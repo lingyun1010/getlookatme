@@ -1,0 +1,27 @@
+{
+  "name": "lookatme-saas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "dev:api": "node --env-file-if-exists=.env --experimental-strip-types scripts/dev-api.ts",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "rag:build": "node --env-file-if-exists=.env --experimental-strip-types scripts/build-rag-index.ts",
+    "rag:test": "node --env-file-if-exists=.env --experimental-strip-types scripts/debug-rag.ts",
+    "rag:regression": "node --env-file-if-exists=.env --experimental-strip-types scripts/regression-rag.ts"
+  },
+  "dependencies": {
+    "openai": "^7.15.0",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5"
+  }
+}

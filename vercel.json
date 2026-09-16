@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/", "destination": "/lingyun", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/:slug", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/chat.ts": {
+      "includeFiles": "{src/rag/**,src/profile/**,knowledge/lingyun.md,generated/rag-index.json}"
+    }
+  }
+}

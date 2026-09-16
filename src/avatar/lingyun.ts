@@ -1,16 +1,13 @@
-export interface AvatarFrame {
-  key: string
-  frame: number
-  src: string
-  angle?: number
-}
+import type { DirectionalAvatar } from '../profile/types.ts'
 
 const base = '/profiles/lingyun/avatar/angle-frames'
 
 export const lingyunAvatar = {
+  mode: 'directional',
+  alt: 'Cartoon character portrait of Lingyun Zhao',
   centerDeadZone: 0.13,
-  center: { key: 'center', frame: 121, src: `${base}/center.png` },
-  directions: [
+  centerFrame: { key: 'center', frame: 121, src: `${base}/center.png` },
+  directionalFrames: [
     { key: 'e', angle: 0, frame: 44, src: `${base}/e.png` },
     { key: 'ese', angle: 22.5, frame: 48, src: `${base}/ese.png` },
     { key: 'se', angle: 45, frame: 53, src: `${base}/se.png` },
@@ -27,5 +24,6 @@ export const lingyunAvatar = {
     { key: 'nne', angle: 292.5, frame: 18, src: `${base}/nne.png` },
     { key: 'ne', angle: 315, frame: 30, src: `${base}/ne.png` },
     { key: 'ene', angle: 337.5, frame: 38, src: `${base}/ene.png` },
-  ] satisfies AvatarFrame[],
-}
+  ],
+  presentation: { objectFit: 'contain', objectPosition: 'center bottom' },
+} satisfies DirectionalAvatar

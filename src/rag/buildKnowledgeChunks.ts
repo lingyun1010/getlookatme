@@ -1,17 +1,18 @@
-import type { Profile } from '../profile/types.ts'
+import type { ProfileDocument } from '../profile/types.ts'
 import type { KnowledgeChunk } from './types.ts'
 
 const compact = (values: Array<string | undefined>) => values.filter(Boolean).join(' | ')
 
-export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge: string): KnowledgeChunk[] {
+export function buildKnowledgeChunks(profile: ProfileDocument, canonicalProfileKnowledge: string): KnowledgeChunk[] {
   const normalizedProfileKnowledge = canonicalProfileKnowledge.trim()
   if (!normalizedProfileKnowledge) throw new Error('Canonical profile knowledge is required')
+  const profileName = profile.identity.fullName
 
   const chunks: KnowledgeChunk[] = [
     {
       id: 'summary-profile',
       type: 'summary',
-      title: `${profile.name} — Professional profile`,
+      title: `${profileName} — Professional profile`,
       content: normalizedProfileKnowledge,
       metadata: { sourceId: `knowledge/${profile.slug}.md` },
     },
@@ -22,7 +23,7 @@ export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge
       id: `skill-${skill.id}`,
       type: 'skill',
       title: `${skill.category} skills`,
-      content: `${profile.name}'s ${skill.category} skills include ${skill.items.join(', ')}.`,
+      content: `${profileName}'s ${skill.category} skills include ${skill.items.join(', ')}.`,
       metadata: { sourceId: skill.id, category: skill.category, technologies: skill.items },
     })
   }
@@ -34,7 +35,7 @@ export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge
       type: 'experience',
       title: `${experience.role} — ${experience.company}`,
       content: compact([
-        `${profile.name} worked as ${experience.role} at ${experience.company}${experience.location ? ` in ${experience.location}` : ''}${dates.length ? ` from ${dates.join(' to ')}` : ''}.`,
+        `${profileName} worked as ${experience.role} at ${experience.company}${experience.location ? ` in ${experience.location}` : ''}${dates.length ? ` from ${dates.join(' to ')}` : ''}.`,
         experience.summary,
         experience.highlights?.length ? `Key responsibilities and contributions: ${experience.highlights.join(' ')}` : undefined,
         experience.technologies?.length ? `Technologies: ${experience.technologies.join(', ')}.` : undefined,
@@ -54,7 +55,7 @@ export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge
       type: 'education',
       title: education.degree,
       content: compact([
-        `${profile.name} completed ${education.degree}${education.institution ? ` at ${education.institution}` : ''}${dates.length ? ` from ${dates.join(' to ')}` : ''}.`,
+        `${profileName} completed ${education.degree}${education.institution ? ` at ${education.institution}` : ''}${dates.length ? ` from ${dates.join(' to ')}` : ''}.`,
         education.description ? `Area of study or research: ${education.description}.` : undefined,
         education.honours ? `Honours: ${education.honours}.` : undefined,
       ]),
@@ -71,7 +72,7 @@ export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge
       title: project.title,
       content: compact([
         `Project — ${project.title}`,
-        `${project.title} is ${isAiProject ? 'an AI project' : 'a project'} built by ${profile.name} in the ${project.category} category.`,
+        `${project.title} is ${isAiProject ? 'an AI project' : 'a project'} built by ${profileName} in the ${project.category} category.`,
         `Project description: ${project.shortDescription}`,
         project.description ? `Additional project details: ${project.description}` : undefined,
         project.technologies?.length ? `Technologies: ${project.technologies.join(', ')}.` : undefined,
@@ -87,7 +88,7 @@ export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge
       id: `service-${service.id}`,
       type: 'service',
       title: service.name,
-      content: `${profile.name} offers ${service.name}: ${service.description}`,
+      content: `${profileName} offers ${service.name}: ${service.description}`,
       metadata: { sourceId: service.id },
     })
   }
@@ -97,7 +98,7 @@ export function buildKnowledgeChunks(profile: Profile, canonicalProfileKnowledge
       id: `highlight-${highlight.id}`,
       type: 'highlight',
       title: highlight.title,
-      content: `${profile.name}'s ${highlight.title} focus: ${highlight.description}`,
+      content: `${profileName}'s ${highlight.title} focus: ${highlight.description}`,
       metadata: { sourceId: highlight.id },
     })
   }

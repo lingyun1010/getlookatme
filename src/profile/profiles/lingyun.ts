@@ -1,19 +1,22 @@
-import type { Profile } from './types.ts'
+import { lingyunAvatar } from '../../avatar/lingyun.ts'
+import type { ProfileDocument } from '../types.ts'
 
 // Canonical structured profile for the portfolio UI and a future knowledge-generation pipeline.
-export const profile = {
+export const lingyunProfile = {
+  profileId: 'profile_lingyun_seed',
   slug: 'lingyun',
-  name: 'Lingyun Zhao',
-  preferredName: 'Lingyun',
-  headline: 'Applied AI Engineer | Full-stack Software Engineer | Computer Vision PhD',
-  location: 'Ryde, NSW, Australia',
-  summary:
-    'I bring 7+ years of production engineering experience together with a PhD in Computer Vision. I build applied AI products around RAG, tool-using agents, evaluation and structured knowledge pipelines, with clear source grounding, safe fallbacks and human review where it matters.',
-  introduction: 'Applied AI, trustworthy RAG systems and computer vision research shaped into useful production software.',
-  contact: {
+  version: 1,
+  identity: {
+    fullName: 'Lingyun Zhao',
+    preferredName: 'Lingyun',
+    headline: 'Applied AI Engineer | Full-stack Software Engineer | Computer Vision PhD',
+    location: 'Ryde, NSW, Australia',
+    summary:
+      'I bring 7+ years of production engineering experience together with a PhD in Computer Vision. I build applied AI products around RAG, tool-using agents, evaluation and structured knowledge pipelines, with clear source grounding, safe fallbacks and human review where it matters.',
+    introduction: 'Applied AI, trustworthy RAG systems and computer vision research shaped into useful production software.',
     email: 'zhaolingyun1010@gmail.com',
-    github: 'https://github.com/lingyun1010',
-    linkedin: 'https://www.linkedin.com/in/lingyun-zhao-syd/',
+    githubUrl: 'https://github.com/lingyun1010',
+    linkedinUrl: 'https://www.linkedin.com/in/lingyun-zhao-syd/',
   },
   focusAreas: [
     'LLM apps',
@@ -194,4 +197,7 @@ export const profile = {
     title: 'Lingyun Zhao — Applied AI Engineer',
     description: 'Interactive professional portfolio for Lingyun Zhao, an applied AI engineer, full-stack software engineer, and computer vision PhD.',
   },
-} satisfies Profile
+  avatar: lingyunAvatar,
+  presentation: { theme: 'default' },
+  ai: { enabled: true },
+} satisfies ProfileDocument

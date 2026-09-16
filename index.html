@@ -217,6 +217,24 @@
         filter: drop-shadow(0 32px 44px rgba(0, 0, 0, 0.62));
       }
 
+      .character-placeholder {
+        position: absolute;
+        inset: 12% 12% 0;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(215, 226, 234, 0.3);
+        border-radius: 48% 48% 18% 18%;
+        color: #ffffff;
+        background:
+          radial-gradient(circle at 30% 24%, rgba(255, 103, 202, 0.34), transparent 35%),
+          radial-gradient(circle at 74% 68%, rgba(37, 151, 255, 0.34), transparent 38%),
+          rgba(24, 24, 28, 0.92);
+        box-shadow: 0 32px 44px rgba(0, 0, 0, 0.42);
+        font-size: clamp(4rem, 12vw, 9rem);
+        font-weight: 800;
+        letter-spacing: -0.05em;
+      }
+
       .character-stage[data-state="thinking"] .character-glow {
         animation: avatar-thinking 1.25s ease-in-out infinite alternate;
       }
@@ -1405,9 +1423,9 @@
           <img
             id="characterFrame"
             class="character-frame"
-            src="/profiles/lingyun/avatar/angle-frames/center.png"
             alt=""
           />
+          <div class="character-placeholder" id="characterPlaceholder" hidden aria-hidden="true"></div>
         </div>
 
         <div class="avatar-chat" aria-label="Ask this portfolio avatar">
@@ -1487,7 +1505,6 @@
 
     <script type="module">
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
-      import { lingyunAvatar } from "/src/avatar/lingyun.ts";
       import * as THREE from "three";
       import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
       import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -1496,7 +1513,14 @@
 
       const profile = resolveProfile(window.location.pathname);
       if (!profile) {
-        document.body.innerHTML = '<main class="profile-not-found"><h1>Profile not found</h1><p>This LookAtMe profile is not published.</p></main>';
+        const notFound = document.createElement("main");
+        notFound.className = "profile-not-found";
+        const heading = document.createElement("h1");
+        heading.textContent = "Profile not found";
+        const detail = document.createElement("p");
+        detail.textContent = "This LookAtMe profile is not published.";
+        notFound.append(heading, detail);
+        document.body.replaceChildren(notFound);
         throw new Error(`Unknown profile path: ${window.location.pathname}`);
       }
 
@@ -1505,21 +1529,42 @@
         if (element) element.textContent = value ?? "";
       };
 
-      const emailHref = profile.contact?.email ? `mailto:${profile.contact.email}` : "#contact";
+      const identity = profile.identity;
+      const emailHref = identity.email ? `mailto:${identity.email}` : "#contact";
       document.title = profile.seo.title;
       document.querySelector('meta[name="description"]')?.setAttribute("content", profile.seo.description);
-      setText("profileHeadline", profile.headline);
-      const greeting = `Hi, I am ${profile.preferredName}`;
+      setText("profileHeadline", identity.headline);
+      const greeting = `Hi, I am ${identity.preferredName}`;
       setText("profileGreetingText", greeting);
-      setText("profileIntroduction", profile.introduction);
-      setText("profileSummary", profile.summary);
-      setText("profileLocation", profile.location);
-      setText("profileEmail", profile.contact?.email);
+      setText("profileIntroduction", identity.introduction);
+      setText("profileSummary", identity.summary);
+      setText("profileLocation", identity.location);
+      setText("profileEmail", identity.email);
       document.querySelector("#profileEmail")?.setAttribute("href", emailHref);
-      document.querySelector("#profileGitHub")?.setAttribute("href", profile.contact?.github ?? "#contact");
-      document.querySelector("#profileLinkedIn")?.setAttribute("href", profile.contact?.linkedin ?? "#contact");
       document.querySelector("#profileContactButton")?.setAttribute("href", emailHref);
-      document.querySelector("#characterFrame")?.setAttribute("alt", `Cartoon character portrait of ${profile.name}`);
+      const setOptionalLink = (selector, url) => {
+        const link = document.querySelector(selector);
+        if (!link) return;
+        if (url) link.setAttribute("href", url);
+        else link.hidden = true;
+      };
+      setOptionalLink("#profileGitHub", identity.githubUrl);
+      setOptionalLink("#profileLinkedIn", identity.linkedinUrl);
+
+      const frameImage = document.querySelector("#characterFrame");
+      const characterPlaceholder = document.querySelector("#characterPlaceholder");
+      frameImage.setAttribute("alt", profile.avatar.alt);
+      if (profile.avatar.mode === "directional") {
+        frameImage.src = profile.avatar.centerFrame.src;
+        frameImage.style.objectFit = profile.avatar.presentation?.objectFit ?? "contain";
+        frameImage.style.objectPosition = profile.avatar.presentation?.objectPosition ?? "center bottom";
+      } else {
+        frameImage.hidden = true;
+        characterPlaceholder.hidden = false;
+        characterPlaceholder.textContent = profile.avatar.initials;
+        characterPlaceholder.setAttribute("aria-label", profile.avatar.alt);
+        characterPlaceholder.removeAttribute("aria-hidden");
+      }
 
       const renderList = (id, items, renderItem) => {
         const element = document.querySelector(`#${id}`);
@@ -1626,7 +1671,7 @@
           offscreen.width = width;
           offscreen.height = height;
           const offscreenContext = offscreen.getContext("2d", { willReadFrequently: true });
-          const lines = width <= 700 ? ["HI, I AM", profile.preferredName.toUpperCase()] : [text.toUpperCase()];
+          const lines = width <= 700 ? ["HI, I AM", identity.preferredName.toUpperCase()] : [text.toUpperCase()];
           let fontSize = parseFloat(computed.fontSize);
           const lineHeight = lines.length > 1 ? fontSize * 0.78 : fontSize;
           offscreenContext.font = `${computed.fontWeight} ${fontSize}px ${computed.fontFamily}`;
@@ -1804,17 +1849,43 @@
 
       const experience = profile.experience[0];
       setText("profileExperienceSummary", experience.summary);
-      document.querySelector("#profileExperience").dataset.profileId = experience.id;
-      document.querySelector("#profileExperience").innerHTML = `
-        <p class="period">${experience.startDate} - ${experience.endDate} | ${experience.location}</p>
-        <h3>${experience.role}</h3><p>${experience.company}</p>
-        <ul>${(experience.highlights ?? []).map((highlight) => `<li>${highlight}</li>`).join("")}</ul>`;
+      const experienceCard = document.querySelector("#profileExperience");
+      experienceCard.dataset.profileId = experience.id;
+      const experiencePeriod = document.createElement("p");
+      experiencePeriod.className = "period";
+      experiencePeriod.textContent = [
+        [experience.startDate, experience.endDate].filter(Boolean).join(" - "),
+        experience.location,
+      ].filter(Boolean).join(" | ");
+      const experienceRole = document.createElement("h3");
+      experienceRole.textContent = experience.role;
+      const experienceCompany = document.createElement("p");
+      experienceCompany.textContent = experience.company;
+      const experienceHighlights = document.createElement("ul");
+      (experience.highlights ?? []).forEach((highlight) => {
+        const item = document.createElement("li");
+        item.textContent = highlight;
+        experienceHighlights.append(item);
+      });
+      experienceCard.replaceChildren(experiencePeriod, experienceRole, experienceCompany, experienceHighlights);
 
       const educationLine = (item) => [item.institution, item.description, item.honours, `${item.startDate} - ${item.endDate}`]
         .filter(Boolean).join(" | ");
-      document.querySelector("#profileEducation").innerHTML = profile.education.map((item, index) =>
-        `<div data-profile-id="${item.id}">${index === 0 ? `<h2>${item.degree}</h2>` : ""}<p>${index === 0 ? educationLine(item) : `${item.degree} | ${educationLine(item)}`}</p></div>`
-      ).join("");
+      const educationContainer = document.querySelector("#profileEducation");
+      const educationNodes = profile.education.map((item, index) => {
+        const record = document.createElement("div");
+        record.dataset.profileId = item.id;
+        if (index === 0) {
+          const degree = document.createElement("h2");
+          degree.textContent = item.degree;
+          record.append(degree);
+        }
+        const detail = document.createElement("p");
+        detail.textContent = index === 0 ? educationLine(item) : `${item.degree} | ${educationLine(item)}`;
+        record.append(detail);
+        return record;
+      });
+      educationContainer.replaceChildren(...educationNodes);
 
       const suggestedQuestions = profile.suggestedQuestions;
 
@@ -1832,12 +1903,22 @@
       let currentRelatedIds = [];
       let thinkingDotsTimer = 0;
 
-      renderList("suggestedQuestions", suggestedQuestions, (question) =>
-        `<button class="question-chip" type="button" data-question="${question}">
-          <canvas class="question-electric-border" aria-hidden="true"></canvas>
-          <span class="question-chip-label">${question}</span>
-        </button>`
-      );
+      const questionButtons = suggestedQuestions.map((question) => {
+        const button = document.createElement("button");
+        button.className = "question-chip";
+        button.type = "button";
+        button.dataset.question = question;
+        button.disabled = !profile.ai.enabled;
+        const canvas = document.createElement("canvas");
+        canvas.className = "question-electric-border";
+        canvas.setAttribute("aria-hidden", "true");
+        const label = document.createElement("span");
+        label.className = "question-chip-label";
+        label.textContent = question;
+        button.append(canvas, label);
+        return button;
+      });
+      suggestedQuestionList.replaceChildren(...questionButtons);
 
       function initElectricQuestion(button) {
         const canvas = button.querySelector(".question-electric-border");
@@ -1975,8 +2056,8 @@
         speechBubble.setAttribute("aria-live", state === "thinking" ? "off" : "polite");
         characterStage.dataset.state = state;
         answerText.textContent = message;
-        chatInput.disabled = state === "thinking";
-        chatSubmit.disabled = state === "thinking";
+        chatInput.disabled = !profile.ai.enabled || state === "thinking";
+        chatSubmit.disabled = !profile.ai.enabled || state === "thinking";
         chatSubmit.setAttribute("aria-label", state === "thinking" ? "Answering question" : "Send question");
         suggestedQuestionList.dataset.state = state;
 
@@ -2022,6 +2103,7 @@
       }
 
       async function askAvatar(question) {
+        if (!profile.ai.enabled) return;
         const message = question.trim();
         if (!message || avatarChatState === "thinking") return;
         chatInput.value = message;
@@ -2064,6 +2146,10 @@
           askAvatar(button.dataset.question);
         }
       });
+
+      if (!profile.ai.enabled) {
+        setAvatarChatState("error", profile.ai.unavailableMessage ?? "AI profile not available yet.");
+      }
 
       function initGhostCursor(host) {
         if (!host) return;
@@ -2404,13 +2490,12 @@
 
       initGhostCursor(document.querySelector("#ghostCursor"));
 
-      const ANGLE_KEYS = lingyunAvatar.directions;
-      const CENTER_KEY = lingyunAvatar.center;
+      const directionalAvatar = profile.avatar.mode === "directional" ? profile.avatar : null;
+      const ANGLE_KEYS = directionalAvatar?.directionalFrames ?? [];
+      const CENTER_KEY = directionalAvatar?.centerFrame ?? null;
+      let activeKey = CENTER_KEY?.key ?? "";
 
-      const frameImage = document.querySelector("#characterFrame");
-      let activeKey = CENTER_KEY.key;
-
-      [...ANGLE_KEYS, CENTER_KEY].forEach((item) => {
+      [...ANGLE_KEYS, ...(CENTER_KEY ? [CENTER_KEY] : [])].forEach((item) => {
         const img = new Image();
         img.src = item.src;
       });
@@ -2427,7 +2512,8 @@
         const dy = pointerY - centerY;
         const distance = Math.hypot(dx, dy);
 
-        if (distance < Math.min(window.innerWidth, window.innerHeight) * lingyunAvatar.centerDeadZone) {
+        if (!CENTER_KEY || ANGLE_KEYS.length === 0) return CENTER_KEY;
+        if (distance < Math.min(window.innerWidth, window.innerHeight) * (directionalAvatar.centerDeadZone ?? 0.13)) {
           return CENTER_KEY;
         }
 
@@ -2439,20 +2525,22 @@
       }
 
       function setFrame(next) {
-        if (!frameImage || next.key === activeKey) return;
+        if (!frameImage || !next || next.key === activeKey) return;
         activeKey = next.key;
         frameImage.src = next.src;
       }
 
-      window.addEventListener(
-        "pointermove",
-        (event) => {
-          setFrame(chooseAngleKey(event.clientX, event.clientY));
-        },
-        { passive: true }
-      );
+      if (directionalAvatar) {
+        window.addEventListener(
+          "pointermove",
+          (event) => {
+            setFrame(chooseAngleKey(event.clientX, event.clientY));
+          },
+          { passive: true }
+        );
 
-      window.addEventListener("pointerleave", () => setFrame(CENTER_KEY));
+        window.addEventListener("pointerleave", () => setFrame(CENTER_KEY));
+      }
 
       const glowCards = document.querySelectorAll(".skill-card, .project-card");
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { profile } from '../src/profile/lingyun.ts'
+import { lingyunProfile as profile } from '../src/profile/profiles/lingyun.ts'
 import { buildKnowledgeChunks } from '../src/rag/buildKnowledgeChunks.ts'
 import { cosineSimilarity } from '../src/rag/cosineSimilarity.ts'
 import { detectRetrievalIntents } from '../src/rag/detectIntent.ts'

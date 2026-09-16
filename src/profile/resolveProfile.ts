@@ -1,14 +1,10 @@
-import { profile as lingyunProfile } from './lingyun.ts'
-import type { Profile } from './types.ts'
+import { profileRegistry } from './registry.ts'
+import type { ProfileDocument } from './types.ts'
 
-const seedProfiles: Record<string, Profile> = {
-  [lingyunProfile.slug]: lingyunProfile,
+export function profileSlugFromPath(pathnameOrSlug: string): string {
+  return pathnameOrSlug.split('/').filter(Boolean)[0] ?? 'lingyun'
 }
 
-export function profileSlugFromPath(pathname: string): string {
-  return pathname.split('/').filter(Boolean)[0] ?? lingyunProfile.slug
-}
-
-export function resolveProfile(pathname: string): Profile | null {
-  return seedProfiles[profileSlugFromPath(pathname)] ?? null
+export function resolveProfile(pathnameOrSlug: string): ProfileDocument | null {
+  return profileRegistry.get(profileSlugFromPath(pathnameOrSlug)) ?? null
 }

@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises'
-import { profile } from '../src/profile/lingyun.ts'
+import { lingyunProfile as profile } from '../src/profile/profiles/lingyun.ts'
 import { buildKnowledgeChunks } from '../src/rag/buildKnowledgeChunks.ts'
 import { RAG_CONFIG } from '../src/rag/config.ts'
 import { embedTexts } from '../src/rag/embeddings.ts'

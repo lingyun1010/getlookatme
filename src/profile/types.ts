@@ -1,7 +1,16 @@
-export interface ProfileContact {
-  email?: string
-  linkedin?: string
-  github?: string
+export type ProfileId = string
+
+export interface ProfileIdentity {
+  fullName: string
+  preferredName: string
+  headline: string
+  location?: string
+  summary: string
+  introduction: string
+  email: string
+  githubUrl?: string
+  linkedinUrl?: string
+  websiteUrl?: string
 }
 
 export interface SkillGroup {
@@ -67,22 +76,60 @@ export interface ProfileSeo {
   description: string
 }
 
-export interface Profile {
+export interface AvatarFrame {
+  key: string
+  frame: number
+  src: string
+  angle?: number
+}
+
+export interface AvatarPresentation {
+  objectFit?: 'contain' | 'cover'
+  objectPosition?: string
+}
+
+export interface DirectionalAvatar {
+  mode: 'directional'
+  alt: string
+  centerFrame: AvatarFrame
+  directionalFrames: Array<AvatarFrame & { angle: number }>
+  centerDeadZone?: number
+  presentation?: AvatarPresentation
+}
+
+export interface PlaceholderAvatar {
+  mode: 'placeholder'
+  alt: string
+  initials: string
+  presentation?: AvatarPresentation
+}
+
+export type ProfileAvatar = DirectionalAvatar | PlaceholderAvatar
+
+export interface ProfilePresentation {
+  theme?: 'default'
+}
+
+export interface ProfileAi {
+  enabled: boolean
+  unavailableMessage?: string
+}
+
+export interface ProfileDocument {
+  profileId: ProfileId
   slug: string
-  name: string
-  preferredName: string
-  headline: string
-  location?: string
-  summary: string
-  introduction: string
-  contact?: ProfileContact
-  focusAreas: string[]
+  version: number
+  identity: ProfileIdentity
+  seo: ProfileSeo
   highlights: Highlight[]
   skills: SkillGroup[]
   services: Service[]
   experience: Experience[]
   education: Education[]
   projects: Project[]
+  focusAreas: string[]
   suggestedQuestions: string[]
-  seo: ProfileSeo
+  avatar: ProfileAvatar
+  presentation?: ProfilePresentation
+  ai: ProfileAi
 }

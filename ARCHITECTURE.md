@@ -12,12 +12,14 @@ The chat endpoint uses a committed, Lingyun-only RAG index. Retrieval uses OpenA
 
 `ProfileDocument` separates immutable internal identity (`profileId`) from mutable public routing identity (`slug`) and includes a version, nested identity and SEO data, stable-ID content collections, suggested questions, an avatar union, minimal presentation configuration, and explicit AI availability.
 
+Profile-derived content is rendered with DOM construction and `textContent`; the shared renderer does not interpolate profile fields through `innerHTML`. Optional project links and images accept only HTTP(S) URLs. Small presentation hints hold owner-specific section copy, explicit highlight anchors, and featured experience/education intent without turning the document into a page-builder schema.
+
 Profiles live under `src/profile/profiles/` and are registered in `src/profile/registry.ts`. The resolver depends only on the registry lookup shape so a future persistent repository can replace it without changing the renderer's document contract.
 
 ## Boundaries
 
 - **Profile:** a tenant-neutral `ProfileDocument` containing structured professional content and presentation metadata. Seed and fixture data are not product defaults.
-- **Renderer:** turns a resolved profile into the current portfolio UI. It must not own authentication or persistence.
+- **Renderer:** safely turns a resolved profile into the current portfolio UI. It consumes explicit featured records and presentation hints, and must not own authentication or persistence.
 - **Avatar:** a profile selects either directional frames or a placeholder. Pointer-direction behavior remains in the renderer for now and must not own chat or profile storage.
 - **RAG:** chunking, indexing, retrieval, and grounded answering. It must remain independent from portfolio rendering.
 - **API/deployment:** Vercel hosts the static build and serverless endpoints. Configuration is environment-driven.

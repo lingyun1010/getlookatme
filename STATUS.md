@@ -2,19 +2,19 @@
 
 ## Current milestone
 
-M1.1 — ProfileDocument contract and static multi-profile registry — complete.
+M1.2 — safe profile-driven renderer — complete.
 
 ## Completed
 
 - M0 architecture audit.
 - M1.0 private SaaS repository bootstrap and reusable foundation migration.
-- M1.1 tenant-neutral `ProfileDocument` with distinct `profileId`, slug, and version.
-- Static registry and resolver shared by every profile route.
-- Lingyun migrated without changing stable portfolio record IDs.
-- Aaron fixture added to prove a second document renders through the same application.
-- Directional and placeholder avatar modes.
-- Explicit profile-level AI availability; Aaron cannot call the Lingyun-only chat flow.
-- Profile-not-found, experience, education, and suggested-question rendering moved to safe DOM APIs.
+- M1.1 tenant-neutral `ProfileDocument` and static multi-profile registry.
+- M1.2 safe DOM construction for all profile-derived lists, project links, and project images.
+- Owner-specific services/contact copy moved into each profile document.
+- Owner-specific accessibility labels derived from profile identity.
+- Explicit highlight anchors and featured experience/education records replace ID and array-position assumptions.
+- Lingyun retains the existing directional avatar and RAG behavior.
+- Aaron retains the initials avatar fallback and disabled AI state.
 
 ## Current supported profiles
 
@@ -23,14 +23,13 @@ M1.1 — ProfileDocument contract and static multi-profile registry — complete
 
 ## Known limitations
 
-- Profiles are held in a static registry.
-- RAG is available only for Lingyun and the server endpoint is not yet profile-aware.
-- No persistence, authentication, editor, uploads, or user-created profiles.
-- `index.html` remains the active renderer and contains presentation assumptions from the original demo.
-- The shared `renderList` helper still inserts profile-derived HTML for highlights, focus-area marquee items, skills, services, and projects. These values remain trusted source fixtures; they are not safe for user-authored content yet.
-- Global section copy such as the services introduction and contact heading is not in `ProfileDocument`.
-- The renderer emphasizes the first experience record and first education record.
+- Static profile registry.
+- RAG remains Lingyun-only and the server endpoint is not profile-aware.
+- No persistence, authentication, editor, uploads, or user-generated profiles.
+- `index.html` remains the active renderer.
 - Avatar pointer origin remains based on the viewport center.
+- Service/project numbering and project stack order intentionally follow collection order as generic layout behavior.
+- A complete visual regression pass remains manual because browser automation is unavailable in this environment.
 
 ## Deferred
 
@@ -38,4 +37,4 @@ Database-backed profiles, authentication, uploads, editor, multi-tenant RAG, ana
 
 ## Next exact task
 
-M1.2: remove remaining Lingyun-specific presentation assumptions and replace the shared profile-derived `innerHTML` list rendering with safe DOM construction while preserving the visual design.
+M2.0: implement a CV/PDF/DOCX onboarding pipeline that produces a validated temporary `ProfileDocument` preview without adding authentication or persistent user storage.

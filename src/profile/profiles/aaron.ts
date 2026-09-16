@@ -49,6 +49,7 @@ export const aaronProfile = {
       summary: 'Fixture product engineering experience',
       highlights: ['Built and tested small web product prototypes for demonstration purposes.'],
       technologies: ['TypeScript', 'Web APIs'],
+      featured: true,
     },
   ],
   education: [
@@ -59,6 +60,7 @@ export const aaronProfile = {
       startDate: '2019',
       endDate: '2022',
       description: 'Fixture education record',
+      featured: true,
     },
   ],
   projects: [
@@ -81,7 +83,11 @@ export const aaronProfile = {
     alt: 'Placeholder avatar for the Aaron fixture profile',
     initials: 'AE',
   },
-  presentation: { theme: 'default' },
+  presentation: {
+    theme: 'default',
+    servicesIntro: 'Fixture services demonstrate that each portfolio controls its own professional positioning.',
+    contactHeading: 'Get in touch with this fixture profile.',
+  },
   ai: {
     enabled: false,
     unavailableMessage: 'AI profile not available yet.',

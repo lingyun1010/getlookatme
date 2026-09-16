@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { assertValidProfileRegistry, profileRegistry, registeredProfiles } from '../src/profile/registry.ts'
+import { featuredEducation, featuredExperience } from '../src/profile/presentation.ts'
 import { profileSlugFromPath, resolveProfile } from '../src/profile/resolveProfile.ts'
 import type { ProfileDocument } from '../src/profile/types.ts'
 
@@ -21,6 +22,10 @@ function assertRequiredProfileDocument(profile: ProfileDocument): void {
   assert.ok(profile.skills.length > 0)
   assert.ok(profile.suggestedQuestions.length > 0)
   assert.ok(profile.avatar.alt)
+  assert.ok(profile.presentation?.servicesIntro)
+  assert.ok(profile.presentation?.contactHeading)
+  assert.equal(profile.experience.filter(({ featured }) => featured).length, 1)
+  assert.equal(profile.education.filter(({ featured }) => featured).length, 1)
 }
 
 test('Lingyun and Aaron satisfy the required ProfileDocument contract', () => {
@@ -71,6 +76,18 @@ test('prevents Aaron from using the Lingyun-only RAG capability', () => {
   assert.equal(resolveProfile('lingyun')?.ai.enabled, true)
   assert.equal(resolveProfile('aaron')?.ai.enabled, false)
   assert.match(resolveProfile('aaron')?.ai.unavailableMessage ?? '', /not available/i)
+})
+
+test('featured experience and education do not depend on array position', () => {
+  const lingyun = resolveProfile('lingyun')!
+  const reversed = {
+    ...lingyun,
+    experience: [...lingyun.experience].reverse(),
+    education: [...lingyun.education].reverse(),
+  }
+  assert.equal(featuredExperience(reversed).id, 'embl-ebi-senior-software-engineer')
+  assert.equal(featuredEducation(reversed).id, 'phd-computer-vision')
+  assert.equal(lingyun.highlights.find(({ anchorId }) => anchorId === 'systems')?.id, 'production-systems')
 })
 
 test('registry contains unique slugs and profileIds', () => {

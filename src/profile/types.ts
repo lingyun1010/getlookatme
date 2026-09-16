@@ -29,6 +29,7 @@ export interface Highlight {
   id: string
   title: string
   description: string
+  anchorId?: string
 }
 
 export interface Experience {
@@ -41,6 +42,7 @@ export interface Experience {
   summary?: string
   highlights?: string[]
   technologies?: string[]
+  featured?: boolean
 }
 
 export interface Education {
@@ -51,6 +53,7 @@ export interface Education {
   endDate?: string
   description?: string
   honours?: string
+  featured?: boolean
 }
 
 export interface ProfileLink {
@@ -108,6 +111,8 @@ export type ProfileAvatar = DirectionalAvatar | PlaceholderAvatar
 
 export interface ProfilePresentation {
   theme?: 'default'
+  servicesIntro: string
+  contactHeading: string
 }
 
 export interface ProfileAi {
@@ -130,6 +135,6 @@ export interface ProfileDocument {
   focusAreas: string[]
   suggestedQuestions: string[]
   avatar: ProfileAvatar
-  presentation?: ProfilePresentation
+  presentation: ProfilePresentation
   ai: ProfileAi
 }

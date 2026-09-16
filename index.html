@@ -1461,7 +1461,7 @@
       <section class="section-light services" id="services">
         <div class="section-head">
           <h2>Services</h2>
-          <p>Focused engineering work across AI product systems, full-stack delivery, search and visual computing.</p>
+          <p id="profileServicesIntro"></p>
         </div>
 
         <div class="service-list" id="profileServices"></div>
@@ -1493,7 +1493,7 @@
           </div>
           <div class="contact-panel">
             <span class="eyebrow">Contact</span>
-            <h2>Let us build useful AI with a little visual magic.</h2>
+            <h2 id="profileContactHeading"></h2>
             <a id="profileEmail"></a>
             <span id="profileLocation"></span>
             <a id="profileGitHub" target="_blank" rel="noreferrer">GitHub</a>
@@ -1505,6 +1505,7 @@
 
     <script type="module">
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
+      import { featuredEducation, featuredExperience } from "/src/profile/presentation.ts";
       import * as THREE from "three";
       import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
       import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -1529,6 +1530,16 @@
         if (element) element.textContent = value ?? "";
       };
 
+      const safeExternalUrl = (value) => {
+        if (!value) return null;
+        try {
+          const url = new URL(value, window.location.origin);
+          return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+        } catch {
+          return null;
+        }
+      };
+
       const identity = profile.identity;
       const emailHref = identity.email ? `mailto:${identity.email}` : "#contact";
       document.title = profile.seo.title;
@@ -1540,16 +1551,21 @@
       setText("profileSummary", identity.summary);
       setText("profileLocation", identity.location);
       setText("profileEmail", identity.email);
+      setText("profileServicesIntro", profile.presentation.servicesIntro);
+      setText("profileContactHeading", profile.presentation.contactHeading);
       document.querySelector("#profileEmail")?.setAttribute("href", emailHref);
       document.querySelector("#profileContactButton")?.setAttribute("href", emailHref);
       const setOptionalLink = (selector, url) => {
         const link = document.querySelector(selector);
         if (!link) return;
-        if (url) link.setAttribute("href", url);
+        const href = safeExternalUrl(url);
+        if (href) link.setAttribute("href", href);
         else link.hidden = true;
       };
       setOptionalLink("#profileGitHub", identity.githubUrl);
       setOptionalLink("#profileLinkedIn", identity.linkedinUrl);
+      document.querySelector(".avatar-chat")?.setAttribute("aria-label", `Ask ${identity.preferredName}'s portfolio avatar`);
+      document.querySelector("#avatarQuestion")?.setAttribute("aria-label", `Ask ${identity.preferredName} a question`);
 
       const frameImage = document.querySelector("#characterFrame");
       const characterPlaceholder = document.querySelector("#characterPlaceholder");
@@ -1565,11 +1581,6 @@
         characterPlaceholder.setAttribute("aria-label", profile.avatar.alt);
         characterPlaceholder.removeAttribute("aria-hidden");
       }
-
-      const renderList = (id, items, renderItem) => {
-        const element = document.querySelector(`#${id}`);
-        if (element) element.innerHTML = items.map(renderItem).join("");
-      };
 
       function initParticleHeading(container, canvas, text) {
         const context = canvas.getContext("2d");
@@ -1734,31 +1745,126 @@
         greeting,
       );
 
-      renderList("work", profile.highlights, (item) => `
-        <article class="reveal-on-scroll" style="--reveal-delay: ${profile.highlights.indexOf(item) * 110}ms"${item.id === "production-systems" ? ' id="systems"' : ""} data-profile-id="${item.id}">
-          <h2>${item.title}</h2><p>${item.description}</p>
-        </article>`);
-      renderList("profileMarquee", [...profile.focusAreas, ...profile.focusAreas], (item) => `<span>${item}</span>`);
-      renderList("profileSkills", profile.skills, (group) => `
-        <article class="skill-card reveal-on-scroll" style="--reveal-delay: ${profile.skills.indexOf(group) * 90}ms" data-profile-id="${group.id}">
-          <span class="edge-light" aria-hidden="true"></span>
-          <strong>${group.category}</strong>${group.items.map((item) => `<span>${item}</span>`).join("")}
-        </article>`);
-      renderList("profileServices", profile.services, (service, index) => `
-        <article class="service-item" data-profile-id="${service.id}">
-          <span>${String(index + 1).padStart(2, "0")}</span>
-          <div><h3>${service.name}</h3><p>${service.description}</p></div>
-        </article>`);
-      renderList("profileProjects", profile.projects, (project, index) => `
-        <article class="project-card" data-profile-id="${project.id}" style="--stack-index: ${index}">
-          <span class="edge-light" aria-hidden="true"></span>
-          <span class="project-number">${String(index + 1).padStart(2, "0")}</span>
-          ${project.image ? `<a class="project-media" href="${project.links?.[0]?.url ?? "#projects"}" target="_blank" rel="noreferrer"><img src="${project.image}" alt="${project.imageAlt ?? project.title}" loading="lazy"></a>` : ""}
-          <p class="project-type">${project.category}</p>
-          <h3>${project.title}</h3><p>${project.shortDescription}</p>
-          <div class="tags">${(project.tags ?? []).map((tag) => `<span>${tag}</span>`).join("")}</div>
-          <div class="project-links">${(project.links ?? []).map((link) => `<a href="${link.url}" target="_blank" rel="noreferrer">${link.label} ↗</a>`).join("")}</div>
-        </article>`);
+      const highlightNodes = profile.highlights.map((item, index) => {
+        const article = document.createElement("article");
+        article.className = "reveal-on-scroll";
+        article.style.setProperty("--reveal-delay", `${index * 110}ms`);
+        article.dataset.profileId = item.id;
+        if (item.anchorId) article.id = item.anchorId;
+        const title = document.createElement("h2");
+        title.textContent = item.title;
+        const description = document.createElement("p");
+        description.textContent = item.description;
+        article.append(title, description);
+        return article;
+      });
+      document.querySelector("#work")?.replaceChildren(...highlightNodes);
+
+      const marqueeNodes = [...profile.focusAreas, ...profile.focusAreas].map((item) => {
+        const label = document.createElement("span");
+        label.textContent = item;
+        return label;
+      });
+      document.querySelector("#profileMarquee")?.replaceChildren(...marqueeNodes);
+
+      const skillNodes = profile.skills.map((group, index) => {
+        const article = document.createElement("article");
+        article.className = "skill-card reveal-on-scroll";
+        article.style.setProperty("--reveal-delay", `${index * 90}ms`);
+        article.dataset.profileId = group.id;
+        const edge = document.createElement("span");
+        edge.className = "edge-light";
+        edge.setAttribute("aria-hidden", "true");
+        const category = document.createElement("strong");
+        category.textContent = group.category;
+        const items = group.items.map((item) => {
+          const label = document.createElement("span");
+          label.textContent = item;
+          return label;
+        });
+        article.append(edge, category, ...items);
+        return article;
+      });
+      document.querySelector("#profileSkills")?.replaceChildren(...skillNodes);
+
+      const serviceNodes = profile.services.map((service, index) => {
+        const article = document.createElement("article");
+        article.className = "service-item";
+        article.dataset.profileId = service.id;
+        const number = document.createElement("span");
+        number.textContent = String(index + 1).padStart(2, "0");
+        const copy = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = service.name;
+        const description = document.createElement("p");
+        description.textContent = service.description;
+        copy.append(title, description);
+        article.append(number, copy);
+        return article;
+      });
+      document.querySelector("#profileServices")?.replaceChildren(...serviceNodes);
+
+      const projectNodes = profile.projects.map((project, index) => {
+        const article = document.createElement("article");
+        article.className = "project-card";
+        article.dataset.profileId = project.id;
+        article.style.setProperty("--stack-index", String(index));
+        const edge = document.createElement("span");
+        edge.className = "edge-light";
+        edge.setAttribute("aria-hidden", "true");
+        const number = document.createElement("span");
+        number.className = "project-number";
+        number.textContent = String(index + 1).padStart(2, "0");
+        article.append(edge, number);
+
+        const imageUrl = safeExternalUrl(project.image);
+        if (imageUrl) {
+          const firstProjectUrl = safeExternalUrl(project.links?.[0]?.url);
+          const media = document.createElement(firstProjectUrl ? "a" : "div");
+          media.className = "project-media";
+          if (firstProjectUrl) {
+            media.href = firstProjectUrl;
+            media.target = "_blank";
+            media.rel = "noreferrer";
+          }
+          const image = document.createElement("img");
+          image.src = imageUrl;
+          image.alt = project.imageAlt ?? project.title;
+          image.loading = "lazy";
+          media.append(image);
+          article.append(media);
+        }
+
+        const category = document.createElement("p");
+        category.className = "project-type";
+        category.textContent = project.category;
+        const title = document.createElement("h3");
+        title.textContent = project.title;
+        const description = document.createElement("p");
+        description.textContent = project.shortDescription;
+        const tags = document.createElement("div");
+        tags.className = "tags";
+        (project.tags ?? []).forEach((tag) => {
+          const label = document.createElement("span");
+          label.textContent = tag;
+          tags.append(label);
+        });
+        const links = document.createElement("div");
+        links.className = "project-links";
+        (project.links ?? []).forEach((link) => {
+          const href = safeExternalUrl(link.url);
+          if (!href) return;
+          const anchor = document.createElement("a");
+          anchor.href = href;
+          anchor.target = "_blank";
+          anchor.rel = "noreferrer";
+          anchor.textContent = `${link.label} ↗`;
+          links.append(anchor);
+        });
+        article.append(category, title, description, tags, links);
+        return article;
+      });
+      document.querySelector("#profileProjects")?.replaceChildren(...projectNodes);
 
       const projectCards = [...document.querySelectorAll(".project-card")];
       const projectMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1847,7 +1953,7 @@
         revealTargets.forEach((target) => target.classList.add("is-visible"));
       }
 
-      const experience = profile.experience[0];
+      const experience = featuredExperience(profile);
       setText("profileExperienceSummary", experience.summary);
       const experienceCard = document.querySelector("#profileExperience");
       experienceCard.dataset.profileId = experience.id;
@@ -1871,17 +1977,19 @@
 
       const educationLine = (item) => [item.institution, item.description, item.honours, `${item.startDate} - ${item.endDate}`]
         .filter(Boolean).join(" | ");
+      const primaryEducation = featuredEducation(profile);
       const educationContainer = document.querySelector("#profileEducation");
-      const educationNodes = profile.education.map((item, index) => {
+      const educationNodes = profile.education.map((item) => {
         const record = document.createElement("div");
         record.dataset.profileId = item.id;
-        if (index === 0) {
+        const isFeatured = item.id === primaryEducation.id;
+        if (isFeatured) {
           const degree = document.createElement("h2");
           degree.textContent = item.degree;
           record.append(degree);
         }
         const detail = document.createElement("p");
-        detail.textContent = index === 0 ? educationLine(item) : `${item.degree} | ${educationLine(item)}`;
+        detail.textContent = isFeatured ? educationLine(item) : `${item.degree} | ${educationLine(item)}`;
         record.append(detail);
         return record;
       });

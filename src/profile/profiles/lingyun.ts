@@ -42,6 +42,7 @@ export const lingyunProfile = {
     },
     {
       id: 'production-systems',
+      anchorId: 'systems',
       title: 'Production Systems',
       description: 'React, TypeScript, JavaScript, REST services, PostgreSQL, Solr, data pipelines and AWS.',
     },
@@ -111,6 +112,7 @@ export const lingyunProfile = {
         'Supported system design, documentation, testing, deployment and cross-functional agile delivery.',
       ],
       technologies: ['React', 'JavaScript', 'Java', 'REST services', 'Solr', 'PostgreSQL'],
+      featured: true,
     },
   ],
   education: [
@@ -121,6 +123,7 @@ export const lingyunProfile = {
       startDate: 'July 2014',
       endDate: 'July 2019',
       description: 'Scene Estimation and Modelling in Haze',
+      featured: true,
     },
     {
       id: 'bsc-telecommunications-and-management',
@@ -198,6 +201,10 @@ export const lingyunProfile = {
     description: 'Interactive professional portfolio for Lingyun Zhao, an applied AI engineer, full-stack software engineer, and computer vision PhD.',
   },
   avatar: lingyunAvatar,
-  presentation: { theme: 'default' },
+  presentation: {
+    theme: 'default',
+    servicesIntro: 'Focused engineering work across AI product systems, full-stack delivery, search and visual computing.',
+    contactHeading: 'Let us build useful AI with a little visual magic.',
+  },
   ai: { enabled: true },
 } satisfies ProfileDocument

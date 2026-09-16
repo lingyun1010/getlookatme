@@ -4,6 +4,7 @@
     { "source": "/", "destination": "/lingyun", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/create", "destination": "/create.html" },
     { "source": "/:slug", "destination": "/index.html" }
   ],
   "functions": {

@@ -1506,13 +1506,20 @@
     <script type="module">
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
       import { featuredEducation, featuredExperience } from "/src/profile/presentation.ts";
+      import { loadTemporaryProfile } from "/src/onboarding/session.ts";
       import * as THREE from "three";
       import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
       import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
       import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
       import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
-      const profile = resolveProfile(window.location.pathname);
+      if (window.location.pathname === "/create") {
+        window.location.replace("/create.html");
+        throw new Error("Opening profile creation flow");
+      }
+      const profile = window.location.pathname === "/preview"
+        ? loadTemporaryProfile()
+        : resolveProfile(window.location.pathname);
       if (!profile) {
         const notFound = document.createElement("main");
         notFound.className = "profile-not-found";
@@ -1953,36 +1960,41 @@
         revealTargets.forEach((target) => target.classList.add("is-visible"));
       }
 
-      const experience = featuredExperience(profile);
-      setText("profileExperienceSummary", experience.summary);
+      const experience = profile.experience.length ? featuredExperience(profile) : undefined;
       const experienceCard = document.querySelector("#profileExperience");
-      experienceCard.dataset.profileId = experience.id;
-      const experiencePeriod = document.createElement("p");
-      experiencePeriod.className = "period";
-      experiencePeriod.textContent = [
-        [experience.startDate, experience.endDate].filter(Boolean).join(" - "),
-        experience.location,
-      ].filter(Boolean).join(" | ");
-      const experienceRole = document.createElement("h3");
-      experienceRole.textContent = experience.role;
-      const experienceCompany = document.createElement("p");
-      experienceCompany.textContent = experience.company;
-      const experienceHighlights = document.createElement("ul");
-      (experience.highlights ?? []).forEach((highlight) => {
-        const item = document.createElement("li");
-        item.textContent = highlight;
-        experienceHighlights.append(item);
-      });
-      experienceCard.replaceChildren(experiencePeriod, experienceRole, experienceCompany, experienceHighlights);
+      if (experience) {
+        setText("profileExperienceSummary", experience.summary);
+        experienceCard.dataset.profileId = experience.id;
+        const experiencePeriod = document.createElement("p");
+        experiencePeriod.className = "period";
+        experiencePeriod.textContent = [
+          [experience.startDate, experience.endDate].filter(Boolean).join(" - "),
+          experience.location,
+        ].filter(Boolean).join(" | ");
+        const experienceRole = document.createElement("h3");
+        experienceRole.textContent = experience.role;
+        const experienceCompany = document.createElement("p");
+        experienceCompany.textContent = experience.company;
+        const experienceHighlights = document.createElement("ul");
+        (experience.highlights ?? []).forEach((highlight) => {
+          const item = document.createElement("li");
+          item.textContent = highlight;
+          experienceHighlights.append(item);
+        });
+        experienceCard.replaceChildren(experiencePeriod, experienceRole, experienceCompany, experienceHighlights);
+      } else {
+        setText("profileExperienceSummary", "Experience not provided");
+        experienceCard.textContent = "Add experience from the profile creation screen.";
+      }
 
       const educationLine = (item) => [item.institution, item.description, item.honours, `${item.startDate} - ${item.endDate}`]
         .filter(Boolean).join(" | ");
-      const primaryEducation = featuredEducation(profile);
+      const primaryEducation = profile.education.length ? featuredEducation(profile) : undefined;
       const educationContainer = document.querySelector("#profileEducation");
       const educationNodes = profile.education.map((item) => {
         const record = document.createElement("div");
         record.dataset.profileId = item.id;
-        const isFeatured = item.id === primaryEducation.id;
+        const isFeatured = item.id === primaryEducation?.id;
         if (isFeatured) {
           const degree = document.createElement("h2");
           degree.textContent = item.degree;
@@ -1993,7 +2005,8 @@
         record.append(detail);
         return record;
       });
-      educationContainer.replaceChildren(...educationNodes);
+      if (educationNodes.length) educationContainer.replaceChildren(...educationNodes);
+      else educationContainer.textContent = "Education not provided.";
 
       const suggestedQuestions = profile.suggestedQuestions;
 

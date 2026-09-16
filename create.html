@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Create a temporary LookAtMe profile from a resume." />
+    <title>Create your profile — LookAtMe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/onboarding/create.css" />
+  </head>
+  <body>
+    <main class="create-shell">
+      <header class="create-header">
+        <a href="/lingyun" aria-label="LookAtMe home">LOOKATME</a>
+        <p>Temporary profile preview</p>
+      </header>
+
+      <section class="create-panel" id="inputStep">
+        <p class="step-label">Step 1 of 3</p>
+        <h1>Create your profile</h1>
+        <p class="lede">Upload a PDF or DOCX resume, or paste the text. Your resume stays in this browser session and is not published.</p>
+        <div class="input-grid">
+          <label class="upload-card">
+            <span>Upload PDF or DOCX</span>
+            <small>Maximum 8 MB</small>
+            <input id="resumeFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+          </label>
+          <div class="paste-card">
+            <label for="resumeText">Paste resume text</label>
+            <textarea id="resumeText" rows="12" placeholder="Paste your resume here…"></textarea>
+          </div>
+        </div>
+        <p class="error" id="inputError" role="alert" hidden></p>
+        <button class="primary" id="buildButton" type="button">Build temporary profile</button>
+      </section>
+
+      <section class="create-panel building" id="buildingStep" hidden aria-live="polite">
+        <p class="step-label">Step 2 of 3</p>
+        <div class="spinner" aria-hidden="true"></div>
+        <h1>Building your profile</h1>
+        <p id="buildingStatus">Extracting resume text…</p>
+      </section>
+
+      <section class="create-panel" id="reviewStep" hidden>
+        <p class="step-label">Step 3 of 3</p>
+        <h1>Review your profile</h1>
+        <p class="lede">Edit anything that was missed or mapped incorrectly. Missing optional details can be left blank.</p>
+        <div class="issues" id="reviewIssues" aria-live="polite"></div>
+        <form id="reviewForm">
+          <fieldset>
+            <legend>Identity</legend>
+            <div class="field-grid">
+              <label>Full name <input id="fullName" required /></label>
+              <label>Preferred name <input id="preferredName" required /></label>
+              <label>Location / base <input id="location" /></label>
+              <label>Headline <input id="headline" required /></label>
+              <label>Email <input id="email" type="email" required /></label>
+            </div>
+            <label>Summary / about <textarea id="summary" rows="5" required></textarea></label>
+          </fieldset>
+          <fieldset>
+            <legend>Links</legend>
+            <div class="field-grid">
+              <label>LinkedIn <input id="linkedinUrl" type="url" placeholder="https://linkedin.com/in/…" /></label>
+              <label>GitHub <input id="githubUrl" type="url" placeholder="https://github.com/…" /></label>
+              <label>Portfolio / website <input id="websiteUrl" type="url" placeholder="https://…" /></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Content</legend>
+            <label>Skills <small>One per line</small><textarea id="skills" rows="6"></textarea></label>
+            <label>Experience <small>One per line: Role | Company | Start | End | Summary</small><textarea id="experience" rows="7"></textarea></label>
+            <label>Education <small>One per line: Degree | Institution | Start | End</small><textarea id="education" rows="5"></textarea></label>
+            <label>Projects <small>One per line: Title | Category | Description | URL</small><textarea id="projects" rows="6"></textarea></label>
+          </fieldset>
+          <fieldset>
+            <legend>Presentation</legend>
+            <label>Services intro <textarea id="servicesIntro" rows="2"></textarea></label>
+            <label>Contact heading <input id="contactHeading" /></label>
+          </fieldset>
+          <div class="actions">
+            <button class="secondary" id="startOverButton" type="button">Start over</button>
+            <button class="primary" type="submit">Preview profile</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="/src/onboarding/createApp.ts"></script>
+  </body>
+</html>

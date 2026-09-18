@@ -2,7 +2,9 @@
 
 ## Current architecture
 
-LookAtMe is a Vite-built static portfolio with Vercel serverless endpoints and Supabase for authentication, persisted application data, and assets. `index.html` remains the active UI surface to preserve the reference implementation's design and interactions. The old React implementation was not migrated.
+LookAtMe is a Vite-built static portfolio with Vercel serverless endpoints and Supabase for authentication, persisted application data, and assets. `index.html` remains the active public-profile UI surface to preserve the reference implementation's design and interactions. The old React implementation was not migrated.
+
+Product UI and published portfolios have separate visual boundaries. Landing and future SaaS surfaces own their product styles; the public renderer loads the named `kinetic` template stylesheet from `src/profile/templates/kinetic/`. The renderer root exposes both `portfolio-page` and a template-specific class. Future templates must receive their own directory, stylesheet, and root class while continuing to consume the same `ProfileDocument`, avatar, and RAG/chat boundaries. Template selection is publication/presentation state outside `ProfileDocument`, so professional data remains portable across designs.
 
 ## Authentication and ownership
 

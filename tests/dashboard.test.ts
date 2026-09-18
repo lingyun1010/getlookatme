@@ -12,7 +12,7 @@ const shell = await readFile(new URL('../src/dashboard/DashboardShell.ts', impor
 
 test('dashboard is an authenticated product route', () => {
   assert.match(routes, /"\/dashboard", "destination": "\/dashboard\.html"/)
-  assert.match(app, /requireAuthenticatedUser\('\/dashboard'\)/)
+  assert.match(app, /requireAuthenticatedUser\(initialRoute\)/)
   assert.match(page, /src\/dashboard\/dashboard\.css/)
   assert.doesNotMatch(page, /profile\/templates\/kinetic/)
 })
@@ -33,15 +33,27 @@ test('unfinished dashboard capabilities are visibly disabled', () => {
 })
 
 test('create workspace is mounted inside the shared authenticated dashboard shell', () => {
-  assert.match(routes, /"source": "\/dashboard\/create", "destination": "\/create\.html"/)
+  assert.match(routes, /"source": "\/dashboard\/create", "destination": "\/dashboard\.html"/)
   assert.match(routes, /"source": "\/create", "destination": "\/dashboard\/create"/)
-  assert.match(createWorkspace, /requireAuthenticatedUser\('\/dashboard\/create'\)/)
-  assert.match(createWorkspace, /mountDashboardShell\(content/)
+  assert.match(app, /requireAuthenticatedUser\(initialRoute\)/)
+  assert.match(app, /mountDashboardShell/)
+  assert.match(createWorkspace, /controllerStarted/)
   assert.match(createWorkspace, /import\('\.\/createApp\.ts'\)/)
   assert.match(createPage, /createWorkspaceTemplate/)
   assert.match(createPage, /src\/dashboard\/dashboard\.css/)
   assert.doesNotMatch(createPage, /profile\/templates\/kinetic/)
-  assert.match(shell, /\/dashboard\/create/)
+  assert.match(app, /\/dashboard\/create/)
+})
+
+test('dashboard uses History API routing without remounting its shell', () => {
+  assert.match(app, /history\.pushState/)
+  assert.match(app, /addEventListener\('popstate'/)
+  assert.match(app, /shell\.content\.replaceChildren\(view\)/)
+  assert.equal((app.match(/mountDashboardShell\(/g) ?? []).length, 1)
+  assert.match(app, /location\.hash==='#avatar'/)
+  assert.match(routes, /"source": "\/dashboard\/profile", "destination": "\/dashboard\.html"/)
+  assert.match(routes, /"source": "\/dashboard\/avatar", "destination": "\/dashboard\.html"/)
+  assert.match(routes, /"source": "\/dashboard\/pages", "destination": "\/dashboard\.html"/)
 })
 
 test('dashboard creator actions stay in the dashboard workspace', () => {

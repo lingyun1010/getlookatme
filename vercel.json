@@ -9,7 +9,10 @@
     { "source": "/auth", "destination": "/auth.html" },
     { "source": "/login", "destination": "/auth.html" },
     { "source": "/signup", "destination": "/auth.html" },
-    { "source": "/dashboard/create", "destination": "/create.html" },
+    { "source": "/dashboard/create", "destination": "/dashboard.html" },
+    { "source": "/dashboard/profile", "destination": "/dashboard.html" },
+    { "source": "/dashboard/avatar", "destination": "/dashboard.html" },
+    { "source": "/dashboard/pages", "destination": "/dashboard.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/:slug", "destination": "/index.html" }
   ],

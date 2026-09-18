@@ -1,30 +1,22 @@
 import { requireAuthenticatedUser } from '../auth/session.ts'
 import { getOwnedProfile, loadOnboardingState } from '../profile/repository.ts'
 import type { ProfileDocument } from '../profile/types.ts'
-import { mountDashboardShell } from './DashboardShell.ts'
+import { getCreateWorkspace, startCreateWorkspace } from '../onboarding/createWorkspaceApp.ts'
+import { mountDashboardShell, type DashboardSection } from './DashboardShell.ts'
 
-const user = await requireAuthenticatedUser('/dashboard')
-const profile = await getOwnedProfile(user)
-const state = await loadOnboardingState(profile)
-const profileDocument = profile.document as ProfileDocument
-const hasProfile = profileDocument?.profileId === profile.id
-const hasCv = Boolean(state?.cv_path)
-const hasAvatar = Boolean(state?.original_photo_path || state?.avatar_frame_paths.length || (hasProfile && profileDocument.avatarMode === 'dynamic'))
-const published = profile.is_published
-const content=(document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement)
-mountDashboardShell(content,{active:'dashboard',user,name:profileDocument?.identity?.preferredName??user.email?.split('@')[0]??'Your account',published})
-const checks = [{label:'Add your CV or professional background',done:hasCv},{label:'Review your profile details',done:hasProfile},{label:'Create or choose your avatar',done:hasAvatar},{label:'Publish your profile',done:published}]
-const completion = Math.round(checks.filter(({done})=>done).length / checks.length * 100)
-const text=(id:string,value:string)=>{documentQuery<HTMLElement>(id).textContent=value}
-function documentQuery<T extends Element>(id:string):T{return document.getElementById(id) as unknown as T}
-
-const name = hasProfile ? profileDocument.identity.preferredName : (user.email?.split('@')[0] ?? 'there')
-text('welcomeTitle',`Welcome, ${name}`)
-text('completionPercent',String(completion));text('ringPercent',`${completion}%`);documentQuery<HTMLElement>('progressBar').style.width=`${completion}%`;documentQuery<HTMLElement>('completionRing').style.setProperty('--progress',`${completion * 3.6}deg`)
-const remaining=documentQuery<HTMLUListElement>('remainingItems');remaining.replaceChildren(...checks.filter(({done})=>!done).map(({label})=>{const li=document.createElement('li');li.textContent=label;return li}))
-if(!remaining.children.length){const li=document.createElement('li');li.textContent='Your profile setup is complete';li.className='complete';remaining.append(li)}
-text('avatarTitle',hasAvatar?'Avatar ready':'No avatar yet');text('avatarCopy',hasAvatar?'Your current avatar is connected to your profile.':'Add a portrait, then keep it natural or generate a living avatar.');text('avatarAction',hasAvatar?'Manage avatar →':'Create avatar →')
-text('knowledgeTitle',hasProfile?'Profile data ready':'Not set up');text('knowledgeCopy',hasProfile?'Your structured profile data is ready. Persistent per-profile RAG is coming next.':'Complete your profile to prepare structured experience and project data.')
-text('profileStatus',published?'Published':'Draft');documentQuery('profileStatus').classList.toggle('published',published)
-const actions=documentQuery<HTMLElement>('pageActions');const action=(label:string,href:string,primary=false)=>{const a=document.createElement('a');a.textContent=label;a.href=href;if(primary)a.className='primary-action';return a}
-if(published){text('pageTitle','Your profile is live');text('pageCopy','Recruiters can open and explore your public profile.');const url=`/${profile.slug}`;const code=documentQuery<HTMLElement>('profileUrl');code.hidden=false;code.textContent=url;actions.append(action('View live ↗',url,true),action('Edit','/dashboard/create'));const live=documentQuery<HTMLAnchorElement>('liveProfileAction');live.hidden=false;live.href=url}else{text('pageTitle','Draft profile');text('pageCopy','Preview your work while you finish setting up. Publishing is not available yet.');actions.append(action('Preview','/preview',true));const disabled=document.createElement('button');disabled.disabled=true;disabled.textContent='Publish · Coming soon';disabled.className='disabled-action';actions.append(disabled)}
+const initialRoute=`${location.pathname}${location.hash}`
+const user=await requireAuthenticatedUser(initialRoute)
+const profile=await getOwnedProfile(user),state=await loadOnboardingState(profile),profileDocument=profile.document as ProfileDocument
+const hasProfile=profileDocument?.profileId===profile.id,name=hasProfile?profileDocument.identity.preferredName:(user.email?.split('@')[0]??'Your account')
+const shell=mountDashboardShell({user,name})
+const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
+const text=(root:ParentNode,id:string,value:string)=>{const element=root.querySelector<HTMLElement>(`#${id}`);if(element)element.textContent=value}
+function initialiseOverview(){const hasCv=Boolean(state?.cv_path),hasAvatar=Boolean(state?.original_photo_path||state?.avatar_frame_paths.length||(hasProfile&&profileDocument.avatarMode==='dynamic')),published=profile.is_published,checks=[{label:'Add your CV or professional background',done:hasCv},{label:'Review your profile details',done:hasProfile},{label:'Create or choose your avatar',done:hasAvatar},{label:'Publish your profile',done:published}],completion=Math.round(checks.filter(x=>x.done).length/checks.length*100);text(overview,'welcomeTitle',`Welcome, ${name}`);text(overview,'completionPercent',String(completion));text(overview,'ringPercent',`${completion}%`);overview.querySelector<HTMLElement>('#progressBar')!.style.width=`${completion}%`;overview.querySelector<HTMLElement>('#completionRing')!.style.setProperty('--progress',`${completion*3.6}deg`);const remaining=overview.querySelector<HTMLUListElement>('#remainingItems')!;remaining.replaceChildren(...checks.filter(x=>!x.done).map(x=>{const li=document.createElement('li');li.textContent=x.label;return li}));text(overview,'avatarTitle',hasAvatar?'Avatar ready':'No avatar yet');text(overview,'avatarCopy',hasAvatar?'Your current avatar is connected to your profile.':'Add a portrait, then keep it natural or generate a living avatar.');text(overview,'knowledgeTitle',hasProfile?'Profile data ready':'Not set up');text(overview,'profileStatus',published?'Published':'Draft');overview.querySelector('#profileStatus')?.classList.toggle('published',published);const actions=overview.querySelector<HTMLElement>('#pageActions')!,make=(label:string,href:string)=>{const a=document.createElement('a');a.textContent=label;a.href=href;return a};if(published){text(overview,'pageTitle','Your profile is live');text(overview,'pageCopy','Recruiters can open and explore your public profile.');actions.append(make('View live ↗',`/${profile.slug}`),make('Edit','/dashboard/create'))}else{actions.append(make('Preview','/preview'));const b=document.createElement('button');b.disabled=true;b.textContent='Publish · Coming soon';b.className='disabled-action';actions.append(b)}}
+initialiseOverview()
+const simpleView=(title:string,copy:string,action:string,href:string)=>{const main=document.createElement('main');main.className='dashboard-content';const card=document.createElement('section');card.className='card route-placeholder';const h=document.createElement('h1');h.textContent=title;const p=document.createElement('p');p.textContent=copy;const a=document.createElement('a');a.className='primary-action';a.href=href;a.dataset.dashboardRoute='';a.textContent=action;card.append(h,p,a);main.append(card);return main}
+const pagesView=simpleView('Pages','Preview the profile recruiters will see. Publishing controls will appear here when supported.','Preview profile ↗','/preview')
+async function renderRoute(){const path=location.pathname;let section:DashboardSection='dashboard',view=overview;if(path==='/dashboard/create'||path==='/dashboard/profile'||path==='/dashboard/avatar'){section=path.endsWith('/avatar')?'avatar':'profile';view=await getCreateWorkspace()}else if(path==='/dashboard/pages'){section='pages';view=pagesView}shell.content.replaceChildren(view);shell.setActive(section);if(view!==overview&&view!==pagesView){await startCreateWorkspace();if(path.endsWith('/avatar')||location.hash==='#avatar')requestAnimationFrame(()=>view.querySelector<HTMLElement>('#avatar')?.scrollIntoView({behavior:'smooth',block:'start'}))}}
+function navigate(url:string){const target=new URL(url,location.href);history.pushState({},'',`${target.pathname}${target.search}${target.hash}`);void renderRoute()}
+document.addEventListener('click',event=>{const anchor=(event.target as Element).closest<HTMLAnchorElement>('a[href^="\/dashboard"]');if(!anchor||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;const target=new URL(anchor.href);if(!target.pathname.startsWith('/dashboard'))return;event.preventDefault();navigate(`${target.pathname}${target.search}${target.hash}`)})
+window.addEventListener('popstate',()=>void renderRoute())
+await renderRoute()

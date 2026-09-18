@@ -1,14 +1,4 @@
-import { requireAuthenticatedUser } from '../auth/session.ts'
-import { getOwnedProfile } from '../profile/repository.ts'
-import type { ProfileDocument } from '../profile/types.ts'
-import { mountDashboardShell } from '../dashboard/DashboardShell.ts'
-
-const user=await requireAuthenticatedUser('/dashboard/create')
-const profile=await getOwnedProfile(user)
-const profileDocument=profile.document as ProfileDocument
-const content=document.querySelector<HTMLTemplateElement>('#createWorkspaceTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
-mountDashboardShell(content,{active:'profile',user,name:profileDocument?.identity?.preferredName??user.email?.split('@')[0]??'Your account',published:profile.is_published})
-const status=document.querySelector<HTMLElement>('#profileStatus')!
-status.textContent=profile.is_published?'Published':'Draft'
-status.classList.toggle('published',profile.is_published)
-await import('./createApp.ts')
+let workspace:HTMLElement|null=null
+let controllerStarted=false
+export async function getCreateWorkspace():Promise<HTMLElement>{if(workspace)return workspace;const response=await fetch('/create.html');if(!response.ok)throw new Error('Unable to load the profile workspace.');const page=new DOMParser().parseFromString(await response.text(),'text/html');workspace=page.querySelector<HTMLTemplateElement>('#createWorkspaceTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement;return workspace}
+export async function startCreateWorkspace():Promise<void>{if(controllerStarted)return;controllerStarted=true;await import('./createApp.ts')}

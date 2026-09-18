@@ -9,8 +9,7 @@ export default defineConfig({
         const path = request.url?.split('?')[0]
         if (path === '/') request.url = '/landing.html'
         if (path === '/login' || path === '/signup' || path === '/auth') request.url = `/auth.html${request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : ''}`
-        if (path === '/dashboard') request.url = '/dashboard.html'
-        if (path === '/dashboard/create') request.url = '/create.html'
+        if (path === '/dashboard' || path === '/dashboard/create' || path === '/dashboard/profile' || path === '/dashboard/avatar' || path === '/dashboard/pages') request.url = '/dashboard.html'
         if (path === '/create' || path === '/edit') { _response.statusCode = 302; _response.setHeader('Location','/dashboard/create'); _response.end(); return }
         next()
       })

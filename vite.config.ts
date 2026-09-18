@@ -2,6 +2,15 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   base: '/',
+  plugins: [{
+    name: 'landing-page-root',
+    configureServer(server) {
+      server.middlewares.use((request, _response, next) => {
+        if (request.url === '/') request.url = '/landing.html'
+        next()
+      })
+    },
+  }],
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -21,6 +30,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+        landing: 'landing.html',
         profile: 'index.html',
         create: 'create.html',
         auth: 'auth.html',

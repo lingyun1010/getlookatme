@@ -1,4 +1,8 @@
+import type { AvatarFrameSet } from 'lookatme-avatar'
+
 export type ProfileId = string
+export type ProfileAvatarMode = 'original' | 'dynamic'
+export type ProfileAvatarPreset = 'fast' | 'balanced' | 'smooth'
 
 export interface ProfileIdentity {
   fullName: string
@@ -135,6 +139,10 @@ export interface ProfileDocument {
   focusAreas: string[]
   suggestedQuestions: string[]
   avatar: ProfileAvatar
+  avatarMode?: ProfileAvatarMode
+  avatarPreset?: ProfileAvatarPreset
+  avatarImageUrl?: string
+  avatarFrameSet?: AvatarFrameSet | null
   presentation: ProfilePresentation
   ai: ProfileAi
 }

@@ -4,6 +4,35 @@
 
 LookAtMe is currently a Vite-built static portfolio plus one Vercel serverless chat function. `index.html` remains the active UI surface to preserve the reference implementation's design and interactions. The old React implementation was not migrated.
 
+## LookAtMe avatar integration architecture
+
+The avatar feature is integrated directly into the existing onboarding and portfolio flow without creating a standalone demo page or a separate LookAtMe service. The onboarding form keeps the existing resume/CV pipeline and adds a portrait upload with two product states:
+
+- `avatarMode: "original"` for a static uploaded photo
+- `avatarMode: "dynamic"` for a generated avatar using the external `lookatme-avatar` SDK
+
+The semantic profile state sits alongside the existing canonical `ProfileDocument` contract rather than replacing it. The app stores optional fields like `avatarMode`, `avatarPreset`, `avatarImageUrl`, and `avatarFrameSet` and preserves the existing rendering contract with a compatibility mapping layer.
+
+The dynamic generation path is intentionally narrow and server-owned. Browser code only uploads the portrait and requests generation; the backend route runs the server-side SDK and uses the app-owned `OPENAI_API_KEY`:
+
+```text
+uploaded portrait
+  ↓
+GET/POST API route in getlookatme
+  ↓
+PhotoAIFrameProducer
+  ↓
+OpenAIImageGenerationProvider
+  ↓
+smooth preset
+  ↓
+AvatarFrameSet
+  ↓
+profile state + hero rendering
+```
+
+The local API route sits behind the current SDK abstraction and uses temporary local storage for generated frame sets, clearly marked as development-only. The generated frames are rendered into the same hero avatar position with `LookAtMeAvatar` from `lookatme-avatar/react`, while the original-photo path keeps the normal static image behavior.
+
 Vercel redirects `/` to `/lingyun` and rewrites single-segment profile paths to the application shell. A static registry resolves `/lingyun` and the fixture `/aaron` to separate `ProfileDocument` instances. Unknown slugs render an explicit not-found state.
 
 The chat endpoint uses a committed, Lingyun-only RAG index. Retrieval uses OpenAI embeddings, in-memory cosine similarity, deterministic intent reranking, and a grounded structured answer. Aaron's document disables AI, and the shared renderer never calls the endpoint for that profile.
@@ -54,10 +83,10 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 
 - **Profile:** a tenant-neutral `ProfileDocument` containing structured professional content and presentation metadata. Seed and fixture data are not product defaults.
 - **Renderer:** safely turns a resolved profile into the current portfolio UI. It consumes explicit featured records and presentation hints, and must not own authentication or persistence.
-- **Avatar:** a profile selects either directional frames or a placeholder. Pointer-direction behavior remains in the renderer for now and must not own chat or profile storage.
+- **Avatar:** a profile selects either directional frames, a placeholder, or an original/dynamic avatar state. Pointer-direction behavior remains in the renderer for now and must not own chat or profile storage. Dynamic avatars are generated through the external SDK, rendered in the same hero slot, and previewed with mouse-following interaction rather than autoplaying frame swaps. Original-photo mode remains a square static crop in the onboarding preview.
 - **RAG:** chunking, indexing, retrieval, and grounded answering. It must remain independent from portfolio rendering.
-- **Onboarding:** local extraction, server-isolated LLM mapping with deterministic fallback, draft review, classified validation, and session-only preview. It cannot register a profile or enable RAG.
-- **API/deployment:** Vercel hosts the static build and serverless endpoints. Configuration is environment-driven.
+- **Onboarding:** local extraction, server-isolated LLM mapping with deterministic fallback, draft review, classified validation, and session-only preview. It cannot register a profile or enable RAG. The onboarding flow also captures the portrait photo and avatar mode selections for the portfolio hero.
+- **API/deployment:** Vercel hosts the static build and serverless endpoints. Configuration is environment-driven. The LookAtMe generation route remains inside getlookatme rather than depending on an external demo server.
 
 ## Migration principles
 

@@ -7,9 +7,10 @@
 - **M1.3 — Multi-profile routing foundation — DONE** (delivered through M1.0–M1.2)
 - **M2.0 — CV/PDF/DOCX onboarding pipeline + temporary profile preview — DONE**
 - **M2.0.1 — LLM structured resume mapping + deterministic fallback — DONE**
-- **M2.1 — Profile-aware RAG design and tenant-isolation boundary — NEXT**
-- **M3 — Auth + persistence + tenant model**
-- **M4 — Profile-scoped RAG + structured editor**
+- **M2.1 — Photo upload + dynamic avatar onboarding — DONE**
+- **M2.2 — Supabase Auth + persistence + profile ownership/RLS foundation — CODE COMPLETE; DEPLOYMENT VALIDATION PENDING**
+- **M3 — Profile-scoped RAG + pgvector tenant isolation — NEXT**
+- **M4 — Structured editor + publishing lifecycle**
 - **M5 — Analytics**
 - **M6 — Monetization + custom domain**
 - **M7 — Beta validation**

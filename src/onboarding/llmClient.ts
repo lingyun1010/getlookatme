@@ -1,5 +1,6 @@
 import type { ExtractedResumeText, MappingDiagnostic, ParsedResume, ResumeMappingService } from './types.ts'
 import { validateParsedResumeResponse } from './llmSchema.ts'
+import { supabase } from '../auth/supabase.ts'
 
 export class LLMResumeMappingService implements ResumeMappingService {
   private readonly endpoint: string
@@ -24,8 +25,12 @@ export class LLMResumeMappingService implements ResumeMappingService {
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
     try {
       this.diagnostic?.('LLM mapper invoked', { endpoint: this.endpoint, sourceType: extracted.sourceType, textLength: extracted.text.length })
+      const { data: { session } } = await supabase?.auth.getSession() ?? { data: { session: null } }
       const response = await this.fetcher(this.endpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+        method: 'POST', headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        }, signal: controller.signal,
         body: JSON.stringify({ text: extracted.text, sourceType: extracted.sourceType }),
       })
       this.diagnostic?.('LLM mapper response received', { endpoint: this.endpoint, status: response.status, ok: response.ok })

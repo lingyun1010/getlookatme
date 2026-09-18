@@ -1523,7 +1523,9 @@
       import { LookAtMeAvatar } from "lookatme-avatar/react";
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
       import { featuredEducation, featuredExperience } from "/src/profile/presentation.ts";
-      import { loadTemporaryProfile } from "/src/onboarding/session.ts";
+      import { isSupabaseConfigured } from "/src/auth/supabase.ts";
+      import { requireAuthenticatedUser } from "/src/auth/session.ts";
+      import { loadCurrentUserProfileDocument, loadPublicProfile } from "/src/profile/repository.ts";
       import * as THREE from "three";
       import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
       import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -1534,9 +1536,11 @@
         window.location.replace("/create.html");
         throw new Error("Opening profile creation flow");
       }
+      const requestedSlug = window.location.pathname.replace(/^\/+|\/+$/g, "");
+      if (window.location.pathname === "/preview") await requireAuthenticatedUser("/preview");
       const profile = window.location.pathname === "/preview"
-        ? loadTemporaryProfile()
-        : resolveProfile(window.location.pathname);
+        ? await loadCurrentUserProfileDocument()
+        : resolveProfile(window.location.pathname) ?? (isSupabaseConfigured && requestedSlug ? await loadPublicProfile(requestedSlug) : null);
       if (!profile) {
         const notFound = document.createElement("main");
         notFound.className = "profile-not-found";

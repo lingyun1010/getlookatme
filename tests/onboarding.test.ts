@@ -7,7 +7,6 @@ import { extractResumeText, extractedPastedText, type DocumentExtractors, type R
 import { parsedResumeToDraft } from '../src/onboarding/mapping.ts'
 import { parseResumeDeterministically } from '../src/onboarding/parser.ts'
 import { draftToProfileDocument } from '../src/onboarding/profileDocument.ts'
-import { loadTemporaryProfile, saveTemporaryProfile, TEMPORARY_PROFILE_KEY } from '../src/onboarding/session.ts'
 import type { ParsedResume } from '../src/onboarding/types.ts'
 import { validateProfileDraft } from '../src/onboarding/validation.ts'
 import { resolveProfile } from '../src/profile/resolveProfile.ts'
@@ -101,20 +100,6 @@ test('temporary profile uses the canonical renderer contract and cannot use Ling
   assert.equal(profile.avatar.mode, 'placeholder')
   assert.equal(resolveProfile('lingyun')?.profileId, 'profile_lingyun_seed')
   assert.equal(resolveProfile('aaron')?.ai.enabled, false)
-})
-
-test('temporary preview round-trips only through session storage', () => {
-  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
-  draft.identity.headline = 'Senior Engineer'
-  const profile = draftToProfileDocument(draft)
-  const values = new Map<string, string>()
-  const storage = { setItem(key: string, value: string) { values.set(key, value) }, getItem(key: string) { return values.get(key) ?? null } }
-  saveTemporaryProfile(profile, storage)
-  assert.ok(values.has(TEMPORARY_PROFILE_KEY))
-  const loaded = loadTemporaryProfile(storage)
-  assert.equal(loaded?.profileId, profile.profileId)
-  assert.equal(loaded?.identity.fullName, profile.identity.fullName)
-  assert.equal(loaded?.ai.enabled, false)
 })
 
 test('temporary profile supports original and dynamic avatar state without storing frame counts', () => {

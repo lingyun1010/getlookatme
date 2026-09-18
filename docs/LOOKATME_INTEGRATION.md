@@ -12,7 +12,7 @@ This milestone integrates the external `lookatme-avatar` SDK into the real onboa
 4. The onboarding preview keeps the uploaded original photo in a square crop, while the generated avatar preview uses pointer-following motion rather than timed autoplay.
 5. Dynamic-avatar mode sends the portrait to the getlookatme-owned API route for generation.
 6. The server route uses the external SDK's `PhotoAIFrameProducer` and `OpenAIImageGenerationProvider` with the `smooth` preset.
-7. The resulting `AvatarFrameSet` is stored temporarily in a development-only local store and applied to the hero avatar slot.
+7. The resulting `AvatarFrameSet` passes through the SDK's local store, is copied to owner-scoped Supabase Storage, and is applied to the hero avatar slot.
 
 ## Server boundary
 
@@ -27,9 +27,9 @@ import {
 
 The server uses the app-owned `OPENAI_API_KEY` from the getlookatme environment; it never depends on a LookAtMe demo server or a browser API call to OpenAI.
 
-## Temporary storage
+## Storage
 
-Generated frame sets are currently stored in a temporary local folder behind the SDK abstraction, so the app can validate the flow without a production storage system. This is intentionally development-only and must be replaced with a production-backed asset lifecycle before launch.
+Generated frame sets currently pass through a temporary local folder behind the SDK abstraction. The authenticated browser then uploads each frame to `profile-public-assets/<user_id>/<profile_id>/avatar-frames/...`; Storage RLS verifies both ownership components, and the durable URLs are persisted with the private onboarding state. Original photos remain in `profile-private-assets` and use owner-authorized signed URLs for previews. Direct-to-object-storage generation and cleanup of replaced assets remain deferred.
 
 ## UI contract
 

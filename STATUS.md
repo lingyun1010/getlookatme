@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-M2.1 — onboarding photo + dynamic avatar integration — in progress / complete on this branch.
+M2.2 — minimal production-oriented authentication and profile ownership foundation — implemented in code; Supabase migration deployment and live environment validation remain.
 
 ## Completed
 
@@ -35,6 +35,14 @@ M2.1 — onboarding photo + dynamic avatar integration — in progress / complet
 - Portfolio hero renders static or dynamic avatar state directly in the same hero slot.
 - Generated frame sets are kept in temporary local storage behind the SDK abstraction and clearly marked as dev-only.
 - Targeted tests cover avatar mode selection, original-photo state, dynamic-avatar state, and malformed frame-set guardrails.
+- Supabase email/password sign-up, sign-in, sign-out, and persistent browser sessions.
+- Auth-protected onboarding/edit/dashboard/preview routes without redesigning the portfolio UI.
+- Stable Auth `user_id` → profile UUID ownership and automatic initial profile creation.
+- Persisted canonical `ProfileDocument` and private onboarding draft/state.
+- Supabase Storage paths scoped by both user ID and profile ID for CVs, original photos, and generated frames.
+- Explicit grants plus database and Storage RLS policies; public reads are limited to published profiles.
+- Authenticated onboarding API calls and server-side access-token verification.
+- Ownership tests cover stable IDs, cross-user path rejection, RLS policy presence, and browser-key safety.
 
 ## Current supported profiles
 
@@ -43,9 +51,10 @@ M2.1 — onboarding photo + dynamic avatar integration — in progress / complet
 
 ## Known limitations
 
-- Static profile registry.
+- Lingyun and Aaron remain static seed profiles; user-created public profiles resolve from Supabase after publishing.
 - RAG remains Lingyun-only and the server endpoint is not profile-aware.
-- No persistence, authentication, permanent publishing, or stored user-generated profiles.
+- The migration has not been applied to a linked Supabase project in this repository, and live RLS/storage pgTAP tests therefore remain to run.
+- No end-user publishing control exists yet; new profiles are private by default.
 - `index.html` remains the active renderer.
 - Avatar pointer origin remains based on the viewport center.
 - Service/project numbering and project stack order intentionally follow collection order as generic layout behavior.
@@ -55,16 +64,17 @@ M2.1 — onboarding photo + dynamic avatar integration — in progress / complet
 
 ## Deferred
 
-Database-backed profiles, authentication, accounts, permanent profile URLs, profile-aware RAG, production user image storage, analytics, billing, custom domains, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
+Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion, asset cleanup, background avatar generation, analytics, billing, custom domains, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
 
 ## Remaining production work
 
-- Replace the development-only avatar storage with production cloud or object storage.
-- Add a production-safe upload/asset lifecycle and cleanup strategy for generated frame sets.
-- Add real persisted profile storage and user account ownership for generated avatars.
+- Apply `supabase/migrations/202609180001_auth_profile_ownership.sql` to the target project and run `supabase test db`.
+- Configure `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY` in deployment.
+- Add a production-safe cleanup lifecycle for replaced CV/photo/frame assets.
+- Replace the avatar endpoint's intermediate local file store with direct object-storage output.
 - Consider a background queue if generation becomes asynchronous or requires rate-limit controls.
 - Add full end-to-end tests for the server route and hero rendering in a browser environment.
 
 ## Next exact task
 
-M2.2: design and implement profile-aware RAG isolation without allowing temporary or generated profiles to access Lingyun's knowledge index by default.
+M3.0: implement profile-scoped knowledge ingestion and pgvector retrieval keyed by both `user_id` and `profile_id`, with RLS isolation and no fallback to Lingyun's index.

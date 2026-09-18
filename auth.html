@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sign in to manage your LookAtMe profile." />
+    <title>Sign in — LookAtMe</title>
+    <link rel="stylesheet" href="/src/onboarding/create.css" />
+  </head>
+  <body>
+    <main class="create-shell">
+      <header class="create-header"><a href="/lingyun">LOOKATME</a><p>Account</p></header>
+      <section class="create-panel">
+        <h1>Sign in to your profile</h1>
+        <p class="lede">Use your email and password, or create an account.</p>
+        <form id="authForm">
+          <label>Email <input id="email" type="email" autocomplete="email" required /></label>
+          <label>Password <input id="password" type="password" autocomplete="current-password" minlength="8" required /></label>
+          <p class="error" id="authStatus" role="status" hidden></p>
+          <div class="actions">
+            <button class="secondary" id="signUpButton" type="button">Sign up</button>
+            <button class="primary" id="signInButton" type="submit">Sign in</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="/src/auth/authApp.ts"></script>
+  </body>
+</html>

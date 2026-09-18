@@ -1,12 +1,14 @@
   import type { AvatarFrameSet } from 'lookatme-avatar'
   import { createLookAtMeAvatar } from 'lookatme-avatar/vanilla'
   import { isAvatarFrameSet, normalizeAvatarMode } from '../avatar/generation.ts'
+  import { requireAuthenticatedUser, signOut } from '../auth/session.ts'
+  import { requireSupabase } from '../auth/supabase.ts'
+  import { createPrivateAssetUrl, getOwnedProfile, loadOnboardingState, persistAvatarFrames, saveOnboardingState, saveProfileDocument, uploadProfileAsset } from '../profile/repository.ts'
   import type { Education, Experience, Project } from '../profile/types.ts'
   import { extractResumeText, extractedPastedText } from './extraction.ts'
   import { parsedResumeToDraft } from './mapping.ts'
   import { createResumeMappingService } from './mappingCoordinator.ts'
   import { draftToProfileDocument } from './profileDocument.ts'
-  import { saveTemporaryProfile } from './session.ts'
   import type { ProfileDocumentDraft, ProfileValidationResult } from './types.ts'
   import { validateProfileDraft } from './validation.ts'
 
@@ -32,6 +34,13 @@
   let selectedPhotoFile: File | null = null
   let generatedFrameSet: AvatarFrameSet | null = null
   let activeAvatarPreview: { destroy: () => void } | null = null
+  const authenticatedUser = await requireAuthenticatedUser()
+  const ownedProfile = await getOwnedProfile(authenticatedUser)
+  let cvPath: string | null = null
+  let originalPhotoPath: string | null = null
+  let avatarFramePaths: string[] = []
+
+  document.querySelector<HTMLButtonElement>('#signOutButton')!.addEventListener('click', () => { void signOut() })
 
   const field = <T extends HTMLInputElement | HTMLTextAreaElement>(id: string): T => document.querySelector<T>(`#${id}`)!
   const lines = (value: string): string[] => value.split('\n').map((line) => line.trim()).filter(Boolean)
@@ -298,7 +307,12 @@
       payload.append('preset', preset)
       payload.append('style', style)
 
-      const response = await fetch(avatarEndpoint, { method: 'POST', body: payload })
+      const { data: { session } } = await requireSupabase().auth.getSession()
+      const response = await fetch(avatarEndpoint, {
+        method: 'POST',
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        body: payload,
+      })
       const rawText = await response.text()
       let result: { error?: string; frames?: unknown; avatarPreset?: string }
       if (!rawText) {
@@ -312,7 +326,9 @@
       if (!response.ok || !result.frames || !isAvatarFrameSet(result.frames)) {
         throw new Error(result.error ?? 'Dynamic avatar generation could not be completed.')
       }
-      generatedFrameSet = result.frames
+      const durable = await persistAvatarFrames(ownedProfile, result.frames)
+      generatedFrameSet = durable.frames
+      avatarFramePaths = durable.paths
       const resolvedPreset = result.avatarPreset === 'fast' || result.avatarPreset === 'balanced' || result.avatarPreset === 'smooth'
         ? result.avatarPreset
         : preset
@@ -325,6 +341,12 @@
         draft.avatarFrameSet = generatedFrameSet
       }
       setAvatarStatus(`Dynamic avatar ready with the ${resolvedPreset} motion profile.`, 'success')
+      await saveOnboardingState(ownedProfile, {
+        draft,
+        avatar_frame_paths: avatarFramePaths,
+        avatar_metadata: { preset: resolvedPreset, style, frameSet: generatedFrameSet },
+        selected_avatar_mode: 'dynamic',
+      })
       syncPreviewForMode()
       updateBuildButtonText()
       updateGenerateButtonText()
@@ -408,7 +430,15 @@
       document.querySelector<HTMLElement>('#buildingStatus')!.textContent = 'Mapping structured resume information…'
       const parsed = await mappingService.mapResume(extracted)
       draft = parsedResumeToDraft(parsed)
-          draft.avatarMode = normalizeAvatarMode(document.querySelector<HTMLInputElement>('input[name="avatarMode"]:checked')?.value)
+      if (fileInput.files?.[0]) {
+        cvPath = (await uploadProfileAsset(ownedProfile, 'profile-private-assets', 'cv', fileInput.files[0], fileInput.files[0].name)).path
+      }
+      if (selectedPhotoFile) {
+        const uploadedPhoto = await uploadProfileAsset(ownedProfile, 'profile-private-assets', 'original-photo', selectedPhotoFile, selectedPhotoFile.name)
+        originalPhotoPath = uploadedPhoto.path
+        selectedPhotoUrl = await createPrivateAssetUrl(uploadedPhoto.path)
+      }
+      draft.avatarMode = normalizeAvatarMode(document.querySelector<HTMLInputElement>('input[name="avatarMode"]:checked')?.value)
       draft.avatarPreset = draft.avatarMode === 'dynamic' ? getSelectedAvatarPreset() : undefined
       draft.avatarImageUrl = selectedPhotoUrl ?? undefined
       draft.avatarFrameSet = draft.avatarMode === 'dynamic' ? generatedFrameSet ?? null : null
@@ -417,6 +447,14 @@
         console.info('[onboarding] Review UI populated', { mapper: draft.mapping.mapper })
       }
       populateReview(draft)
+      await saveOnboardingState(ownedProfile, {
+        draft,
+        cv_path: cvPath,
+        original_photo_path: originalPhotoPath,
+        avatar_frame_paths: avatarFramePaths,
+        avatar_metadata: generatedFrameSet ? { preset: draft.avatarPreset, frameSet: generatedFrameSet } : {},
+        selected_avatar_mode: draft.avatarMode,
+      })
       showStep(reviewStep)
     } catch (error) {
       inputError.textContent = error instanceof Error ? error.message : 'The resume could not be processed.'
@@ -437,17 +475,53 @@
     showStep(inputStep)
   })
 
-  document.querySelector<HTMLFormElement>('#reviewForm')!.addEventListener('submit', (event) => {
+  document.querySelector<HTMLFormElement>('#reviewForm')!.addEventListener('submit', async (event) => {
     event.preventDefault()
     try {
       draft = readReview()
       const result = validateProfileDraft(draft)
       renderIssues(result)
       if (!result.valid) return
-      saveTemporaryProfile(draftToProfileDocument(draft))
+      const document = draftToProfileDocument(draft, { profileId: ownedProfile.id, slug: ownedProfile.slug })
+      await saveProfileDocument(ownedProfile, document)
+      await saveOnboardingState(ownedProfile, {
+        draft,
+        cv_path: cvPath,
+        original_photo_path: originalPhotoPath,
+        avatar_frame_paths: avatarFramePaths,
+        avatar_metadata: generatedFrameSet ? { preset: draft.avatarPreset, frameSet: generatedFrameSet } : {},
+        selected_avatar_mode: draft.avatarMode,
+      })
       window.location.assign('/preview')
     } catch (error) {
       inputError.textContent = error instanceof Error ? error.message : 'The profile could not be previewed.'
       inputError.hidden = false
     }
   })
+
+  const persisted = await loadOnboardingState(ownedProfile)
+  if (persisted) {
+    cvPath = persisted.cv_path
+    originalPhotoPath = persisted.original_photo_path
+    avatarFramePaths = persisted.avatar_frame_paths
+    draft = persisted.draft
+    const persistedFrames = persisted.avatar_metadata.frameSet
+    if (isAvatarFrameSet(persistedFrames)) generatedFrameSet = persistedFrames
+    if (draft) {
+      selectedPhotoUrl = originalPhotoPath && draft.avatarMode === 'original'
+        ? await createPrivateAssetUrl(originalPhotoPath)
+        : draft.avatarImageUrl ?? null
+      draft.avatarImageUrl = selectedPhotoUrl ?? undefined
+      if (selectedPhotoUrl) {
+        photoPreview.src = selectedPhotoUrl
+        photoPreviewWrap.hidden = false
+        avatarChoice.hidden = false
+      }
+      const mode = draft.avatarMode === 'dynamic' ? 'dynamic' : 'original'
+      document.querySelector<HTMLInputElement>(`input[name="avatarMode"][value="${mode}"]`)!.checked = true
+      avatarSettings.hidden = mode !== 'dynamic'
+      populateReview(draft)
+      syncPreviewForMode()
+      showStep(reviewStep)
+    }
+  }

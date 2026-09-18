@@ -8,7 +8,10 @@ function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || '?'
 }
 
-export function draftToProfileDocument(draft: ProfileDocumentDraft): ProfileDocument {
+export function draftToProfileDocument(
+  draft: ProfileDocumentDraft,
+  identity: { profileId?: string; slug?: string } = {},
+): ProfileDocument {
   const validation = validateProfileDraft(draft)
   if (!validation.valid) throw new Error(validation.blockingErrors.map(({ message }) => message).join(' '))
   const fullName = draft.identity.fullName!.trim()
@@ -32,7 +35,7 @@ export function draftToProfileDocument(draft: ProfileDocumentDraft): ProfileDocu
       }
     : { mode: 'placeholder', alt: `Initials avatar for ${fullName}`, initials: initials(fullName) }
   return {
-    profileId: 'temporary_session_profile', slug: 'preview', version: 1,
+    profileId: identity.profileId ?? 'temporary_session_profile', slug: identity.slug ?? 'preview', version: 1,
     identity: {
       fullName, preferredName,
       headline: draft.identity.headline!.trim(),

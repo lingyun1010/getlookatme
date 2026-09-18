@@ -2,7 +2,22 @@
 
 ## Current architecture
 
-LookAtMe is currently a Vite-built static portfolio plus one Vercel serverless chat function. `index.html` remains the active UI surface to preserve the reference implementation's design and interactions. The old React implementation was not migrated.
+LookAtMe is a Vite-built static portfolio with Vercel serverless endpoints and Supabase for authentication, persisted application data, and assets. `index.html` remains the active UI surface to preserve the reference implementation's design and interactions. The old React implementation was not migrated.
+
+## Authentication and ownership
+
+Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.
+
+The database model intentionally has only two application tables:
+
+- `profiles`: immutable UUID, owning `user_id`, mutable unique public slug, canonical `ProfileDocument` JSON, and `is_published`.
+- `onboarding_states`: one private row per profile containing the draft, private CV path, original-photo path, generated frame paths/metadata, and selected avatar mode.
+
+An Auth trigger creates one profile and onboarding row for every new user. The composite `(profile_id, user_id)` foreign key prevents an onboarding row being attached to a profile owned by someone else. Explicit Data API grants are paired with RLS: anonymous callers can select only published profiles; authenticated callers can mutate only rows whose `user_id` equals `auth.uid()`. This same stable `user_id`/`profile_id` pair is the future RAG tenant key.
+
+Storage uses two buckets. `profile-private-assets` stores CV source files and original photos and is owner-readable; authenticated previews use short-lived signed URLs. `profile-public-assets` accepts only generated avatar frames needed for public portfolio delivery. Writes to either bucket must use `<user_id>/<profile_id>/...`, and Storage RLS verifies that the authenticated user owns the referenced profile. A future publishing flow for original-photo profiles must explicitly create a public derivative rather than exposing the source upload.
+
+Seed profiles remain in the static registry for backward compatibility. A non-seed public slug is loaded from Supabase only when `is_published` is true. `/preview` loads the current user's document through owner RLS even when it is unpublished.
 
 ## LookAtMe avatar integration architecture
 
@@ -31,7 +46,7 @@ AvatarFrameSet
 profile state + hero rendering
 ```
 
-The local API route sits behind the current SDK abstraction and uses temporary local storage for generated frame sets, clearly marked as development-only. The generated frames are rendered into the same hero avatar position with `LookAtMeAvatar` from `lookatme-avatar/react`, while the original-photo path keeps the normal static image behavior.
+The current SDK writes generation output to temporary local server storage, after which the authenticated browser copies the returned frame blobs to owner-scoped Supabase Storage and persists the durable URLs. Removing the intermediate local store is deferred until the generation endpoint is productionised. The generated frames are rendered into the same hero avatar position with `LookAtMeAvatar` from `lookatme-avatar/react`, while the original-photo path keeps the normal static image behavior.
 
 Vercel redirects `/` to `/lingyun` and rewrites single-segment profile paths to the application shell. A static registry resolves `/lingyun` and the fixture `/aaron` to separate `ProfileDocument` instances. Unknown slugs render an explicit not-found state.
 
@@ -69,7 +84,7 @@ In development, non-sensitive console diagnostics trace mapper selection, endpoi
 
 The mapper prompt permits normalization but prohibits invented identity, links, dates, locations, employers, qualifications, projects, achievements, services, images, or suggested questions. Resume content is delimited and explicitly treated as untrusted data. Inputs are stripped of HTML/script markup, rejected when empty, and capped at 40,000 characters without silent truncation. Server failure logs contain only mapper/category/fallback metadata—not resume text, raw model output, or secrets.
 
-Validation returns classified blocking errors, non-blocking missing information, and mapping warnings. Only a valid draft can become a canonical document. The result is serialized to `sessionStorage`, resolved only at `/preview`, and consumed by the same renderer as registered profiles. It is not registered, persisted, published, or assigned a permanent slug. Temporary documents always have AI disabled.
+Validation returns classified blocking errors, non-blocking missing information, and mapping warnings. Only a valid draft can become a canonical document. The reviewed draft and canonical document are persisted to the authenticated user's profile and private onboarding row. `/preview` consumes the same renderer as registered profiles and is owner-only. New profiles remain unpublished by default and AI-disabled.
 
 ## ProfileDocument
 
@@ -85,7 +100,7 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 - **Renderer:** safely turns a resolved profile into the current portfolio UI. It consumes explicit featured records and presentation hints, and must not own authentication or persistence.
 - **Avatar:** a profile selects either directional frames, a placeholder, or an original/dynamic avatar state. Pointer-direction behavior remains in the renderer for now and must not own chat or profile storage. Dynamic avatars are generated through the external SDK, rendered in the same hero slot, and previewed with mouse-following interaction rather than autoplaying frame swaps. Original-photo mode remains a square static crop in the onboarding preview.
 - **RAG:** chunking, indexing, retrieval, and grounded answering. It must remain independent from portfolio rendering.
-- **Onboarding:** local extraction, server-isolated LLM mapping with deterministic fallback, draft review, classified validation, and session-only preview. It cannot register a profile or enable RAG. The onboarding flow also captures the portrait photo and avatar mode selections for the portfolio hero.
+- **Onboarding:** local extraction, authenticated server-isolated LLM mapping with deterministic fallback, persisted draft review, classified validation, and owner-only preview. It updates the user's existing profile but cannot enable RAG. The onboarding flow also captures the portrait photo and avatar mode selections for the portfolio hero.
 - **API/deployment:** Vercel hosts the static build and serverless endpoints. Configuration is environment-driven. The LookAtMe generation route remains inside getlookatme rather than depending on an external demo server.
 
 ## Migration principles
@@ -100,6 +115,6 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 
 Every published profile, asset, knowledge document, index, chat request, and usage record must carry an immutable profile/tenant identity. Profile resolution must be server-verified from the requested slug or host. Retrieval must never search a global unfiltered index, and browser-supplied tenant identifiers must not be trusted without resolution and authorization.
 
-## Deliberately deferred after M2.0
+## Deliberately deferred after M2
 
-Authentication, user accounts, database persistence, permanent profile URLs, profile-aware RAG, avatar generation, user image storage, job matching, SEEK/LinkedIn integrations, and billing remain outside this architecture.
+Profile-aware RAG/pgvector, embeddings, document chunking, profile publishing controls, password reset, account deletion, asset garbage collection, generation queues, teams, roles, billing, analytics, custom domains, job matching, and network integrations remain outside this milestone.

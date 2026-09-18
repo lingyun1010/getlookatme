@@ -13,6 +13,7 @@ import { answerPortfolioQuestion } from '../src/rag/answerQuestion.ts'
 import { RAG_CONFIG } from '../src/rag/config.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
 import { ONBOARDING_MAPPING_CONFIG } from '../src/onboarding/config.ts'
+import { authenticateBearer } from '../src/auth/server.ts'
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
@@ -23,7 +24,7 @@ const LOOKATME_STORAGE_DIR = fileURLToPath(new URL('../tmp/lookatme-avatar-gener
 const LOOKATME_STORAGE_BASE = '/generated/lookatme'
 
 const baseCorsHeaders = {
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Content-Type': 'application/json',
 }
@@ -154,6 +155,7 @@ createServer(async (request, response) => {
     const requestBody = Buffer.concat(chunks)
 
     if (request.url === '/api/onboarding/map-resume') {
+      if (!await authenticateBearer(request.headers.authorization)) return send(401, { error: 'Authentication required' })
       const body = JSON.parse(requestBody.toString()) as { message?: unknown; text?: unknown; sourceType?: unknown }
       try {
         const parsedResume = await mapResumeOnServer(
@@ -181,6 +183,7 @@ createServer(async (request, response) => {
     }
 
     if (request.url === '/api/avatar/generate' || request.url === '/api/lookatme/generate') {
+      if (!await authenticateBearer(request.headers.authorization)) return send(401, { error: 'Authentication required' })
       const contentType = request.headers['content-type'] ?? ''
       if (!contentType.includes('multipart/form-data')) {
         return send(400, { error: 'This route expects multipart/form-data portrait uploads.' })

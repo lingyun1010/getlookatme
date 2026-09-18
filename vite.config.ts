@@ -23,6 +23,7 @@ export default defineConfig({
       input: {
         profile: 'index.html',
         create: 'create.html',
+        auth: 'auth.html',
       },
     },
   },

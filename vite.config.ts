@@ -6,7 +6,9 @@ export default defineConfig({
     name: 'landing-page-root',
     configureServer(server) {
       server.middlewares.use((request, _response, next) => {
-        if (request.url === '/') request.url = '/landing.html'
+        const path = request.url?.split('?')[0]
+        if (path === '/') request.url = '/landing.html'
+        if (path === '/login' || path === '/signup' || path === '/auth') request.url = `/auth.html${request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : ''}`
         next()
       })
     },

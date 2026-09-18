@@ -1,0 +1,4 @@
+import { AuthForm, type AuthFormMode } from './AuthForm.ts'
+import { authRedirectFromLocation } from './authActions.ts'
+import { requireSupabase } from './supabase.ts'
+const destination=authRedirectFromLocation();let mode:AuthFormMode=location.pathname==='/signup'?'sign-up':new URLSearchParams(location.search).get('recovery')==='1'?'reset':'sign-in';const form=new AuthForm(document.querySelector<HTMLElement>('#authFormRoot')!,{initialMode:mode,onAuthenticated:()=>location.assign(destination),onModeChange:next=>{mode=next},recoveryRedirectUrl:`${location.origin}/login?recovery=1&redirect=${encodeURIComponent(destination)}`});requireSupabase().auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')form.setMode('reset')});requireSupabase().auth.getSession().then(({data})=>{if(data.session&&mode!=='reset')location.replace(destination)}).catch(()=>undefined)

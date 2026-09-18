@@ -16,7 +16,7 @@
       <nav aria-label="Main navigation">
         <a href="#how-it-works">How it works</a><a href="#features">Features</a><a href="#examples">Examples</a><a href="#pricing">Pricing</a>
       </nav>
-      <div class="header-actions"><a class="sign-in" href="/auth">Sign in</a><a class="button button-small auth-cta" href="/auth?next=%2Fcreate">Create my profile</a></div>
+      <div class="header-actions"><a class="sign-in" data-auth-mode="sign-in" href="/login">Sign in</a><a class="button button-small auth-cta" data-auth-mode="sign-up" href="/signup">Create my profile</a></div>
       <button class="menu-button" type="button" aria-label="Toggle navigation" aria-expanded="false">Menu</button>
     </header>
 
@@ -26,7 +26,7 @@
           <p class="eyebrow">✦ Your experience, brought to life</p>
           <h1 id="hero-title">Don’t just send your CV.<br /><span>Let recruiters meet you.</span></h1>
           <p class="hero-lede">Turn your CV, LinkedIn and projects into an interactive AI profile with a living avatar and a searchable knowledge base recruiters can actually talk to.</p>
-          <div class="hero-actions"><a class="button auth-cta" href="/auth?next=%2Fcreate">Create my profile <span aria-hidden="true">→</span></a><a class="button button-secondary" href="/lingyun">Try the demo <span aria-hidden="true">↗</span></a></div>
+          <div class="hero-actions"><a class="button auth-cta" data-auth-mode="sign-up" href="/signup">Create my profile <span aria-hidden="true">→</span></a><a class="button button-secondary" href="/lingyun">Try the demo <span aria-hidden="true">↗</span></a></div>
           <ul class="capability-list" aria-label="Profile capabilities"><li>CV upload</li><li>LinkedIn details</li><li>Living avatar</li><li>AI knowledge base</li></ul>
         </div>
         <div class="avatar-experience reveal" aria-label="Interactive AI candidate profile preview">
@@ -62,9 +62,9 @@
         <figure><span aria-hidden="true">“</span><blockquote>It gives me a much better way to explain the parts of my experience that don’t fit neatly into a one-page CV.</blockquote><figcaption><i>J</i><div><strong>Job Seeker</strong><small>Prototype persona</small></div></figcaption></figure>
       </div></section>
 
-      <section class="final-wrap section-shell" id="pricing"><div class="final-cta"><p class="eyebrow">Your next introduction</p><h2>Let your profile answer for you.</h2><p>Build an AI profile recruiters can remember.</p><a class="button auth-cta" href="/auth?next=%2Fcreate">Create my profile →</a><span class="handwritten">Same you. A bigger conversation.</span></div></section>
+      <section class="final-wrap section-shell" id="pricing"><div class="final-cta"><p class="eyebrow">Your next introduction</p><h2>Let your profile answer for you.</h2><p>Build an AI profile recruiters can remember.</p><a class="button auth-cta" data-auth-mode="sign-up" href="/signup">Create my profile →</a><span class="handwritten">Same you. A bigger conversation.</span></div></section>
     </main>
-    <footer class="site-footer section-shell"><a class="brand" href="/">Get<span>LookAtMe</span></a><p>Interactive professional profiles, made human.</p><a href="/auth">Sign in</a></footer>
+    <footer class="site-footer section-shell"><a class="brand" href="/">Get<span>LookAtMe</span></a><p>Interactive professional profiles, made human.</p><a data-auth-mode="sign-in" href="/login">Sign in</a></footer>
     <script type="module" src="/src/landing/landing.ts"></script>
   </body>
 </html>

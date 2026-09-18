@@ -3,27 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Sign in to manage your LookAtMe profile." />
-    <title>Sign in — LookAtMe</title>
-    <link rel="stylesheet" href="/src/onboarding/create.css" />
+    <meta name="description" content="Sign in or create your GetLookAtMe account." />
+    <title>Account — GetLookAtMe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/auth/auth.css" />
   </head>
-  <body>
-    <main class="create-shell">
-      <header class="create-header"><a href="/lingyun">LOOKATME</a><p>Account</p></header>
-      <section class="create-panel">
-        <h1>Sign in to your profile</h1>
-        <p class="lede">Use your email and password, or create an account.</p>
-        <form id="authForm">
-          <label>Email <input id="email" type="email" autocomplete="email" required /></label>
-          <label>Password <input id="password" type="password" autocomplete="current-password" minlength="8" required /></label>
-          <p class="error" id="authStatus" role="status" hidden></p>
-          <div class="actions">
-            <button class="secondary" id="signUpButton" type="button">Sign up</button>
-            <button class="primary" id="signInButton" type="submit">Sign in</button>
-          </div>
-        </form>
-      </section>
-    </main>
-    <script type="module" src="/src/auth/authApp.ts"></script>
+  <body class="auth-ui auth-page">
+    <header class="auth-page-header"><a class="auth-brand" href="/">Get<span>LookAtMe</span></a><a href="/">Back to home</a></header>
+    <main class="auth-page-main"><section class="auth-page-card" aria-label="GetLookAtMe account"><div id="authFormRoot"></div></section></main>
+    <script type="module" src="/src/auth/authPage.ts"></script>
   </body>
 </html>

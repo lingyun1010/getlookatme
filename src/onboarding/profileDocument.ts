@@ -14,6 +14,23 @@ export function draftToProfileDocument(draft: ProfileDocumentDraft): ProfileDocu
   const fullName = draft.identity.fullName!.trim()
   const preferredName = draft.identity.preferredName!.trim()
   const summary = draft.identity.summary!.trim()
+  const avatarMode = draft.avatarMode ?? 'original'
+  const avatarPreset = avatarMode === 'dynamic' ? (draft.avatarPreset ?? 'smooth') : undefined
+  const avatarFrameSet = avatarMode === 'dynamic' ? draft.avatarFrameSet ?? null : null
+  const avatar: ProfileDocument['avatar'] = avatarMode === 'dynamic' && avatarFrameSet
+    ? {
+        mode: 'directional',
+        alt: `Dynamic avatar for ${fullName}`,
+        centerFrame: { key: avatarFrameSet.center.key || 'center', frame: avatarFrameSet.center.frame ?? 0, src: avatarFrameSet.center.src },
+        directionalFrames: avatarFrameSet.directions.map((direction) => ({
+          key: direction.key,
+          src: direction.src,
+          frame: direction.frame ?? 0,
+          angle: Number.isFinite(direction.angle) ? direction.angle : 0,
+        })),
+        presentation: { objectFit: 'contain', objectPosition: 'center bottom' },
+      }
+    : { mode: 'placeholder', alt: `Initials avatar for ${fullName}`, initials: initials(fullName) }
   return {
     profileId: 'temporary_session_profile', slug: 'preview', version: 1,
     identity: {
@@ -34,7 +51,11 @@ export function draftToProfileDocument(draft: ProfileDocumentDraft): ProfileDocu
     projects: draft.projects,
     focusAreas: draft.skills.flatMap(({ items }) => items).slice(0, 8),
     suggestedQuestions: [],
-    avatar: { mode: 'placeholder', alt: `Initials avatar for ${fullName}`, initials: initials(fullName) },
+    avatar,
+    avatarMode,
+    avatarPreset,
+    avatarImageUrl: draft.avatarImageUrl || undefined,
+    avatarFrameSet,
     presentation: draft.presentation,
     ai: { enabled: false, unavailableMessage: NEUTRAL_PROFILE_DEFAULTS.aiUnavailableMessage },
   }

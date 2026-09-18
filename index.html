@@ -217,6 +217,19 @@
         filter: drop-shadow(0 32px 44px rgba(0, 0, 0, 0.62));
       }
 
+      .character-frame-host {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+      }
+
+      .character-frame-host > div {
+        width: 100%;
+        height: 100%;
+      }
+
       .character-placeholder {
         position: absolute;
         inset: 12% 12% 0;
@@ -1420,6 +1433,7 @@
 
         <div class="character-stage" aria-label="Animated character portrait controlled by pointer direction">
           <div class="character-glow" aria-hidden="true"></div>
+          <div class="character-frame-host" id="characterFrameHost" hidden aria-hidden="true"></div>
           <img
             id="characterFrame"
             class="character-frame"
@@ -1504,6 +1518,9 @@
     </main>
 
     <script type="module">
+      import React from "react";
+      import { createRoot } from "react-dom/client";
+      import { LookAtMeAvatar } from "lookatme-avatar/react";
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
       import { featuredEducation, featuredExperience } from "/src/profile/presentation.ts";
       import { loadTemporaryProfile } from "/src/onboarding/session.ts";
@@ -1576,8 +1593,49 @@
 
       const frameImage = document.querySelector("#characterFrame");
       const characterPlaceholder = document.querySelector("#characterPlaceholder");
+      const frameHost = document.querySelector("#characterFrameHost");
+      const avatarRoot = frameHost ? createRoot(frameHost) : null;
       frameImage.setAttribute("alt", profile.avatar.alt);
-      if (profile.avatar.mode === "directional") {
+      const renderOriginalAvatar = () => {
+        const imageUrl = profile.avatarImageUrl;
+        frameHost?.setAttribute("hidden", "true");
+        frameHost?.setAttribute("aria-hidden", "true");
+        if (imageUrl) {
+          frameImage.src = imageUrl;
+          frameImage.style.objectFit = "cover";
+          frameImage.style.objectPosition = "center center";
+          frameImage.hidden = false;
+        } else {
+          frameImage.hidden = true;
+        }
+        characterPlaceholder.hidden = true;
+        characterPlaceholder.setAttribute("aria-hidden", "true");
+      };
+      if (profile.avatarMode === "dynamic" && profile.avatarFrameSet) {
+        frameImage.hidden = true;
+        characterPlaceholder.hidden = true;
+        characterPlaceholder.setAttribute("aria-hidden", "true");
+        if (frameHost) {
+          frameHost.hidden = false;
+          frameHost.removeAttribute("aria-hidden");
+          avatarRoot?.render(
+            React.createElement(LookAtMeAvatar, {
+              frames: profile.avatarFrameSet,
+              width: "100%",
+              height: "100%",
+              size: 520,
+              objectFit: "contain",
+              alt: profile.avatar.alt ?? `${identity.preferredName}'s dynamic avatar`,
+              deadZone: 0.12,
+            })
+          );
+        }
+      } else if (profile.avatarMode === "original" && profile.avatarImageUrl) {
+        renderOriginalAvatar();
+      } else if (profile.avatar.mode === "directional") {
+        frameImage.hidden = false;
+        frameHost?.setAttribute("hidden", "true");
+        frameHost?.setAttribute("aria-hidden", "true");
         frameImage.src = profile.avatar.centerFrame.src;
         frameImage.style.objectFit = profile.avatar.presentation?.objectFit ?? "contain";
         frameImage.style.objectPosition = profile.avatar.presentation?.objectPosition ?? "center bottom";

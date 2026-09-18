@@ -1,4 +1,5 @@
-import type { Education, Experience, ProfileDocument, Project, Service, SkillGroup } from '../profile/types.ts'
+import type { AvatarFrameSet } from 'lookatme-avatar'
+import type { Education, Experience, ProfileAvatarMode, ProfileAvatarPreset, ProfileDocument, Project, Service, SkillGroup } from '../profile/types.ts'
 
 export type ResumeSourceType = 'pdf' | 'docx' | 'text'
 
@@ -53,6 +54,10 @@ export interface ProfileDocumentDraft {
   missingFields: string[]
   warnings: string[]
   mapping: ParsedResume['mapping']
+  avatarMode?: ProfileAvatarMode
+  avatarPreset?: ProfileAvatarPreset
+  avatarImageUrl?: string
+  avatarFrameSet?: AvatarFrameSet | null
 }
 
 export type ValidationSeverity = 'blocking' | 'missing' | 'warning'

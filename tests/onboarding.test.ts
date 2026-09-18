@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { isAvatarFrameSet, normalizeAvatarMode } from '../src/avatar/generation.ts'
 import { NEUTRAL_PROFILE_DEFAULTS } from '../src/onboarding/defaults.ts'
 import { extractResumeText, extractedPastedText, type DocumentExtractors, type ResumeFileLike } from '../src/onboarding/extraction.ts'
 import { parsedResumeToDraft } from '../src/onboarding/mapping.ts'
@@ -114,6 +115,48 @@ test('temporary preview round-trips only through session storage', () => {
   assert.equal(loaded?.profileId, profile.profileId)
   assert.equal(loaded?.identity.fullName, profile.identity.fullName)
   assert.equal(loaded?.ai.enabled, false)
+})
+
+test('temporary profile supports original and dynamic avatar state without storing frame counts', () => {
+  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
+  draft.identity.headline = 'Senior Engineer'
+  draft.avatarMode = 'original'
+  draft.avatarImageUrl = 'data:image/png;base64,abc'
+  const original = draftToProfileDocument(draft)
+  assert.equal(original.avatarMode, 'original')
+  assert.equal(original.avatarImageUrl, 'data:image/png;base64,abc')
+  assert.equal(original.avatar.mode, 'placeholder')
+
+  const frameSet = {
+    version: 2,
+    center: { key: 'center', frame: 0, src: '/generated/center.png' },
+    directions: [
+      { key: 'left', frame: 1, src: '/generated/left.png', angle: 180 },
+      { key: 'right', frame: 2, src: '/generated/right.png', angle: 0 },
+      { key: 'up', frame: 3, src: '/generated/up.png', angle: 270 },
+      { key: 'down', frame: 4, src: '/generated/down.png', angle: 90 },
+    ],
+  } satisfies { version: 2; center: { key: string; frame: number; src: string }; directions: Array<{ key: string; frame: number; src: string; angle: number }> }
+
+  const dynamicDraft = { ...draft, avatarMode: 'dynamic' as const, avatarPreset: 'smooth' as const, avatarFrameSet: frameSet }
+  const dynamic = draftToProfileDocument(dynamicDraft)
+  assert.equal(dynamic.avatarMode, 'dynamic')
+  assert.equal(dynamic.avatarPreset, 'smooth')
+  assert.equal(dynamic.avatarFrameSet?.version, 2)
+  assert.equal(dynamic.avatar.mode, 'directional')
+  assert.ok(isAvatarFrameSet(dynamic.avatarFrameSet))
+})
+
+test('avatar generation helpers normalize product state and reject malformed frame sets', () => {
+  assert.equal(normalizeAvatarMode('dynamic'), 'dynamic')
+  assert.equal(normalizeAvatarMode('original'), 'original')
+  assert.equal(normalizeAvatarMode(undefined), 'original')
+  assert.equal(isAvatarFrameSet({
+    version: 2,
+    center: { key: 'center', frame: 0, src: '/generated/center.png' },
+    directions: [{ key: 'left', frame: 1, src: '/generated/left.png', angle: 180 }],
+  }), true)
+  assert.equal(isAvatarFrameSet({ version: 1, center: { key: 'center', src: '/generated/center.png' }, directions: [] }), false)
 })
 
 test('onboarding and renderer never assign untrusted strings through innerHTML', async () => {

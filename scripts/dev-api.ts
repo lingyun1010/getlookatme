@@ -1,4 +1,14 @@
+import { statSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { extname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { AvatarFramePreset, AvatarStyleId } from 'lookatme-avatar'
+import {
+  LocalAvatarImageStorage,
+  OpenAIImageGenerationProvider,
+  PhotoAIFrameProducer,
+  SharpGeneratedImageValidator,
+} from 'lookatme-avatar/server'
 import { answerPortfolioQuestion } from '../src/rag/answerQuestion.ts'
 import { RAG_CONFIG } from '../src/rag/config.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
@@ -9,10 +19,84 @@ const allowedOrigins = new Set(
     .split(',').map((origin) => origin.trim()).filter(Boolean),
 )
 
+const LOOKATME_STORAGE_DIR = fileURLToPath(new URL('../tmp/lookatme-avatar-generated', import.meta.url))
+const LOOKATME_STORAGE_BASE = '/generated/lookatme'
+
 const baseCorsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Content-Type': 'application/json',
+}
+
+function buildDemoAvatarFrameSet() {
+  const withSvg = (label: string, fill: string, accent: string) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+      <rect width="200" height="200" rx="30" fill="${fill}"/>
+      <circle cx="100" cy="82" r="42" fill="#f8fafc"/>
+      <circle cx="84" cy="74" r="5" fill="${accent}"/>
+      <circle cx="116" cy="74" r="5" fill="${accent}"/>
+      <path d="M80 100 Q100 118 120 100" fill="none" stroke="${accent}" stroke-width="8" stroke-linecap="round"/>
+      <text x="100" y="170" text-anchor="middle" font-size="18" fill="${accent}" font-family="sans-serif" font-weight="700">${label}</text>
+    </svg>
+  `)}`
+
+  return {
+    version: 2,
+    center: { key: 'center', src: withSvg('center', '#1f2937', '#7dd3fc') },
+    directions: [
+      { key: 'left', angle: 180, src: withSvg('left', '#111827', '#f9a8d4') },
+      { key: 'right', angle: 0, src: withSvg('right', '#111827', '#fcd34d') },
+      { key: 'up', angle: 270, src: withSvg('up', '#111827', '#86efac') },
+      { key: 'down', angle: 90, src: withSvg('down', '#111827', '#c4b5fd') },
+    ],
+    metadata: { source: { type: 'manual' } },
+  }
+}
+
+function parseMultipartFormData(body: Buffer, contentType: string) {
+  const match = contentType.match(/boundary=(?:(?:"([^"]+)")|([^;]+))/i)
+  const boundary = match ? (match[1] ?? match[2]).trim() : null
+  if (!boundary) {
+    return { fields: {}, files: [] as Array<{ name: string; filename: string; mimeType: string; buffer: Buffer }> }
+  }
+
+  const delimiter = `--${boundary}`
+  const parts = body.toString('binary').split(delimiter)
+  const files: Array<{ name: string; filename: string; mimeType: string; buffer: Buffer }> = []
+  const fields: Record<string, string> = {}
+
+  for (const part of parts) {
+    const trimmed = part.replace(/^\r\n/, '').replace(/\r\n$/, '')
+    if (!trimmed || trimmed === '--') continue
+
+    const segments = trimmed.split('\r\n\r\n')
+    if (segments.length < 2) continue
+
+    const headerBlock = segments[0]
+    const content = Buffer.from(segments.slice(1).join('\r\n\r\n'), 'binary')
+    const disposition = headerBlock.match(/Content-Disposition: form-data; name="([^"]+)"(?:; filename="([^"]*)")?/i)
+    if (!disposition) continue
+
+    const name = disposition[1]
+    const fileName = disposition[2]
+    if (fileName) {
+      const mimeType = headerBlock.match(/Content-Type:\s*([^\r\n]+)/i)?.[1]?.trim() ?? 'application/octet-stream'
+      files.push({ name, filename: fileName, mimeType, buffer: content })
+      continue
+    }
+
+    fields[name] = content.toString('utf8').replace(/\r\n$/, '')
+  }
+
+  return { fields, files }
+}
+
+function createPhotoProducer() {
+  return new PhotoAIFrameProducer({
+    provider: new OpenAIImageGenerationProvider({ apiKey: process.env.OPENAI_API_KEY }),
+    storage: new LocalAvatarImageStorage(LOOKATME_STORAGE_DIR, LOOKATME_STORAGE_BASE),
+    validator: new SharpGeneratedImageValidator(),
+  })
 }
 
 console.info('Local onboarding mapper configuration', {
@@ -31,14 +115,46 @@ createServer(async (request, response) => {
     response.end(JSON.stringify(body))
   }
 
+  const url = request.url ?? '/'
+
   if (request.method === 'OPTIONS') return send(204, null)
+
+  if (request.method === 'GET' && url.startsWith('/generated/lookatme/')) {
+    const relativePath = decodeURIComponent(url.replace('/generated/lookatme/', ''))
+    const safePath = resolve(LOOKATME_STORAGE_DIR, relativePath)
+    if (!safePath.startsWith(LOOKATME_STORAGE_DIR)) return send(403, { error: 'Invalid storage path' })
+    try {
+      const file = readFileSync(safePath)
+      const extension = extname(safePath).toLowerCase()
+      const mimeType = extension === '.png' ? 'image/png' : extension === '.jpg' || extension === '.jpeg' ? 'image/jpeg' : 'application/octet-stream'
+      response.writeHead(200, { 'Content-Type': mimeType })
+      response.end(file)
+      return
+    } catch {
+      return send(404, { error: 'Generated avatar asset was not found' })
+    }
+  }
+
+  if (request.method === 'GET' && url === '/api/lookatme/health') {
+    return send(200, {
+      ok: true,
+      openAiConfigured: Boolean(process.env.OPENAI_API_KEY),
+      storageBase: LOOKATME_STORAGE_BASE,
+      storageDir: LOOKATME_STORAGE_DIR,
+      browserServerSeparation: 'Frontend uses lookatme-avatar/react; generation stays in getlookatme server code via lookatme-avatar/server.',
+      requiresManualConfirmation: true,
+    })
+  }
+
   if (request.method !== 'POST') return send(404, { error: 'Not found' })
 
   try {
     const chunks: Buffer[] = []
     for await (const chunk of request) chunks.push(chunk)
-    const body = JSON.parse(Buffer.concat(chunks).toString()) as { message?: unknown; text?: unknown; sourceType?: unknown }
+    const requestBody = Buffer.concat(chunks)
+
     if (request.url === '/api/onboarding/map-resume') {
+      const body = JSON.parse(requestBody.toString()) as { message?: unknown; text?: unknown; sourceType?: unknown }
       try {
         const parsedResume = await mapResumeOnServer(
           { text: body.text, sourceType: body.sourceType },
@@ -53,17 +169,84 @@ createServer(async (request, response) => {
         return send(status, { error: error instanceof ResumeMappingInputError ? error.message : 'AI-assisted resume mapping is unavailable', category })
       }
     }
-    if (request.url !== '/api/chat') return send(404, { error: 'Not found' })
-    const message = typeof body.message === 'string' ? body.message.trim() : ''
-    if (!message) return send(400, { error: 'Message cannot be empty' })
-    if (message.length > RAG_CONFIG.maximumQuestionLength) {
-      return send(400, { error: `Message must be ${RAG_CONFIG.maximumQuestionLength} characters or fewer` })
+
+    if (request.url === '/api/chat') {
+      const body = JSON.parse(requestBody.toString()) as { message?: unknown }
+      const message = typeof body.message === 'string' ? body.message.trim() : ''
+      if (!message) return send(400, { error: 'Message cannot be empty' })
+      if (message.length > RAG_CONFIG.maximumQuestionLength) {
+        return send(400, { error: `Message must be ${RAG_CONFIG.maximumQuestionLength} characters or fewer` })
+      }
+      return send(200, await answerPortfolioQuestion(message))
     }
-    send(200, await answerPortfolioQuestion(message))
+
+    if (request.url === '/api/avatar/generate' || request.url === '/api/lookatme/generate') {
+      const contentType = request.headers['content-type'] ?? ''
+      if (!contentType.includes('multipart/form-data')) {
+        return send(400, { error: 'This route expects multipart/form-data portrait uploads.' })
+      }
+
+      const { fields, files } = parseMultipartFormData(requestBody, contentType)
+      const portraitFile = files.find((file) => file.name === 'portrait')
+      if (!portraitFile) return send(400, { error: 'A portrait image file is required.' })
+      const confirmGeneration = fields.confirmGeneration === 'true' || fields.confirmGeneration === '1' || fields.confirmGeneration === 'yes'
+      const previewOnly = fields.preview === 'true' || fields.preview === '1' || fields.preview === 'yes'
+      const allowedPresets = new Set(['fast', 'balanced', 'smooth'])
+      const allowedStyles = new Set(['felt@1', 'cartoon@1', 'cinematic-3d@1', 'anime@1'])
+      const preset = (allowedPresets.has(fields.preset ?? '') ? fields.preset : 'smooth') as AvatarFramePreset
+      const style = (allowedStyles.has(fields.style ?? '') ? fields.style : 'felt@1') as AvatarStyleId
+
+      if (!process.env.OPENAI_API_KEY) {
+        return send(503, {
+          error: 'OPENAI_API_KEY is not configured in getlookatme/.env. Add it before any real Photo AI generation.',
+          requiredEnv: 'OPENAI_API_KEY',
+        })
+      }
+
+      if (!confirmGeneration && !previewOnly) {
+        return send(403, {
+          error: 'Real generation is intentionally gated. Set confirmGeneration=true in the request after OPENAI_API_KEY is present in getlookatme/.env.',
+          requiredEnv: 'OPENAI_API_KEY',
+          previewMode: true,
+        })
+      }
+
+      if (previewOnly || !confirmGeneration) {
+        return send(200, {
+          ok: true,
+          mode: 'preview',
+          frames: buildDemoAvatarFrameSet(),
+          avatarMode: 'dynamic',
+          avatarPreset: preset,
+          note: 'Preview mode is safe and does not make a paid OpenAI call.',
+        })
+      }
+
+      try {
+        const producer = createPhotoProducer()
+        const frames = await producer.produce({
+          image: portraitFile.buffer,
+          mimeType: portraitFile.mimeType || 'image/jpeg',
+          style,
+          preset,
+        })
+
+        return send(200, { ok: true, mode: 'live', frames, avatarMode: 'dynamic', avatarPreset: preset })
+      } catch (error) {
+        console.error('Photo AI generation failed', error)
+        return send(500, {
+          error: error instanceof Error ? error.message : 'Photo AI generation failed.',
+          message: 'Generation failed before a real call was completed. Check OPENAI_API_KEY and the uploaded image.',
+        })
+      }
+    }
+
+    return send(404, { error: 'Not found' })
   } catch (error) {
-    console.error('Local portfolio API request failed', error instanceof SyntaxError ? 'Invalid JSON' : 'Request failed')
-    send(error instanceof SyntaxError ? 400 : 500, {
-      error: error instanceof SyntaxError ? 'Request body must be valid JSON' : 'Unable to answer the question right now',
+    const isJsonError = error instanceof SyntaxError
+    console.error('Local portfolio API request failed', isJsonError ? 'Invalid JSON' : 'Request failed')
+    return send(isJsonError ? 400 : 500, {
+      error: isJsonError ? 'Request body must be valid JSON or multipart/form-data' : 'Unable to process the request right now',
     })
   }
 }).listen(3001, '127.0.0.1', () => console.log('Local portfolio API listening on http://localhost:3001'))

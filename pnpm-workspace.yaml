@@ -3,3 +3,7 @@ packages:
 
 allowBuilds:
   esbuild: true
+  lookatme-avatar@https://codeload.github.com/lingyun1010/lookatme-avatar/tar.gz/a0bcda08c86a546d3fc8b3df0b55f40b4c16ccd8: true
+
+minimumReleaseAgeExclude:
+  - openai@7.17.0

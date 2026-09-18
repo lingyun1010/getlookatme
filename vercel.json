@@ -7,7 +7,7 @@
     { "source": "/signup", "destination": "/auth.html" },
     { "source": "/create", "destination": "/create.html" },
     { "source": "/edit", "destination": "/create.html" },
-    { "source": "/dashboard", "destination": "/create.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/:slug", "destination": "/index.html" }
   ],
   "functions": {

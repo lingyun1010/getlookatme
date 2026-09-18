@@ -9,6 +9,7 @@ export default defineConfig({
         const path = request.url?.split('?')[0]
         if (path === '/') request.url = '/landing.html'
         if (path === '/login' || path === '/signup' || path === '/auth') request.url = `/auth.html${request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : ''}`
+        if (path === '/dashboard') request.url = '/dashboard.html'
         next()
       })
     },
@@ -36,6 +37,7 @@ export default defineConfig({
         profile: 'index.html',
         create: 'create.html',
         auth: 'auth.html',
+        dashboard: 'dashboard.html',
       },
     },
   },

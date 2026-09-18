@@ -9,9 +9,9 @@ Private SaaS foundation for an AI-native professional identity platform. The cur
 - The portfolio renderer remains the proven Vite/static implementation.
 - Chat remains single-profile and uses the bundled Lingyun RAG index.
 - `/auth` provides Supabase email/password sign-up and sign-in with persistent browser sessions.
-- `/create`, `/edit`, `/dashboard`, and `/preview` require authentication.
-- `/create` accepts PDF, DOCX, or pasted resume text and persists an owner-scoped `/preview` profile.
-- `/create` also accepts a portrait image, supports original-photo mode, and can generate a smooth `lookatme-avatar` dynamic avatar via the server-side SDK.
+- `/dashboard/create`, `/edit`, `/dashboard`, and `/preview` require authentication.
+- `/dashboard/create` accepts PDF, DOCX, or pasted resume text and persists an owner-scoped `/preview` profile.
+- `/dashboard/create` also accepts a portrait image, supports original-photo mode, and can generate a smooth `lookatme-avatar` dynamic avatar via the server-side SDK.
 - The onboarding preview now renders the original photo as a square crop and uses pointer-following `LookAtMeAvatar` motion for generated avatars instead of an autoplay slideshow.
 - The avatar generation control keeps a stable CTA label (`Generate dynamic avatar` / `Use the original photo`) instead of flipping text based on whether a frame set exists.
 - Resume mapping prefers a server-side structured-output LLM and falls back to the deterministic local parser.

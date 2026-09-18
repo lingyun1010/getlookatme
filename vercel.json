@@ -1,13 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
-    { "source": "/", "destination": "/lingyun", "permanent": false }
+    { "source": "/create", "destination": "/dashboard/create", "permanent": false },
+    { "source": "/edit", "destination": "/dashboard/create", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/", "destination": "/landing.html" },
     { "source": "/auth", "destination": "/auth.html" },
-    { "source": "/create", "destination": "/create.html" },
-    { "source": "/edit", "destination": "/create.html" },
-    { "source": "/dashboard", "destination": "/create.html" },
+    { "source": "/login", "destination": "/auth.html" },
+    { "source": "/signup", "destination": "/auth.html" },
+    { "source": "/dashboard/create", "destination": "/dashboard.html" },
+    { "source": "/dashboard/profile", "destination": "/dashboard.html" },
+    { "source": "/dashboard/avatar", "destination": "/dashboard.html" },
+    { "source": "/dashboard/pages", "destination": "/dashboard.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/:slug", "destination": "/index.html" }
   ],
   "functions": {

@@ -15,7 +15,7 @@ M2.2 — minimal production-oriented authentication and profile ownership founda
 - Explicit highlight anchors and featured experience/education records replace ID and array-position assumptions.
 - Lingyun retains the existing directional avatar and RAG behavior.
 - Aaron retains the initials avatar fallback and disabled AI state.
-- PDF, DOCX, and pasted-text onboarding through `/create`.
+- PDF, DOCX, and pasted-text onboarding through `/dashboard/create`.
 - Explicit extraction, parsed resume, draft, validation, and canonical document stages.
 - Editable review of identity, summary, links, skills, experience, education, projects, and neutral presentation copy.
 - Session-only `/preview` rendered by the shared renderer with initials fallback and AI disabled.

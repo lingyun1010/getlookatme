@@ -3,6 +3,22 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const renderer = await readFile(new URL('../index.html', import.meta.url), 'utf8')
+const landing = await readFile(new URL('../landing.html', import.meta.url), 'utf8')
+const kineticStyles = await readFile(new URL('../src/profile/templates/kinetic/kinetic.css', import.meta.url), 'utf8')
+
+test('product and portfolio template styles have separate entry boundaries', () => {
+  assert.match(renderer, /class="portfolio-page portfolio-template-kinetic"/)
+  assert.match(renderer, /\/src\/profile\/templates\/kinetic\/kinetic\.css/)
+  assert.doesNotMatch(renderer, /src\/landing\/landing\.css/)
+  assert.match(landing, /src\/landing\/landing\.css/)
+  assert.doesNotMatch(landing, /src\/profile\/templates\//)
+})
+
+test('the current portfolio template owns its page-level visual defaults', () => {
+  assert.match(kineticStyles, /body\.portfolio-template-kinetic\s*\{/)
+  assert.match(kineticStyles, /\.portfolio-template-kinetic a\s*\{/)
+  assert.doesNotMatch(kineticStyles, /\.site-header|\.final-cta|\.auth-cta/)
+})
 
 test('shared renderer does not assign profile-derived content through innerHTML', () => {
   assert.doesNotMatch(renderer, /\.innerHTML\s*=/)

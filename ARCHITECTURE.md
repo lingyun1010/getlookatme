@@ -8,7 +8,7 @@ Product UI and published portfolios have separate visual boundaries. Landing and
 
 ## Authentication and ownership
 
-Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.
+Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/dashboard/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.
 
 The database model intentionally has only two application tables:
 
@@ -54,7 +54,7 @@ Vercel redirects `/` to `/lingyun` and rewrites single-segment profile paths to 
 
 The chat endpoint uses a committed, Lingyun-only RAG index. Retrieval uses OpenAI embeddings, in-memory cosine similarity, deterministic intent reranking, and a grounded structured answer. Aaron's document disables AI, and the shared renderer never calls the endpoint for that profile.
 
-M2.0 adds an onboarding surface at `/create`. PDF files are semantically extracted with `pdfjs-dist`, DOCX files with Mammoth's raw-text API, and pasted text enters the same pipeline after normalization. M2.0.1 keeps extraction browser-side and adds a secure server-side semantic mapper. The effective boundary is:
+M2.0 adds an onboarding surface at `/dashboard/create`. PDF files are semantically extracted with `pdfjs-dist`, DOCX files with Mammoth's raw-text API, and pasted text enters the same pipeline after normalization. M2.0.1 keeps extraction browser-side and adds a secure server-side semantic mapper. The effective boundary is:
 
 ```text
 Document

@@ -1,7 +1,7 @@
   import type { AvatarFrameSet } from 'lookatme-avatar'
   import { createLookAtMeAvatar } from 'lookatme-avatar/vanilla'
   import { isAvatarFrameSet, normalizeAvatarMode } from '../avatar/generation.ts'
-  import { requireAuthenticatedUser, signOut } from '../auth/session.ts'
+  import { requireAuthenticatedUser } from '../auth/session.ts'
   import { requireSupabase } from '../auth/supabase.ts'
   import { createPrivateAssetUrl, getOwnedProfile, loadOnboardingState, persistAvatarFrames, saveOnboardingState, saveProfileDocument, uploadProfileAsset } from '../profile/repository.ts'
   import type { Education, Experience, Project } from '../profile/types.ts'
@@ -39,8 +39,6 @@
   let cvPath: string | null = null
   let originalPhotoPath: string | null = null
   let avatarFramePaths: string[] = []
-
-  document.querySelector<HTMLButtonElement>('#signOutButton')!.addEventListener('click', () => { void signOut() })
 
   const field = <T extends HTMLInputElement | HTMLTextAreaElement>(id: string): T => document.querySelector<T>(`#${id}`)!
   const lines = (value: string): string[] => value.split('\n').map((line) => line.trim()).filter(Boolean)

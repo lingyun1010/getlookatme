@@ -11,7 +11,7 @@ export async function currentUser(): Promise<User | null> {
 export async function requireAuthenticatedUser(returnTo = window.location.pathname): Promise<User> {
   const user = await currentUser()
   if (user) return user
-  const next = returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/create'
+  const next = returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/dashboard/create'
   window.location.replace(`/login?redirect=${encodeURIComponent(next)}`)
   throw new Error('Authentication required')
 }

@@ -17,11 +17,11 @@ if (avatarHost) {
   })
 }
 
-const authModal = new AuthModal(() => window.location.assign('/create'))
+const authModal = new AuthModal(() => window.location.assign('/dashboard/create'))
 async function bindAuth(): Promise<void> {
   const user = isSupabaseConfigured ? await currentUser() : null
   document.querySelectorAll<HTMLAnchorElement>('[data-auth-mode]').forEach(link => link.addEventListener('click', event => {
-    if (user) { event.preventDefault(); window.location.assign('/create'); return }
+    if (user) { event.preventDefault(); window.location.assign('/dashboard/create'); return }
     if (!isSupabaseConfigured) return
     event.preventDefault(); authModal.open(link.dataset.authMode === 'sign-up' ? 'sign-up' : 'sign-in', link)
   }))

@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-M2.3 — persistent Avatar workspace and background generation queue — complete and manually validated. M3 profile-scoped RAG and pgvector tenant isolation is next.
+PR4 — persistent, profile-scoped knowledge base — implemented. Persistent RAG answer generation and chat integration remain deferred to PR5.
 
 ## Completed
 
@@ -26,6 +26,9 @@ M2.3 — persistent Avatar workspace and background generation queue — complet
 - Preview fallback: active generated avatar → original photo → initials.
 - Ready avatars do not auto-activate; “Use this avatar” explicitly updates the selected profile avatar.
 - Lingyun retains the existing directional avatar and RAG behavior; Aaron retains the initials fallback and disabled AI state.
+- Structured `ProfileDocument` knowledge builder, deterministic entity-aware chunking, canonical hashes, and incremental sync planning.
+- Supabase `knowledge_sources` and `knowledge_chunks` with 1536-dimensional pgvector embeddings, exact cosine search, owner RLS, and cross-profile foreign-key enforcement. ANN indexing is intentionally deferred until multi-tenant retrieval can be measured and tuned.
+- Mandatory-profile `search_profile_knowledge` retrieval RPC and local sync/inspect commands.
 
 Manual validation has confirmed queued/generating/ready, queued cancellation, failed retry, duplicate active-job protection, automatic local worker consumption, Supabase frame upload, stable polling, gallery updates, non-activation on completion, and explicit activation.
 
@@ -60,4 +63,4 @@ Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion,
 
 ## Next exact task
 
-M3: implement profile-scoped knowledge ingestion and pgvector retrieval keyed by both `user_id` and `profile_id`, with RLS isolation and no fallback to Lingyun’s index.
+PR5: replace the legacy Lingyun-only retrieval path with authenticated/published-profile resolution, query embedding, persistent profile-scoped retrieval, and grounded answer generation without a global fallback.

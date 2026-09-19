@@ -10,6 +10,8 @@ Product UI and published portfolios have separate visual boundaries. Landing and
 
 Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/dashboard/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.
 
+Environment variables follow the same trust boundary. Browser code receives only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; every `VITE_*` value is public. Authenticated APIs use `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. Privileged avatar, profile-asset, and knowledge tooling uses server-only `SUPABASE_SERVICE_ROLE_KEY`; local Supabase labels that credential “Secret key”, but the established variable name remains unchanged. `OPENAI_API_KEY` and `CRON_SECRET` are also server-only. Local values belong in ignored env files, while production values are supplied by the deployment platform.
+
 The database model has four application tables:
 
 - `profiles`: immutable UUID, owning `user_id`, mutable unique public slug, canonical `ProfileDocument` JSON, and `is_published`.
@@ -90,6 +92,7 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 - **Renderer:** safely turns a resolved profile into the current portfolio UI. It consumes explicit featured records and presentation hints, and must not own authentication or persistence.
 - **Avatar:** owns original photos, generated assets, job lifecycle, gallery, and explicit activation. Pointer-direction behavior remains in the renderer and does not own persistence.
 - **RAG:** chunking, indexing, retrieval, and grounded answering. It must remain independent from portfolio rendering.
+- **Persistent knowledge:** converts the canonical `ProfileDocument` into profile-owned sources and chunks, embeds only invalidated chunks, and exposes mandatory-profile pgvector retrieval. See `docs/PERSISTENT_KNOWLEDGE.md`.
 - **Onboarding:** PDF/DOCX extraction, authenticated server-isolated LLM mapping with deterministic fallback, persisted draft review, classified validation, and owner-only preview. It updates the user's existing profile but does not own avatar state and cannot enable RAG.
 - **API/deployment:** Vercel hosts the static build, job-creation endpoint, and Cron worker. Configuration is environment-driven. Generation remains inside getlookatme rather than depending on an external demo server.
 
@@ -101,9 +104,9 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 - Prefer explicit interfaces that can later be backed by persistent services.
 - Treat editable profile strings as untrusted before user editing is introduced.
 
-## Future tenant-isolation requirements
+## Knowledge tenant isolation (PR4)
 
-Every published profile, asset, knowledge document, index, chat request, and usage record must carry an immutable profile/tenant identity. Profile resolution must be server-verified from the requested slug or host. Retrieval must never search a global unfiltered index, and browser-supplied tenant identifiers must not be trusted without resolution and authorization.
+Every knowledge source and chunk carries the immutable profile identity. Owner RLS follows the existing `profiles.user_id` relationship, a composite foreign key prevents attaching a chunk to a source in another profile, and `search_profile_knowledge` has a mandatory profile filter. Future public profile resolution must be server-verified from the requested slug or host; browser-supplied tenant identifiers must not be trusted without resolution and authorization.
 
 ## Deliberately deferred after M2
 

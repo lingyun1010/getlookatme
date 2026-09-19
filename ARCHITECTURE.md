@@ -10,6 +10,8 @@ Product UI and published portfolios have separate visual boundaries. Landing and
 
 Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/dashboard/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.
 
+Environment variables follow the same trust boundary. Browser code receives only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; every `VITE_*` value is public. Authenticated APIs use `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. Privileged avatar, profile-asset, and knowledge tooling uses server-only `SUPABASE_SERVICE_ROLE_KEY`; local Supabase labels that credential “Secret key”, but the established variable name remains unchanged. `OPENAI_API_KEY` and `CRON_SECRET` are also server-only. Local values belong in ignored env files, while production values are supplied by the deployment platform.
+
 The database model has four application tables:
 
 - `profiles`: immutable UUID, owning `user_id`, mutable unique public slug, canonical `ProfileDocument` JSON, and `is_published`.

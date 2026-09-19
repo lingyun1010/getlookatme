@@ -164,14 +164,14 @@ as $$
     kc.id,
     kc.source_id,
     kc.content,
-    1 - (kc.embedding <=> query_embedding) as similarity,
+    1 - (kc.embedding OPERATOR(extensions.<=>) query_embedding) as similarity,
     kc.source_type,
     kc.source_ref,
     kc.section,
     kc.metadata
   from public.knowledge_chunks kc
   where kc.profile_id = requested_profile_id
-  order by kc.embedding <=> query_embedding
+  order by kc.embedding OPERATOR(extensions.<=>) query_embedding
   limit least(greatest(match_count, 1), 50)
 $$;
 

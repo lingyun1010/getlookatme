@@ -63,20 +63,22 @@ pnpm knowledge:sync <profile-id>
 pnpm knowledge:inspect <profile-id>
 ```
 
-Both commands require `SUPABASE_URL` and server-only `SUPABASE_SERVICE_ROLE_KEY`. Sync also requires `OPENAI_API_KEY`; `OPENAI_EMBEDDING_MODEL` defaults to `text-embedding-3-small`. The service-role credential is limited to this explicit local/server maintenance tool and is never exposed through `VITE_*`.
+Both commands load `.env` followed by `.env.local` and require `SUPABASE_URL` plus server-only `SUPABASE_SERVICE_ROLE_KEY`. For local Supabase, map the `pnpm exec supabase status` **Secret key** to that established variable name. Sync also requires server-only `OPENAI_API_KEY`; inspect does not. `OPENAI_EMBEDDING_MODEL` defaults to `text-embedding-3-small`. These credentials are never exposed through `VITE_*`.
 
 ## Testing
 
 ```bash
+pnpm exec supabase start
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec supabase start
 pnpm exec supabase db reset
 pnpm exec supabase test db
 ```
 
-Database tests assert both ownership policies and cross-profile search isolation for Lingyun and Aaron. Unit tests cover source construction, project evidence, canonical hashing, chunking, sync planning, embedding-version invalidation, and incremental sync.
+Local credentials come from `pnpm exec supabase status`: its Publishable key is browser-safe, while its Secret key is server/tooling-only. Database tests currently pass and cover profile, avatar, and knowledge ownership policies plus cross-profile search isolation for Lingyun and Aaron. Unit tests cover source construction, project evidence, canonical hashing, chunking, sync planning, embedding-version invalidation, and incremental sync.
+
+Production knowledge sync must use production Supabase and OpenAI credentials supplied by the deployment platform. Never copy local Supabase credentials into production configuration.
 
 ## Known limitations and PR5 handoff
 

@@ -94,6 +94,8 @@ pnpm dev:avatar-worker
 
 The worker requires server-only `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `OPENAI_API_KEY`. `CRON_SECRET` protects the HTTP worker endpoint used by production Cron. No server secret uses a `VITE_` prefix.
 
+For local Supabase, obtain credentials with `pnpm exec supabase status`: map the Publishable key to the browser/server publishable variables and the Secret key to the existing server-only `SUPABASE_SERVICE_ROLE_KEY` name. Production workers receive production credentials from the deployment platform rather than copying local values.
+
 ## Validation status
 
 The linked Supabase project has migrations `202609190001_avatar_assets_jobs` and `202609190002_avatar_queue_controls` applied. Manual validation covers automatic queued consumption, cancellation races, duplicate active-job protection, retry, Storage upload, ready gallery insertion, stable polling, non-activation on completion, and explicit activation.

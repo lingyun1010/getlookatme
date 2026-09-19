@@ -12,7 +12,13 @@ function workerClient() {
 
 class SupabaseAvatarStorage implements AvatarImageStorage {
   readonly paths = new Map<string, string>()
-  constructor(private readonly job: AvatarGenerationJob, private readonly client: ReturnType<typeof workerClient>) {}
+  private readonly job: AvatarGenerationJob
+  private readonly client: ReturnType<typeof workerClient>
+
+  constructor(job: AvatarGenerationJob, client: ReturnType<typeof workerClient>) {
+    this.job = job
+    this.client = client
+  }
   createFrameSetId(): string { return this.job.id }
   private path(key: string, mimeType: GeneratedImage['mimeType']): string {
     const extension = mimeType === 'image/jpeg' ? 'jpg' : mimeType === 'image/webp' ? 'webp' : 'png'

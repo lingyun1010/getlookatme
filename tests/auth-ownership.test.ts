@@ -7,7 +7,7 @@ import { extractedPastedText } from '../src/onboarding/extraction.ts'
 import { parseResumeDeterministically } from '../src/onboarding/parser.ts'
 import { parsedResumeToDraft } from '../src/onboarding/mapping.ts'
 
-const migration = await readFile(new URL('../supabase/migrations/202609180001_auth_profile_ownership.sql', import.meta.url), 'utf8')
+const migration = await readFile(new URL('../supabase/migrations/20260918021022_auth_profile_ownership.sql', import.meta.url), 'utf8')
 
 test('owned asset paths are scoped by both stable user and profile IDs', () => {
   const path = ownedAssetPath('user-a', 'profile-a', 'cv', '../../resume.pdf')
@@ -42,9 +42,9 @@ test('storage writes require a matching auth user folder and owned profile folde
 })
 
 test('original photos and CVs share the private bucket while public writes are frame-only', async () => {
-  const onboarding = await readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8')
-  assert.match(onboarding, /'profile-private-assets', 'original-photo'/)
-  assert.doesNotMatch(onboarding, /'profile-public-assets', 'original-photo'/)
+  const avatarRepository = await readFile(new URL('../src/avatar/repository.ts', import.meta.url), 'utf8')
+  assert.match(avatarRepository, /'profile-private-assets', 'original-photo'/)
+  assert.doesNotMatch(avatarRepository, /'profile-public-assets', 'original-photo'/)
   assert.match(migration, /'profile-private-assets'.*false.*application\/pdf.*image\/jpeg/is)
 })
 

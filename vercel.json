@@ -19,6 +19,8 @@
   "functions": {
     "api/chat.ts": {
       "includeFiles": "{src/rag/**,src/profile/**,knowledge/lingyun.md,generated/rag-index.json}"
-    }
-  }
+    },
+    "api/avatar-worker.ts": { "maxDuration": 800 }
+  },
+  "crons": [{ "path": "/api/avatar-worker", "schedule": "* * * * *" }]
 }

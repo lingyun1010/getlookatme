@@ -13,7 +13,10 @@ import { answerPortfolioQuestion } from '../src/rag/answerQuestion.ts'
 import { RAG_CONFIG } from '../src/rag/config.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
 import { ONBOARDING_MAPPING_CONFIG } from '../src/onboarding/config.ts'
-import { authenticateBearer } from '../src/auth/server.ts'
+import { authenticateBearer, createAuthenticatedServerClient } from '../src/auth/server.ts'
+import { isAvatarPreset } from '../src/avatar/types.ts'
+import { isOwnedAssetPath } from '../src/profile/repository.ts'
+import { processNextAvatarJob } from '../src/avatar/worker.ts'
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
@@ -182,66 +185,21 @@ createServer(async (request, response) => {
       return send(200, await answerPortfolioQuestion(message))
     }
 
-    if (request.url === '/api/avatar/generate' || request.url === '/api/lookatme/generate') {
-      if (!await authenticateBearer(request.headers.authorization)) return send(401, { error: 'Authentication required' })
-      const contentType = request.headers['content-type'] ?? ''
-      if (!contentType.includes('multipart/form-data')) {
-        return send(400, { error: 'This route expects multipart/form-data portrait uploads.' })
-      }
+    if (request.url === '/api/avatar-jobs') {
+      const user = await authenticateBearer(request.headers.authorization)
+      const client = createAuthenticatedServerClient(request.headers.authorization)
+      if (!user || !client) return send(401, { error: 'Authentication required' })
+      const body = JSON.parse(requestBody.toString()) as { profileId?: unknown; sourcePhotoPath?: unknown; style?: unknown; preset?: unknown }
+      if (typeof body.profileId !== 'string' || typeof body.sourcePhotoPath !== 'string' || typeof body.style !== 'string' || !isAvatarPreset(body.preset)) return send(400, { error: 'Invalid avatar job request' })
+      if (!isOwnedAssetPath(body.sourcePhotoPath, user.id, body.profileId)) return send(403, { error: 'Source photo is not owned by this profile' })
+      const { data: job, error } = await client.from('avatar_generation_jobs').insert({ user_id: user.id, profile_id: body.profileId, source_photo_path: body.sourcePhotoPath, style: body.style, preset: body.preset }).select('*').single()
+      if (error?.code === '23505') return send(409, { error: 'This profile already has a queued or generating avatar.' })
+      return error ? send(400, { error: 'Could not queue avatar generation' }) : send(202, { job })
+    }
 
-      const { fields, files } = parseMultipartFormData(requestBody, contentType)
-      const portraitFile = files.find((file) => file.name === 'portrait')
-      if (!portraitFile) return send(400, { error: 'A portrait image file is required.' })
-      const confirmGeneration = fields.confirmGeneration === 'true' || fields.confirmGeneration === '1' || fields.confirmGeneration === 'yes'
-      const previewOnly = fields.preview === 'true' || fields.preview === '1' || fields.preview === 'yes'
-      const allowedPresets = new Set(['fast', 'balanced', 'smooth'])
-      const allowedStyles = new Set(['felt@1', 'cartoon@1', 'cinematic-3d@1', 'anime@1'])
-      const preset = (allowedPresets.has(fields.preset ?? '') ? fields.preset : 'smooth') as AvatarFramePreset
-      const style = (allowedStyles.has(fields.style ?? '') ? fields.style : 'felt@1') as AvatarStyleId
-
-      if (!process.env.OPENAI_API_KEY) {
-        return send(503, {
-          error: 'OPENAI_API_KEY is not configured in getlookatme/.env. Add it before any real Photo AI generation.',
-          requiredEnv: 'OPENAI_API_KEY',
-        })
-      }
-
-      if (!confirmGeneration && !previewOnly) {
-        return send(403, {
-          error: 'Real generation is intentionally gated. Set confirmGeneration=true in the request after OPENAI_API_KEY is present in getlookatme/.env.',
-          requiredEnv: 'OPENAI_API_KEY',
-          previewMode: true,
-        })
-      }
-
-      if (previewOnly || !confirmGeneration) {
-        return send(200, {
-          ok: true,
-          mode: 'preview',
-          frames: buildDemoAvatarFrameSet(),
-          avatarMode: 'dynamic',
-          avatarPreset: preset,
-          note: 'Preview mode is safe and does not make a paid OpenAI call.',
-        })
-      }
-
-      try {
-        const producer = createPhotoProducer()
-        const frames = await producer.produce({
-          image: portraitFile.buffer,
-          mimeType: portraitFile.mimeType || 'image/jpeg',
-          style,
-          preset,
-        })
-
-        return send(200, { ok: true, mode: 'live', frames, avatarMode: 'dynamic', avatarPreset: preset })
-      } catch (error) {
-        console.error('Photo AI generation failed', error)
-        return send(500, {
-          error: error instanceof Error ? error.message : 'Photo AI generation failed.',
-          message: 'Generation failed before a real call was completed. Check OPENAI_API_KEY and the uploaded image.',
-        })
-      }
+    if (request.url === '/api/avatar-worker') {
+      if (!process.env.CRON_SECRET || request.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) return send(401, { error: 'Worker authorization required' })
+      return send(200, await processNextAvatarJob())
     }
 
     return send(404, { error: 'Not found' })

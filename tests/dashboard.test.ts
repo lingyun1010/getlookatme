@@ -22,7 +22,8 @@ test('dashboard derives overview state from owned profile data', () => {
   assert.match(app, /loadOnboardingState\(profile\)/)
   assert.match(app, /profile\.is_published/)
   assert.match(app, /state\?\.cv_path/)
-  assert.match(app, /state\?\.avatar_frame_paths/)
+  assert.match(app, /listAvatarAssets\(profile\)/)
+  assert.match(app, /listAvatarJobs\(profile\)/)
 })
 
 test('unfinished dashboard capabilities are visibly disabled', () => {
@@ -50,7 +51,7 @@ test('dashboard uses History API routing without remounting its shell', () => {
   assert.match(app, /addEventListener\('popstate'/)
   assert.match(app, /shell\.content\.replaceChildren\(view\)/)
   assert.equal((app.match(/mountDashboardShell\(/g) ?? []).length, 1)
-  assert.match(app, /location\.hash==='#avatar'/)
+  assert.match(app, /createAvatarPage\(profile,state\)/)
   assert.match(routes, /"source": "\/dashboard\/profile", "destination": "\/dashboard\.html"/)
   assert.match(routes, /"source": "\/dashboard\/avatar", "destination": "\/dashboard\.html"/)
   assert.match(routes, /"source": "\/dashboard\/pages", "destination": "\/dashboard\.html"/)

@@ -3,6 +3,8 @@ import type { AvatarFrameSet } from 'lookatme-avatar'
 import type { ProfileDocument } from './types.ts'
 import type { ProfileDocumentDraft } from '../onboarding/types.ts'
 import { requireSupabase } from '../auth/supabase.ts'
+import { resolveProfileAvatar } from '../avatar/resolution.ts'
+import type { AvatarAsset } from '../avatar/types.ts'
 
 export interface OwnedProfile {
   id: string
@@ -10,6 +12,7 @@ export interface OwnedProfile {
   slug: string
   document: ProfileDocument | Record<string, never>
   is_published: boolean
+  active_avatar_id: string | null
 }
 
 export interface OnboardingState {
@@ -34,7 +37,7 @@ export function isOwnedAssetPath(path: string, userId: string, profileId: string
 
 export async function getOwnedProfile(user: User): Promise<OwnedProfile> {
   const client = requireSupabase()
-  const { data, error } = await client.from('profiles').select('id,user_id,slug,document,is_published').eq('user_id', user.id).order('created_at').limit(1).single()
+  const { data, error } = await client.from('profiles').select('id,user_id,slug,document,is_published,active_avatar_id').eq('user_id', user.id).order('created_at').limit(1).single()
   if (error) throw error
   return data as OwnedProfile
 }
@@ -70,6 +73,16 @@ export async function createPrivateAssetUrl(path: string, expiresInSeconds = 360
   return data.signedUrl
 }
 
+function storedAvatarFrameSet(asset: Pick<AvatarAsset, 'center_frame_path' | 'frame_metadata'>): AvatarFrameSet {
+  const publicUrl = (path: string) => requireSupabase().storage.from('profile-public-assets').getPublicUrl(path).data.publicUrl
+  return {
+    version: 2,
+    center: { key: 'center', src: publicUrl(asset.center_frame_path) },
+    directions: (asset.frame_metadata.directions ?? []).map(({ key, angle, path }) => ({ key, angle, src: publicUrl(path) })),
+    metadata: { source: { type: 'manual' } },
+  }
+}
+
 async function durableFrame(profile: OwnedProfile, source: string, key: string): Promise<{ path: string; url: string }> {
   const response = await fetch(source)
   if (!response.ok) throw new Error(`Could not persist generated avatar frame ${key}.`)
@@ -91,10 +104,25 @@ export async function persistAvatarFrames(profile: OwnedProfile, frames: AvatarF
 }
 
 export async function loadPublicProfile(slug: string): Promise<ProfileDocument | null> {
-  const { data, error } = await requireSupabase().from('profiles').select('document').eq('slug', slug).eq('is_published', true).maybeSingle()
+  const client = requireSupabase()
+  const { data, error } = await client.from('profiles').select('document').eq('slug', slug).eq('is_published', true).maybeSingle()
   if (error) throw error
   const document = data?.document as ProfileDocument | undefined
-  return document?.profileId ? document : null
+  if (!document?.profileId) return null
+  const { data: activeData, error: activeError } = await client.rpc('get_public_active_avatar', { requested_slug: slug }).maybeSingle()
+  if (activeError) throw activeError
+  const active = activeData as { center_frame_path: string; frame_paths: string[]; frame_metadata: AvatarAsset['frame_metadata'] } | null
+  if (!active) {
+    const response = await fetch(`/api/profile-avatar?slug=${encodeURIComponent(slug)}`)
+    const resolved = response.ok ? await response.json() as { originalPhotoUrl?: string | null } : {}
+    return resolveProfileAvatar(document, { originalPhotoUrl: resolved.originalPhotoUrl })
+  }
+  const asset = {
+    center_frame_path: active.center_frame_path,
+    frame_paths: active.frame_paths,
+    frame_metadata: active.frame_metadata,
+  } as AvatarAsset
+  return resolveProfileAvatar(document, { activeFrameSet: storedAvatarFrameSet(asset) })
 }
 
 export async function loadCurrentUserProfileDocument(): Promise<ProfileDocument | null> {
@@ -103,8 +131,13 @@ export async function loadCurrentUserProfileDocument(): Promise<ProfileDocument 
   const profile = await getOwnedProfile(user)
   const document = profile.document as ProfileDocument
   if (document?.profileId !== profile.id) return null
-  if (document.avatarMode !== 'original') return document
   const state = await loadOnboardingState(profile)
-  if (!state?.original_photo_path) return document
-  return { ...document, avatarImageUrl: await createPrivateAssetUrl(state.original_photo_path) }
+  let activeFrameSet: AvatarFrameSet | null = null
+  if (profile.active_avatar_id) {
+    const { data, error } = await requireSupabase().from('avatars').select('*').eq('id', profile.active_avatar_id).eq('profile_id', profile.id).maybeSingle()
+    if (error) throw error
+    if (data) activeFrameSet = storedAvatarFrameSet(data as AvatarAsset)
+  }
+  const originalPhotoUrl = state?.original_photo_path ? await createPrivateAssetUrl(state.original_photo_path) : null
+  return resolveProfileAvatar(document, { activeFrameSet, originalPhotoUrl })
 }

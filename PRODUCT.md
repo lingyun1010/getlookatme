@@ -1,6 +1,6 @@
 # LookAtMe product
 
-LookAtMe is an AI-native professional identity platform. It helps a professional turn a CV and photo into an editable, interactive portfolio with a mouse-follow avatar and a profile-grounded AI conversation.
+LookAtMe is an AI-native professional identity platform. It helps a professional turn a CV into an editable, interactive portfolio, then optionally add an original photo or mouse-follow avatar and a profile-grounded AI conversation.
 
 ## Target user
 
@@ -8,8 +8,8 @@ Professionals who want a richer and more explainable online identity than a stat
 
 ## MVP direction
 
-1. Upload a CV and photo.
-2. Review a structured professional profile.
+1. Upload a CV and review the structured professional profile.
+2. Optionally add an original photo or generated avatar.
 3. Publish an interactive portfolio under a LookAtMe profile URL.
 4. Add a reusable directional avatar.
 5. Let visitors ask questions grounded only in that profile.

@@ -27,7 +27,7 @@ PR4 — persistent, profile-scoped knowledge base — implemented. Persistent RA
 - Ready avatars do not auto-activate; “Use this avatar” explicitly updates the selected profile avatar.
 - Lingyun retains the existing directional avatar and RAG behavior; Aaron retains the initials fallback and disabled AI state.
 - Structured `ProfileDocument` knowledge builder, deterministic entity-aware chunking, canonical hashes, and incremental sync planning.
-- Supabase `knowledge_sources` and `knowledge_chunks` with 1536-dimensional pgvector embeddings, HNSW cosine index, owner RLS, and cross-profile foreign-key enforcement.
+- Supabase `knowledge_sources` and `knowledge_chunks` with 1536-dimensional pgvector embeddings, exact cosine search, owner RLS, and cross-profile foreign-key enforcement. ANN indexing is intentionally deferred until multi-tenant retrieval can be measured and tuned.
 - Mandatory-profile `search_profile_knowledge` retrieval RPC and local sync/inspect commands.
 
 Manual validation has confirmed queued/generating/ready, queued cancellation, failed retry, duplicate active-job protection, automatic local worker consumption, Supabase frame upload, stable polling, gallery updates, non-activation on completion, and explicit activation.

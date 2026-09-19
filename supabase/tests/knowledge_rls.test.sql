@@ -1,6 +1,6 @@
 begin;
 set local search_path = extensions, public;
-select plan(22);
+select plan(21);
 
 select is((select relrowsecurity from pg_class where oid = 'public.knowledge_sources'::regclass), true, 'knowledge_sources RLS enabled');
 select is((select relrowsecurity from pg_class where oid = 'public.knowledge_chunks'::regclass), true, 'knowledge_chunks RLS enabled');
@@ -16,7 +16,6 @@ select has_column('public', 'knowledge_sources', 'profile_id', 'sources carry pr
 select has_column('public', 'knowledge_chunks', 'profile_id', 'chunks carry profile identity');
 select col_is_fk('public', 'knowledge_sources', 'profile_id', 'sources belong to profiles');
 select ok(exists(select 1 from pg_constraint where conname = 'knowledge_chunks_source_profile_fk'), 'chunk source FK enforces the same profile');
-select has_index('public', 'knowledge_chunks', 'knowledge_chunks_embedding_hnsw_idx', 'chunks have a cosine HNSW index');
 select has_function('public', 'search_profile_knowledge', array['uuid', 'vector', 'integer'], 'profile-scoped search RPC exists');
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data)

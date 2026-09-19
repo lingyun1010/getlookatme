@@ -48,7 +48,9 @@ The embedding client batches requests and is injected into the sync service, so 
 
 ## Isolation and retrieval
 
-RLS is enabled on both tables. Only authenticated owners of the referenced `profiles` row can select, insert, update, or delete knowledge. Anonymous callers have no table or function grant. The chunk table's explicit `profile_id` lets vector search filter by tenant before ranking. The `search_profile_knowledge` security-invoker RPC requires `requested_profile_id`; it has no unscoped overload and orders with cosine distance (`<=>`). A cosine HNSW index supports future retrieval volume.
+RLS is enabled on both tables. Only authenticated owners of the referenced `profiles` row can select, insert, update, or delete knowledge. Anonymous callers have no table or function grant. The chunk table's explicit `profile_id` lets vector search filter by tenant before ranking. The `search_profile_knowledge` security-invoker RPC requires `requested_profile_id`; it has no unscoped overload and orders with cosine distance (`<=>`).
+
+PR4 intentionally uses exact pgvector search with no ANN vector index. Current per-profile knowledge bases are small, so predictable profile-scoped correctness is preferred over approximate-search tuning. HNSW can be introduced later only after measuring realistic multi-tenant data volumes and tuning filtered retrieval recall and latency.
 
 Public published-profile chat remains possible in PR5, but it must use a separately reviewed server boundary that resolves the published slug to a trusted profile ID. PR4 deliberately does not weaken private RLS or expose public knowledge.
 

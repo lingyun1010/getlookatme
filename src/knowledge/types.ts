@@ -62,6 +62,7 @@ export interface KnowledgeRepository {
   replaceChunks(sourceId: string, chunks: PersistedChunkInput[]): Promise<void>
   deleteSources(profileId: string, sourceIds: string[]): Promise<void>
   getStatus(profileId: string): Promise<KnowledgeStatus>
+  search(profileId: string, queryEmbedding: number[], limit?: number): Promise<KnowledgeSearchResult[]>
 }
 
 export interface EmbeddingClient {

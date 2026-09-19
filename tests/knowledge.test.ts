@@ -58,6 +58,7 @@ class FakeRepository implements KnowledgeRepository {
     assert.equal(requested, profileId)
     return { profileId, sourceCount: this.sources.length, chunkCount: this.sources.flatMap(({ chunks }) => chunks).length, failedSourceCount: 0, lastIndexedAt: '2026-09-19T00:00:00Z' }
   }
+  async search(): Promise<never[]> { return [] }
 }
 
 test('builds deterministic sources from ProfileDocument with stable entity references', () => {

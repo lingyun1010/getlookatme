@@ -40,8 +40,6 @@ create table public.knowledge_chunks (
 create index knowledge_sources_profile_idx on public.knowledge_sources(profile_id);
 create index knowledge_chunks_profile_idx on public.knowledge_chunks(profile_id);
 create index knowledge_chunks_source_idx on public.knowledge_chunks(source_id);
-create index knowledge_chunks_embedding_hnsw_idx on public.knowledge_chunks
-  using hnsw (embedding extensions.vector_cosine_ops);
 
 create or replace function public.set_knowledge_source_version()
 returns trigger language plpgsql security invoker set search_path = '' as $$

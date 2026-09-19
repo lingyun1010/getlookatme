@@ -30,6 +30,8 @@ Professional profile data and avatar presentation assets are separate domains. P
 
 Avatar generation is a persistent job rather than a browser-held request. `POST /api/avatar-jobs` authenticates the owner and inserts `queued`. Vercel Cron calls the protected `/api/avatar-worker` endpoint every minute. The worker calls the atomic `claim_avatar_generation_job` SQL function (`FOR UPDATE SKIP LOCKED`), marks the job `generating`, downloads the private source photo with the service role, generates and uploads deterministic job-keyed frames, upserts one asset per `generation_job_id`, and marks the job `ready`. A stale `generating` job is reclaimable after 15 minutes. Failed jobs expose a safe diagnostic and can be explicitly retried.
 
+A partial unique index permits only one `queued` or `generating` job per profile. Queued jobs can be atomically cancelled through an owner-scoped SQL function; the same row lock/state predicate decides whether cancellation or worker claim wins. Generating jobs cannot be cancelled. Local development runs the same claim/generation service through `pnpm dev:avatar-worker`; this loop is server-side, serial, and independent of browser navigation.
+
 This mechanism matches the deployed Vite + Vercel + Supabase stack without a second queue service. It requires a Vercel plan/runtime that supports the configured 800-second function duration; real generation duration and Cron authentication must be verified after deployment.
 
 Storage records contain paths, IDs, and frame metadata only. Private source photos are signed on read; generated frames use the public asset bucket. Newly completed assets do not alter `profiles.active_avatar_id`.

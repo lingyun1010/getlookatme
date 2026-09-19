@@ -42,6 +42,12 @@ export async function retryAvatarJob(jobId: string): Promise<void> {
   if (!data) throw new Error('Only a failed job can be retried.')
 }
 
+export async function cancelAvatarJob(jobId: string): Promise<boolean> {
+  const { data, error } = await requireSupabase().rpc('cancel_avatar_generation_job', { job_id: jobId })
+  if (error) throw error
+  return Boolean(data)
+}
+
 export async function activateAvatar(profile: OwnedProfile, avatarId: string | null): Promise<void> {
   const { error } = await requireSupabase().from('profiles').update({ active_avatar_id: avatarId }).eq('id', profile.id).eq('user_id', profile.user_id)
   if (error) throw error

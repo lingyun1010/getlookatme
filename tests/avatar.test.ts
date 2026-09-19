@@ -3,12 +3,16 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { resolveProfileAvatar } from '../src/avatar/resolution.ts'
 import { canRetryAvatarJob, isAvatarJobStatus } from '../src/avatar/types.ts'
+import { avatarAssetsKey, hasActiveGeneration, transitionedToReady } from '../src/avatar/pageState.ts'
 import { resolveProfile } from '../src/profile/resolveProfile.ts'
 
 const migration = await readFile(new URL('../supabase/migrations/202609190001_avatar_assets_jobs.sql', import.meta.url), 'utf8')
+const queueMigration = await readFile(new URL('../supabase/migrations/202609190002_avatar_queue_controls.sql', import.meta.url), 'utf8')
 const createPage = await readFile(new URL('../create.html', import.meta.url), 'utf8')
 const createApp = await readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8')
 const worker = await readFile(new URL('../src/avatar/worker.ts', import.meta.url), 'utf8')
+const avatarPage = await readFile(new URL('../src/avatar/avatarPage.ts', import.meta.url), 'utf8')
+const localWorker = await readFile(new URL('../scripts/dev-avatar-worker.ts', import.meta.url), 'utf8')
 
 const frames = { version: 2 as const, center: { key: 'center', src: '/center.png' }, directions: [{ key: 'left', angle: 180, src: '/left.png' }] }
 
@@ -30,10 +34,50 @@ test('avatar fallback prefers active generated, then original photo, then initia
 })
 
 test('avatar job states and retry path are constrained', () => {
-  for (const state of ['queued', 'generating', 'ready', 'failed']) assert.equal(isAvatarJobStatus(state), true)
+  for (const state of ['queued', 'generating', 'ready', 'failed', 'cancelled']) assert.equal(isAvatarJobStatus(state), true)
   assert.equal(isAvatarJobStatus('complete'), false)
   assert.equal(canRetryAvatarJob({ status: 'failed' }), true)
   assert.equal(canRetryAvatarJob({ status: 'ready' }), false)
+})
+
+test('active generation covers queued and generating for immediate button protection', () => {
+  const job = (status: 'queued' | 'generating' | 'ready') => ({ status }) as never
+  assert.equal(hasActiveGeneration([job('queued')]), true)
+  assert.equal(hasActiveGeneration([job('generating')]), true)
+  assert.equal(hasActiveGeneration([job('ready')]), false)
+  assert.match(avatarPage, /generateButton\.disabled = true/)
+  assert.match(avatarPage, /jobs = \[job, \.\.\.jobs\]/)
+})
+
+test('job polling leaves stable avatar UI alone and refreshes gallery only on ready transition', () => {
+  const queued = [{ id: 'job-1', status: 'queued' }] as never[]
+  const ready = [{ id: 'job-1', status: 'ready' }] as never[]
+  assert.equal(transitionedToReady(queued, ready), true)
+  assert.equal(transitionedToReady(ready, ready), false)
+  assert.equal(avatarAssetsKey([{ id: 'a', created_at: '1' } as never]), 'a:1')
+  const pollBody = avatarPage.slice(avatarPage.indexOf('async function pollJobsOnce'), avatarPage.indexOf('async function start'))
+  assert.match(pollBody, /listAvatarJobs\(profile\)/)
+  assert.match(pollBody, /if \(becameReady\).*listAvatarAssets\(profile\)/s)
+  assert.doesNotMatch(pollBody, /renderOriginal|renderCurrent|originalPhotoUrl/)
+})
+
+test('database prevents duplicate active jobs and cancellation is queued-only and owner-scoped', () => {
+  assert.match(queueMigration, /unique index[\s\S]*where status in \('queued', 'generating'\)/i)
+  assert.match(queueMigration, /status = 'cancelled'[\s\S]*user_id = \(select auth\.uid\(\)\)[\s\S]*status = 'queued'/i)
+  assert.doesNotMatch(queueMigration, /where[^;]*status = 'generating'/i)
+})
+
+test('cancelled jobs cannot be claimed and cancellation never activates an avatar', () => {
+  assert.match(migration, /where status = 'queued' or \(status = 'generating'/i)
+  assert.doesNotMatch(queueMigration, /active_avatar_id/i)
+  assert.doesNotMatch(worker, /cancelled/)
+})
+
+test('local worker automatically consumes jobs without overlapping executions', () => {
+  assert.match(localWorker, /processNextAvatarJob\(\)/)
+  assert.match(localWorker, /if \(processing\)/)
+  assert.match(localWorker, /processing = true/)
+  assert.doesNotMatch(avatarPage, /avatar-worker|processNextAvatarJob/)
 })
 
 test('worker claim and asset upsert make duplicate processing idempotent without activation', () => {

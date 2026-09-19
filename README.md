@@ -29,6 +29,8 @@ Create or link a Supabase project, apply all files under `supabase/migrations/`,
 
 For local chat and LLM-assisted resume mapping, set `OPENAI_API_KEY`, set `VITE_API_BASE_URL=http://localhost:3001`, and run `pnpm dev:api` separately. Set `ONBOARDING_LLM_ENABLED=false` server-side or `VITE_ONBOARDING_LLM_ENABLED=false` client-side to force deterministic onboarding. `VITE_ONBOARDING_LLM_TIMEOUT_MS` defaults to 60000 so normal structured extraction has time to finish before deterministic fallback.
 
+For local avatar generation, also set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `OPENAI_API_KEY`, apply all migrations, then run `pnpm dev:avatar-worker` alongside the UI/API processes. The dev-only worker polls for queued jobs every five seconds by default, processes one job at a time, and stops cleanly on SIGINT/SIGTERM. `AVATAR_WORKER_POLL_MS` can change the interval. `CRON_SECRET` protects the HTTP worker endpoint and is required for Vercel Cron, but the local loop invokes the shared worker service directly.
+
 When using a split local UI/API, `ALLOWED_ORIGINS` must contain the exact browser origin. The example configuration includes both `http://localhost:5173` and `http://127.0.0.1:5173` (plus port 5174 fallbacks). Development console messages prefixed with `[onboarding]` show the selected mapper, endpoint/status, response validation, fallback reason, and final review mapper without logging resume text.
 
 Validation:

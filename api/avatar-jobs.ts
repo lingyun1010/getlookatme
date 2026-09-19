@@ -29,6 +29,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     user_id: user.id, profile_id: body.profileId, source_photo_path: body.sourcePhotoPath,
     style: body.style, preset: body.preset, status: 'queued',
   }).select('*').single()
+  if (error?.code === '23505') return response.status(409).json({ error: 'This profile already has a queued or generating avatar.' })
   if (error) return response.status(400).json({ error: 'Could not queue avatar generation.' })
   return response.status(202).json({ job })
 }

@@ -193,6 +193,7 @@ createServer(async (request, response) => {
       if (typeof body.profileId !== 'string' || typeof body.sourcePhotoPath !== 'string' || typeof body.style !== 'string' || !isAvatarPreset(body.preset)) return send(400, { error: 'Invalid avatar job request' })
       if (!isOwnedAssetPath(body.sourcePhotoPath, user.id, body.profileId)) return send(403, { error: 'Source photo is not owned by this profile' })
       const { data: job, error } = await client.from('avatar_generation_jobs').insert({ user_id: user.id, profile_id: body.profileId, source_photo_path: body.sourcePhotoPath, style: body.style, preset: body.preset }).select('*').single()
+      if (error?.code === '23505') return send(409, { error: 'This profile already has a queued or generating avatar.' })
       return error ? send(400, { error: 'Could not queue avatar generation' }) : send(202, { job })
     }
 

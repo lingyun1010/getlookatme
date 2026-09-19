@@ -1,7 +1,7 @@
 import type { AvatarFrameSet } from 'lookatme-avatar'
 
 export type AvatarPreset = 'fast' | 'balanced' | 'smooth'
-export type AvatarJobStatus = 'queued' | 'generating' | 'ready' | 'failed'
+export type AvatarJobStatus = 'queued' | 'generating' | 'ready' | 'failed' | 'cancelled'
 
 export interface AvatarAsset {
   id: string
@@ -39,7 +39,11 @@ export function isAvatarPreset(value: unknown): value is AvatarPreset {
 }
 
 export function isAvatarJobStatus(value: unknown): value is AvatarJobStatus {
-  return value === 'queued' || value === 'generating' || value === 'ready' || value === 'failed'
+  return value === 'queued' || value === 'generating' || value === 'ready' || value === 'failed' || value === 'cancelled'
+}
+
+export function isActiveAvatarJob(job: Pick<AvatarGenerationJob, 'status'>): boolean {
+  return job.status === 'queued' || job.status === 'generating'
 }
 
 export function canRetryAvatarJob(job: Pick<AvatarGenerationJob, 'status'>): boolean {

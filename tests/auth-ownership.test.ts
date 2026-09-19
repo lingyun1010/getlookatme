@@ -7,7 +7,7 @@ import { extractedPastedText } from '../src/onboarding/extraction.ts'
 import { parseResumeDeterministically } from '../src/onboarding/parser.ts'
 import { parsedResumeToDraft } from '../src/onboarding/mapping.ts'
 
-const migration = await readFile(new URL('../supabase/migrations/202609180001_auth_profile_ownership.sql', import.meta.url), 'utf8')
+const migration = await readFile(new URL('../supabase/migrations/20260918021022_auth_profile_ownership.sql', import.meta.url), 'utf8')
 
 test('owned asset paths are scoped by both stable user and profile IDs', () => {
   const path = ownedAssetPath('user-a', 'profile-a', 'cv', '../../resume.pdf')

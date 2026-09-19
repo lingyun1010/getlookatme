@@ -1,6 +1,6 @@
 begin;
 set local search_path = extensions, public;
-select plan(10);
+select plan(12);
 
 select is((select relrowsecurity from pg_class where oid = 'public.avatars'::regclass), true, 'avatars RLS enabled');
 select is((select relrowsecurity from pg_class where oid = 'public.avatar_generation_jobs'::regclass), true, 'avatar jobs RLS enabled');
@@ -16,6 +16,8 @@ select col_is_fk('public', 'avatar_generation_jobs', 'user_id', 'jobs are tied t
 select ok(exists(select 1 from pg_constraint where conname = 'profiles_active_avatar_owner_fk'), 'activation has composite ownership FK');
 select ok(exists(select 1 from pg_constraint where conname = 'avatars_profile_owner_fk'), 'avatar has profile-owner FK');
 select ok(exists(select 1 from pg_constraint where conname = 'avatar_jobs_profile_owner_fk'), 'job has profile-owner FK');
+select has_function('public', 'cancel_avatar_generation_job', array['uuid'], 'queued cancellation RPC exists');
+select has_index('public', 'avatar_generation_jobs', 'avatar_jobs_one_active_per_profile_idx', 'one active job index exists');
 
 select * from finish();
 rollback;

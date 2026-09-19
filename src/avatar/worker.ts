@@ -80,6 +80,9 @@ export async function processNextAvatarJob(): Promise<{ processed: boolean; jobI
     if (readyError) throw readyError
     return { processed: true, jobId: job.id, status: 'ready' }
   } catch (cause) {
+    const errorName = cause instanceof Error ? cause.name : 'UnknownError'
+    const errorMessage = cause instanceof Error ? cause.message : String(cause)
+    console.error(`[avatar-worker] Job ${job.id} failed: ${errorName}: ${errorMessage}`)
     const safeError = cause instanceof Error && /configured/.test(cause.message) ? cause.message : 'Avatar generation failed. You can retry this job.'
     await client.from('avatar_generation_jobs').update({ status: 'failed', error: safeError, completed_at: new Date().toISOString() }).eq('id', job.id).eq('status', 'generating')
     return { processed: true, jobId: job.id, status: 'failed' }

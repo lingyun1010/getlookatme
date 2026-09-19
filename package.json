@@ -14,7 +14,9 @@
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "rag:build": "node --env-file-if-exists=.env --experimental-strip-types scripts/build-rag-index.ts",
     "rag:test": "node --env-file-if-exists=.env --experimental-strip-types scripts/debug-rag.ts",
-    "rag:regression": "node --env-file-if-exists=.env --experimental-strip-types scripts/regression-rag.ts"
+    "rag:regression": "node --env-file-if-exists=.env --experimental-strip-types scripts/regression-rag.ts",
+    "knowledge:sync": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --experimental-strip-types scripts/knowledge.ts sync",
+    "knowledge:inspect": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --experimental-strip-types scripts/knowledge.ts inspect"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",

@@ -1,5 +1,7 @@
 # LookAtMe
 
+Persistent profile knowledge architecture and local commands are documented in [`docs/PERSISTENT_KNOWLEDGE.md`](docs/PERSISTENT_KNOWLEDGE.md).
+
 Private SaaS foundation for an AI-native professional identity platform. The current milestone preserves the working portfolio experience from the public reference implementation while establishing a clean Vercel-hosted codebase.
 
 ## Current state

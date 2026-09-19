@@ -1,57 +1,99 @@
-# LookAtMe integration
+# LookAtMe avatar integration
 
-## Scope
+## Domain separation
 
-This milestone integrates the external `lookatme-avatar` SDK into the real onboarding flow and the existing portfolio hero. It does not introduce a temporary demo page, a separate LookAtMe server, or a second avatar section. The work stays inside the current getlookatme app.
+Professional profile data and avatar presentation assets are independent product domains.
 
-## Product flow
-
-1. User uploads a CV and a portrait photo during onboarding.
-2. The user selects either `Use original photo` or `Generate dynamic avatar`.
-3. Original-photo mode stores the uploaded image as the portfolio hero avatar and behaves like a normal static image.
-4. The onboarding preview keeps the uploaded original photo in a square crop, while the generated avatar preview uses pointer-following motion rather than timed autoplay.
-5. Dynamic-avatar mode sends the portrait to the getlookatme-owned API route for generation.
-6. The server route uses the external SDK's `PhotoAIFrameProducer` and `OpenAIImageGenerationProvider` with the `smooth` preset.
-7. The resulting `AvatarFrameSet` passes through the SDK's local store, is copied to owner-scoped Supabase Storage, and is applied to the hero avatar slot.
-
-## Server boundary
-
-Browser code imports only React and `lookatme-avatar/react` for rendering. The generation pipeline stays server-side:
-
-```ts
-import {
-  PhotoAIFrameProducer,
-  OpenAIImageGenerationProvider,
-} from "lookatme-avatar/server";
+```text
+Profile onboarding
+PDF/DOCX
+→ text extraction and structured mapping
+→ profile review/edit
+→ ProfileDocument save
+→ preview
 ```
 
-The server uses the app-owned `OPENAI_API_KEY` from the getlookatme environment; it never depends on a LookAtMe demo server or a browser API call to OpenAI.
+Profile creation never waits for avatar generation.
 
-## Storage
-
-Generated frame sets currently pass through a temporary local folder behind the SDK abstraction. The authenticated browser then uploads each frame to `profile-public-assets/<user_id>/<profile_id>/avatar-frames/...`; Storage RLS verifies both ownership components, and the durable URLs are persisted with the private onboarding state. Original photos remain in `profile-private-assets` and use owner-authorized signed URLs for previews. Direct-to-object-storage generation and cleanup of replaced assets remain deferred.
-
-## UI contract
-
-The semantic profile state intentionally keeps product terms, not implementation-specific frame counts:
-
-```ts
-avatarMode: "original" | "dynamic";
-avatarPreset?: "smooth";
-avatarImageUrl?: string;
-avatarFrameSet?: AvatarFrameSet;
+```text
+Avatar workspace
+original photo
+→ explicit Generate click
+→ queued job
+→ background worker
+→ lookatme-avatar/server
+→ OpenAI image generation
+→ Supabase Storage
+→ avatars row
+→ gallery
+→ explicit activation
 ```
 
-The app keeps this state on the profile while mapping it into the renderer's existing avatar contract. The hero uses the same position and layout; only the source of the avatar changes.
+Uploading a photo does not start generation. One Generate click creates a real queued request; the worker processes it automatically when capacity is available. A completed avatar never becomes active automatically.
 
-## Remaining production work
+## Persistent model
 
-- Replace temporary local storage with project-owned cloud/object storage.
-- Add a permanent profile persistence layer for user avatars.
-- Add stricter cleanup and lifecycle controls for generated assets.
-- Consider a background queue if generation becomes asynchronous.
-- Add end-to-end browser validation for hero rendering and API responses.
+`avatar_generation_jobs` owns the generation lifecycle:
 
-## Handoff
+- `queued`: accepted and waiting for worker capacity.
+- `generating`: atomically claimed by a worker.
+- `ready`: frames and the resulting avatar asset were persisted.
+- `failed`: generation ended with a safe user-facing diagnostic and can be retried.
+- `cancelled`: the owner cancelled the job before worker claim.
 
-The integration is intentionally scoped to the current app and should remain easy to replace. The generation route, the onboarding state, and the hero renderer should continue to be the only places that know about dynamic avatar generation. Any future production architecture can swap the storage backend and server provider without changing the product semantics of `avatarMode`.
+A partial unique index allows at most one `queued` or `generating` job per profile. Cancellation is an atomic owner-scoped `queued → cancelled` transition. The worker claim is an atomic `queued → generating` transition. Whichever transition obtains the row first wins; generating jobs cannot be cancelled or interrupted.
+
+`avatars` stores generated presentation assets and retains history. Each asset records its owner/profile, generation job, source-photo path, style, preset, preview and frame paths, frame metadata, and creation time. Activating one asset does not delete prior assets.
+
+`profiles.active_avatar_id` identifies the selected generated avatar. A null value falls back to the original photo and then initials. The composite ownership relationship prevents attaching another user’s asset.
+
+## Server and worker boundary
+
+The browser creates jobs through `POST /api/avatar-jobs` and polls persistent job state. It never calls OpenAI, invokes the worker, or holds the generation HTTP request open.
+
+Both worker entry points reuse `processNextAvatarJob()`:
+
+- Local development: `pnpm dev:avatar-worker` runs a serial polling loop independently of the browser and API server.
+- Production: Vercel Cron calls the protected `/api/avatar-worker` endpoint.
+
+The worker atomically claims one eligible job using `FOR UPDATE SKIP LOCKED`, marks it generating, downloads the private source photo, and runs `PhotoAIFrameProducer` with `OpenAIImageGenerationProvider` from `lookatme-avatar/server`. It uploads deterministic job-keyed frames to Supabase Storage, idempotently upserts one asset per generation job, then marks the job ready. Interrupted stale jobs are reclaimable; failures become retryable without changing the active avatar.
+
+## Storage and URL strategy
+
+- Original photos live in the private `profile-private-assets` bucket and are stored as paths. Fresh signed URLs are created when read and reused by the Avatar page while the path remains unchanged.
+- Generated frames live in the public `profile-public-assets` bucket under owner/profile/job-scoped paths.
+- Database records persist paths, asset IDs, and frame metadata—not temporary signed URLs.
+- The renderer adapter converts the active asset into the existing runtime `AvatarFrameSet` contract.
+
+Legacy `ProfileDocument.avatarFrameSet` data remains only as a compatibility fallback for existing profiles. New generation lifecycle and asset history belong to `avatar_generation_jobs` and `avatars`, not onboarding state.
+
+## Avatar workspace behavior
+
+`/dashboard/avatar` provides:
+
+- Original-photo upload/change and preview.
+- Explicit original-photo activation.
+- Style and preset selection.
+- Non-blocking queued generation.
+- Queued-only cancellation and failed-job retry.
+- Stable polling of job status.
+- Generated avatar gallery/history.
+- Preview, explicit activation, and safe deletion of inactive assets.
+
+Polling reloads only job state. It refreshes assets and rebuilds the gallery only when a job transitions to ready. Unchanged status polling does not regenerate the original-photo signed URL or recreate the active mouse-follow avatar.
+
+## Local development
+
+Run the UI, API, and worker independently:
+
+```bash
+pnpm dev
+pnpm dev:api
+pnpm dev:avatar-worker
+```
+
+The worker requires server-only `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `OPENAI_API_KEY`. `CRON_SECRET` protects the HTTP worker endpoint used by production Cron. No server secret uses a `VITE_` prefix.
+
+## Validation status
+
+The linked Supabase project has migrations `202609190001_avatar_assets_jobs` and `202609190002_avatar_queue_controls` applied. Manual validation covers automatic queued consumption, cancellation races, duplicate active-job protection, retry, Storage upload, ready gallery insertion, stable polling, non-activation on completion, and explicit activation.

@@ -15,7 +15,7 @@ The database model has four application tables:
 - `profiles`: immutable UUID, owning `user_id`, mutable unique public slug, canonical `ProfileDocument` JSON, and `is_published`.
 - `onboarding_states`: one private row per profile containing the profile draft, private CV path, and original-photo path. Legacy generated-frame columns remain temporarily for backwards compatibility but are no longer written by the product flows.
 - `avatars`: immutable generated presentation assets. Each row stores owner/profile identity, source-photo path, style/preset, durable frame paths, metadata, and its unique generation job.
-- `avatar_generation_jobs`: durable queued/generating/ready/failed lifecycle with attempts and timestamps.
+- `avatar_generation_jobs`: durable queued/generating/ready/failed/cancelled lifecycle with attempts and timestamps.
 - `profiles.active_avatar_id`: the explicitly selected generated asset. `NULL` means use the original photo when present, otherwise initials.
 
 An Auth trigger creates one profile and onboarding row for every new user. The composite `(profile_id, user_id)` foreign key prevents an onboarding row being attached to a profile owned by someone else. Explicit Data API grants are paired with RLS: anonymous callers can select only published profiles; authenticated callers can mutate only rows whose `user_id` equals `auth.uid()`. This same stable `user_id`/`profile_id` pair is the future RAG tenant key.
@@ -107,4 +107,4 @@ Every published profile, asset, knowledge document, index, chat request, and usa
 
 ## Deliberately deferred after M2
 
-Profile-aware RAG/pgvector, embeddings, document chunking, profile publishing controls, password reset, account deletion, asset garbage collection, generation queues, teams, roles, billing, analytics, custom domains, job matching, and network integrations remain outside this milestone.
+Profile-aware RAG/pgvector, embeddings, document chunking, profile publishing controls, password reset, account deletion, asset garbage collection, teams, roles, billing, analytics, custom domains, job matching, and network integrations remain outside this milestone.

@@ -25,7 +25,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-Create or link a Supabase project, apply all files under `supabase/migrations/`, then configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Server processes also require `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`; the avatar worker additionally requires `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET`. Never expose either secret through a `VITE_*` variable.
+Create or link a Supabase project, apply all files under `supabase/migrations/`, then configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Server processes also require `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`; avatar generation additionally requires `SUPABASE_SERVICE_ROLE_KEY`, while `CRON_SECRET` protects the production HTTP worker endpoint. Never expose either secret through a `VITE_*` variable.
 
 For local chat and LLM-assisted resume mapping, set `OPENAI_API_KEY`, set `VITE_API_BASE_URL=http://localhost:3001`, and run `pnpm dev:api` separately. Set `ONBOARDING_LLM_ENABLED=false` server-side or `VITE_ONBOARDING_LLM_ENABLED=false` client-side to force deterministic onboarding. `VITE_ONBOARDING_LLM_TIMEOUT_MS` defaults to 60000 so normal structured extraction has time to finish before deterministic fallback.
 
@@ -51,6 +51,8 @@ photo → generation job → background worker → avatar asset → gallery → 
 ```
 
 Preview resolves presentation in this order: active generated avatar, original uploaded photo, initials. A ready job never auto-activates and never blocks profile creation or preview.
+
+One Generate click creates a persistent queued job. The background worker claims it automatically when capacity is available; no second browser action is required. Queued jobs can be cancelled, generating jobs cannot be interrupted, and each profile may have only one queued or generating job at a time.
 
 The server boundary remains getlookatme-owned. Browser code never calls OpenAI or imports `lookatme-avatar/server`. `POST /api/avatar-jobs` quickly creates a queued row. Vercel Cron invokes `/api/avatar-worker`; the worker atomically claims one queued or stale job, generates through:
 

@@ -10,10 +10,13 @@ Product UI and published portfolios have separate visual boundaries. Landing and
 
 Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/dashboard/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.
 
-The database model intentionally has only two application tables:
+The database model has four application tables:
 
 - `profiles`: immutable UUID, owning `user_id`, mutable unique public slug, canonical `ProfileDocument` JSON, and `is_published`.
-- `onboarding_states`: one private row per profile containing the draft, private CV path, original-photo path, generated frame paths/metadata, and selected avatar mode.
+- `onboarding_states`: one private row per profile containing the profile draft, private CV path, and original-photo path. Legacy generated-frame columns remain temporarily for backwards compatibility but are no longer written by the product flows.
+- `avatars`: immutable generated presentation assets. Each row stores owner/profile identity, source-photo path, style/preset, durable frame paths, metadata, and its unique generation job.
+- `avatar_generation_jobs`: durable queued/generating/ready/failed lifecycle with attempts and timestamps.
+- `profiles.active_avatar_id`: the explicitly selected generated asset. `NULL` means use the original photo when present, otherwise initials.
 
 An Auth trigger creates one profile and onboarding row for every new user. The composite `(profile_id, user_id)` foreign key prevents an onboarding row being attached to a profile owned by someone else. Explicit Data API grants are paired with RLS: anonymous callers can select only published profiles; authenticated callers can mutate only rows whose `user_id` equals `auth.uid()`. This same stable `user_id`/`profile_id` pair is the future RAG tenant key.
 
@@ -21,40 +24,23 @@ Storage uses two buckets. `profile-private-assets` stores CV source files and or
 
 Seed profiles remain in the static registry for backward compatibility. A non-seed public slug is loaded from Supabase only when `is_published` is true. `/preview` loads the current user's document through owner RLS even when it is unpublished.
 
-## LookAtMe avatar integration architecture
+## Profile and Avatar boundaries (PR #3)
 
-The avatar feature is integrated directly into the existing onboarding and portfolio flow without creating a standalone demo page or a separate LookAtMe service. The onboarding form keeps the existing resume/CV pipeline and adds a portrait upload with two product states:
+Professional profile data and avatar presentation assets are separate domains. Profile onboarding is PDF/DOCX extraction, structured review, save, and preview. It never waits for avatar generation. The renderer still consumes `ProfileDocument`; a repository adapter resolves the selected `avatars` row into the existing runtime `AvatarFrameSet` and otherwise injects a fresh signed original-photo URL for an authenticated preview.
 
-- `avatarMode: "original"` for a static uploaded photo
-- `avatarMode: "dynamic"` for a generated avatar using the external `lookatme-avatar` SDK
+Avatar generation is a persistent job rather than a browser-held request. `POST /api/avatar-jobs` authenticates the owner and inserts `queued`. Vercel Cron calls the protected `/api/avatar-worker` endpoint every minute. The worker calls the atomic `claim_avatar_generation_job` SQL function (`FOR UPDATE SKIP LOCKED`), marks the job `generating`, downloads the private source photo with the service role, generates and uploads deterministic job-keyed frames, upserts one asset per `generation_job_id`, and marks the job `ready`. A stale `generating` job is reclaimable after 15 minutes. Failed jobs expose a safe diagnostic and can be explicitly retried.
 
-The semantic profile state sits alongside the existing canonical `ProfileDocument` contract rather than replacing it. The app stores optional fields like `avatarMode`, `avatarPreset`, `avatarImageUrl`, and `avatarFrameSet` and preserves the existing rendering contract with a compatibility mapping layer.
+This mechanism matches the deployed Vite + Vercel + Supabase stack without a second queue service. It requires a Vercel plan/runtime that supports the configured 800-second function duration; real generation duration and Cron authentication must be verified after deployment.
 
-The dynamic generation path is intentionally narrow and server-owned. Browser code only uploads the portrait and requests generation; the backend route runs the server-side SDK and uses the app-owned `OPENAI_API_KEY`:
+Storage records contain paths, IDs, and frame metadata only. Private source photos are signed on read; generated frames use the public asset bucket. Newly completed assets do not alter `profiles.active_avatar_id`.
 
-```text
-uploaded portrait
-  ↓
-GET/POST API route in getlookatme
-  ↓
-PhotoAIFrameProducer
-  ↓
-OpenAIImageGenerationProvider
-  ↓
-smooth preset
-  ↓
-AvatarFrameSet
-  ↓
-profile state + hero rendering
-```
-
-The current SDK writes generation output to temporary local server storage, after which the authenticated browser copies the returned frame blobs to owner-scoped Supabase Storage and persists the durable URLs. Removing the intermediate local store is deferred until the generation endpoint is productionised. The generated frames are rendered into the same hero avatar position with `LookAtMeAvatar` from `lookatme-avatar/react`, while the original-photo path keeps the normal static image behavior.
+Legacy `ProfileDocument.avatarFrameSet` data remains a final compatibility fallback so existing profiles render safely while new generation state lives only in `avatars`.
 
 Vercel redirects `/` to `/lingyun` and rewrites single-segment profile paths to the application shell. A static registry resolves `/lingyun` and the fixture `/aaron` to separate `ProfileDocument` instances. Unknown slugs render an explicit not-found state.
 
 The chat endpoint uses a committed, Lingyun-only RAG index. Retrieval uses OpenAI embeddings, in-memory cosine similarity, deterministic intent reranking, and a grounded structured answer. Aaron's document disables AI, and the shared renderer never calls the endpoint for that profile.
 
-M2.0 adds an onboarding surface at `/dashboard/create`. PDF files are semantically extracted with `pdfjs-dist`, DOCX files with Mammoth's raw-text API, and pasted text enters the same pipeline after normalization. M2.0.1 keeps extraction browser-side and adds a secure server-side semantic mapper. The effective boundary is:
+M2.0 adds an onboarding surface at `/dashboard/create`. PDF files are semantically extracted with `pdfjs-dist` and DOCX files with Mammoth's raw-text API. Deterministic text utilities remain internal, but pasted text is not a user-facing input. M2.0.1 keeps extraction browser-side and adds a secure server-side semantic mapper. The effective boundary is:
 
 ```text
 Document
@@ -100,10 +86,10 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 
 - **Profile:** a tenant-neutral `ProfileDocument` containing structured professional content and presentation metadata. Seed and fixture data are not product defaults.
 - **Renderer:** safely turns a resolved profile into the current portfolio UI. It consumes explicit featured records and presentation hints, and must not own authentication or persistence.
-- **Avatar:** a profile selects either directional frames, a placeholder, or an original/dynamic avatar state. Pointer-direction behavior remains in the renderer for now and must not own chat or profile storage. Dynamic avatars are generated through the external SDK, rendered in the same hero slot, and previewed with mouse-following interaction rather than autoplaying frame swaps. Original-photo mode remains a square static crop in the onboarding preview.
+- **Avatar:** owns original photos, generated assets, job lifecycle, gallery, and explicit activation. Pointer-direction behavior remains in the renderer and does not own persistence.
 - **RAG:** chunking, indexing, retrieval, and grounded answering. It must remain independent from portfolio rendering.
-- **Onboarding:** local extraction, authenticated server-isolated LLM mapping with deterministic fallback, persisted draft review, classified validation, and owner-only preview. It updates the user's existing profile but cannot enable RAG. The onboarding flow also captures the portrait photo and avatar mode selections for the portfolio hero.
-- **API/deployment:** Vercel hosts the static build and serverless endpoints. Configuration is environment-driven. The LookAtMe generation route remains inside getlookatme rather than depending on an external demo server.
+- **Onboarding:** PDF/DOCX extraction, authenticated server-isolated LLM mapping with deterministic fallback, persisted draft review, classified validation, and owner-only preview. It updates the user's existing profile but does not own avatar state and cannot enable RAG.
+- **API/deployment:** Vercel hosts the static build, job-creation endpoint, and Cron worker. Configuration is environment-driven. Generation remains inside getlookatme rather than depending on an external demo server.
 
 ## Migration principles
 

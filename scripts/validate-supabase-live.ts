@@ -11,7 +11,7 @@ const phase = process.argv[2]
 assert.ok(url && key && emailA && emailB && password, 'Live Supabase and test-user environment variables are required')
 
 function client(storage?: Map<string, string>): SupabaseClient {
-  return createClient(url, key, {
+  return createClient(url!, key!, {
     auth: storage ? {
       persistSession: true,
       autoRefreshToken: false,

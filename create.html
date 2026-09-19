@@ -18,59 +18,15 @@
       <section class="create-panel" id="inputStep">
         <p class="step-label">Step 1 of 3</p>
         <h1>Create your profile</h1>
-        <p class="lede">Upload a PDF or DOCX resume, or paste the text. Your private onboarding state is saved to your account and is not published.</p>
-        <div class="input-grid">
+        <p class="lede">Upload a PDF or DOCX resume. Your private onboarding state is saved to your account and is not published.</p>
+        <p class="linkedin-guidance">Using LinkedIn? Download your LinkedIn profile as a PDF, then upload it here.</p>
+        <div class="input-grid cv-only-grid">
           <div class="resume-stack">
             <label class="upload-card" for="resumeFile">
               <span>Upload PDF or DOCX</span>
               <small>Maximum 8 MB</small>
               <input id="resumeFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
             </label>
-            <div class="paste-card">
-              <label for="resumeText">Paste resume text</label>
-              <textarea id="resumeText" rows="12" placeholder="Paste your resume here…"></textarea>
-            </div>
-          </div>
-          <div class="photo-stack" id="avatar">
-            <label class="upload-card photo-card" for="photoFile">
-              <span>Upload profile photo</span>
-              <small>Optional. Use a normal portrait or generate a smooth mouse-follow avatar.</small>
-              <input id="photoFile" type="file" accept="image/*" />
-            </label>
-            <div class="photo-preview-wrap" id="photoPreviewWrap" hidden>
-              <img id="photoPreview" alt="Selected profile photo preview" />
-            </div>
-            <div class="avatar-choice" id="avatarChoice" hidden>
-              <label class="choice-option">
-                <input type="radio" name="avatarMode" value="original" checked />
-                <span>Use original photo</span>
-              </label>
-              <label class="choice-option">
-                <input type="radio" name="avatarMode" value="dynamic" />
-                <span>Generate dynamic avatar</span>
-              </label>
-              <div class="avatar-settings" id="avatarSettings" hidden>
-                <label class="field-inline">
-                  <span>Frame set</span>
-                  <select id="avatarPreset">
-                    <option value="fast">Fast (5 frames)</option>
-                    <option value="balanced">Balanced (9 frames)</option>
-                    <option value="smooth">Smooth (13 frames)</option>
-                  </select>
-                </label>
-                <label class="field-inline">
-                  <span>Art style</span>
-                  <select id="avatarStyle">
-                    <option value="felt@1">Handmade felt</option>
-                    <option value="cartoon@1">Graphic cartoon</option>
-                    <option value="cinematic-3d@1">Cinematic 3D</option>
-                    <option value="anime@1">Modern anime</option>
-                  </select>
-                </label>
-              </div>
-              <button class="secondary" id="generateAvatarButton" type="button">Use the original photo</button>
-              <p class="avatar-status" id="avatarStatus" role="status" aria-live="polite"></p>
-            </div>
           </div>
         </div>
         <p class="error" id="inputError" role="alert" hidden></p>

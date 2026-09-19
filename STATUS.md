@@ -15,7 +15,7 @@ M2.2 — minimal production-oriented authentication and profile ownership founda
 - Explicit highlight anchors and featured experience/education records replace ID and array-position assumptions.
 - Lingyun retains the existing directional avatar and RAG behavior.
 - Aaron retains the initials avatar fallback and disabled AI state.
-- PDF, DOCX, and pasted-text onboarding through `/dashboard/create`.
+- PDF and DOCX onboarding through `/dashboard/create`; pasted text remains an internal parser utility only.
 - Explicit extraction, parsed resume, draft, validation, and canonical document stages.
 - Editable review of identity, summary, links, skills, experience, education, projects, and neutral presentation copy.
 - Session-only `/preview` rendered by the shared renderer with initials fallback and AI disabled.
@@ -28,13 +28,14 @@ M2.2 — minimal production-oriented authentication and profile ownership founda
 - Development-only browser diagnostics for mapper selection, endpoint/status, validation, fallback reason, and final review mapper.
 - Local CORS coverage for both `localhost` and `127.0.0.1` Vite origins.
 - Browser mapper fetch is bound to the global receiver, and the configurable client timeout defaults to 60 seconds to avoid premature fallback during structured extraction.
-- Onboarding now supports CV + portrait upload with `Use original photo` and `Generate dynamic avatar` choices.
-- Dynamic avatar generation uses the external `lookatme-avatar` SDK via the getlookatme-owned server route and `smooth` preset.
-- The preview uses pointer-following `LookAtMeAvatar` motion for generated avatars while the original-photo preview remains a square image crop.
-- The avatar CTA keeps a stable label regardless of whether a frame set was already generated.
+- Profile onboarding supports PDF/DOCX only and completes independently of avatar generation. LinkedIn users are guided to export their profile PDF.
+- Avatar is a standalone `/dashboard/avatar` feature with original-photo management, persistent jobs, gallery/history, polling, retry, and explicit activation.
+- Preview fallback is active generated avatar → original photo → initials. Ready jobs do not auto-activate.
+- Avatar assets/jobs are owner-scoped with RLS and durable storage paths; no signed URL is persisted.
+- Background generation is claimed atomically by a protected Vercel Cron worker and supports stale-job recovery/idempotent asset upsert.
 - Portfolio hero renders static or dynamic avatar state directly in the same hero slot.
-- Generated frame sets are kept in temporary local storage behind the SDK abstraction and clearly marked as dev-only.
-- Targeted tests cover avatar mode selection, original-photo state, dynamic-avatar state, and malformed frame-set guardrails.
+- Generated frame sets are stored in owner-scoped Supabase Storage and represented by durable asset paths.
+- Targeted tests cover fallback priority, job states/retries, idempotency constraints, non-activation, gallery retention, path-only durability, and ownership policies.
 - Supabase email/password sign-up, sign-in, sign-out, and persistent browser sessions.
 - Auth-protected onboarding/edit/dashboard/preview routes without redesigning the portfolio UI.
 - Stable Auth `user_id` → profile UUID ownership and automatic initial profile creation.
@@ -64,15 +65,15 @@ M2.2 — minimal production-oriented authentication and profile ownership founda
 
 ## Deferred
 
-Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion, asset cleanup, background avatar generation, analytics, billing, custom domains, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
+Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion, full orphaned-file cleanup, analytics, billing, custom domains, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
 
 ## Remaining production work
 
 - Apply `supabase/migrations/202609180001_auth_profile_ownership.sql` to the target project and run `supabase test db`.
 - Configure `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY` in deployment.
 - Add a production-safe cleanup lifecycle for replaced CV/photo/frame assets.
-- Replace the avatar endpoint's intermediate local file store with direct object-storage output.
-- Consider a background queue if generation becomes asynchronous or requires rate-limit controls.
+- Exercise paid avatar generation, Cron authentication, and the configured Vercel function duration in the deployed environment.
+- Consider a dedicated queue only if Cron throughput or generation concurrency outgrows the current single-job worker.
 - Add full end-to-end tests for the server route and hero rendering in a browser environment.
 
 ## Next exact task

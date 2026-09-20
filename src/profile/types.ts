@@ -3,6 +3,7 @@ import type { AvatarFrameSet } from 'lookatme-avatar'
 export type ProfileId = string
 export type ProfileAvatarMode = 'original' | 'dynamic'
 export type ProfileAvatarPreset = 'fast' | 'balanced' | 'smooth'
+export type ProfileAiStatus = 'off' | 'indexing' | 'ready' | 'stale' | 'failed'
 
 export interface ProfileIdentity {
   fullName: string

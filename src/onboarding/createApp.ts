@@ -8,6 +8,7 @@ import { draftToProfileDocument } from './profileDocument.ts'
 import type { ProfileDocumentDraft, ProfileValidationResult } from './types.ts'
 import { validateProfileDraft } from './validation.ts'
 import { requestPublication } from '../profile/publicationClient.ts'
+import { requestAiLifecycle } from '../profile/aiLifecycleClient.ts'
 
 const inputStep = document.querySelector<HTMLElement>('#inputStep')!
 const buildingStep = document.querySelector<HTMLElement>('#buildingStep')!
@@ -123,6 +124,10 @@ document.querySelector<HTMLFormElement>('#reviewForm')!.addEventListener('submit
     await saveProfileDocument(ownedProfile, draftToProfileDocument(draft, { profileId: ownedProfile.id, slug: ownedProfile.slug }))
     await saveOnboardingState(ownedProfile, { draft, cv_path: cvPath })
     if (!ownedProfile.is_published) await requestPublication('publish', ownedProfile.slug)
+    if (ownedProfile.ai_enabled) {
+      try { await requestAiLifecycle('refresh') }
+      catch (error) { inputError.textContent = error instanceof Error ? error.message : 'Profile saved, but AI refresh failed.'; inputError.hidden = false; return }
+    }
     window.location.assign('/dashboard')
   } catch (error) {
     inputError.textContent = error instanceof Error ? error.message : 'The profile could not be previewed.'; inputError.hidden = false

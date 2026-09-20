@@ -1,0 +1,3 @@
+import { chatAuthorizationHeaders } from '../auth/chatSession.ts'
+import { requireSupabase } from '../auth/supabase.ts'
+export async function requestAiLifecycle(action:'enable'|'disable'|'retry'|'refresh'){const authorization=await chatAuthorizationHeaders(requireSupabase(),{required:true});const base=((import.meta as ImportMeta&{env?:Record<string,string>}).env?.VITE_API_BASE_URL??'').replace(/\/$/,'');const response=await fetch(`${base}/api/profile-ai`,{method:'POST',headers:{'Content-Type':'application/json',...authorization},body:JSON.stringify({action})});const result=await response.json() as{error?:string;profile?:unknown;sync?:unknown};if(!response.ok)throw new Error(result.error??'Could not update AI profile.');return result}

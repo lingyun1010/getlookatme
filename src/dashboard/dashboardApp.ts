@@ -7,6 +7,7 @@ import { createAvatarPage } from '../avatar/avatarPage.ts'
 import { listAvatarAssets, listAvatarJobs } from '../avatar/repository.ts'
 import '../avatar/avatar.css'
 import { requestPublication } from '../profile/publicationClient.ts'
+import { requestAiLifecycle } from '../profile/aiLifecycleClient.ts'
 
 const initialRoute=`${location.pathname}${location.hash}`
 const user=await requireAuthenticatedUser(initialRoute)
@@ -25,7 +26,11 @@ async function initialiseOverview(){
   text(overview,'welcomeTitle',`Welcome, ${name}`)
   text(overview,'avatarTitle',profile.active_avatar_id?'Active generated avatar':generating?'Generating…':ready||avatars.length?'Avatar ready':state?.original_photo_path?'Original photo':'No avatar yet')
   text(overview,'avatarCopy',hasAvatar?'Your current avatar is connected to your profile.':'Add a portrait, then keep it natural or generate a living avatar.')
-  text(overview,'knowledgeTitle',hasProfile?'Profile data ready':'Not set up')
+  let aiEnabled=profile.ai_enabled,aiStatus=profile.ai_status
+  const aiCard=overview.querySelector<HTMLElement>('#knowledgeTitle')!.closest<HTMLElement>('.card')!,aiAction=aiCard.querySelector<HTMLButtonElement>('button')!
+  async function runAi(action:'enable'|'disable'|'retry') { aiAction.disabled=true;text(overview,'knowledgeTitle',action==='disable'?'Updating…':'Preparing…');try{const result=await requestAiLifecycle(action);const next=result.profile as {enabled:boolean;status:string};aiEnabled=next.enabled;aiStatus=next.status as typeof aiStatus;renderAi()}catch(error){text(overview,'knowledgeTitle','Setup failed');text(overview,'knowledgeCopy',error instanceof Error?error.message:'AI setup failed.');aiAction.disabled=false} }
+  function renderAi(){const labels={off:'Off',indexing:'Preparing…',ready:'Ready',stale:'Updating…',failed:'Setup failed'} as const;text(overview,'knowledgeTitle',labels[aiStatus]);text(overview,'knowledgeCopy',aiStatus==='ready'?'Visitors can ask grounded questions about this profile.':aiStatus==='failed'?(profile.ai_last_error??'AI setup failed. Retry when ready.'):'Let visitors ask questions based on your profile.');aiAction.hidden=aiStatus==='indexing'||aiStatus==='stale';aiAction.disabled=false;aiAction.textContent=aiStatus==='failed'?'Retry':aiEnabled?'Disable AI':'Enable AI Profile';aiAction.onclick=()=>void runAi(aiStatus==='failed'?'retry':aiEnabled?'disable':'enable')}
+  renderAi()
   let published=profile.is_published,currentSlug=profile.slug
   const actions=overview.querySelector<HTMLElement>('#pageActions')!,url=overview.querySelector<HTMLElement>('#profileUrl')!
   const slugInput=document.createElement('input');slugInput.value=currentSlug;slugInput.className='slug-input';slugInput.ariaLabel='Public profile URL slug'

@@ -10,7 +10,7 @@ import {
   SharpGeneratedImageValidator,
 } from 'lookatme-avatar/server'
 import { RAG_CONFIG } from '../src/rag/config.ts'
-import { InvalidAuthenticationError, ProfileAccessError } from '../src/rag/chatService.ts'
+import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError } from '../src/rag/chatService.ts'
 import { createServerChatService } from '../src/rag/serverChat.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
 import { ONBOARDING_MAPPING_CONFIG } from '../src/onboarding/config.ts'
@@ -19,6 +19,7 @@ import { isAvatarPreset } from '../src/avatar/types.ts'
 import { isOwnedAssetPath } from '../src/profile/repository.ts'
 import { processNextAvatarJob } from '../src/avatar/worker.ts'
 import { handlePublicationRequest } from '../src/profile/publicationRequest.ts'
+import { handleAiLifecycleRequest } from '../src/profile/aiLifecycleRequest.ts'
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
@@ -191,12 +192,18 @@ createServer(async (request, response) => {
       } catch (error) {
         if (error instanceof InvalidAuthenticationError) return send(401, { error: 'Invalid authentication' })
         if (error instanceof ProfileAccessError) return send(404, { error: 'Profile not found' })
+        if (error instanceof ProfileAiUnavailableError) return send(409, { error: 'AI profile is not ready' })
         throw error
       }
     }
 
     if (request.url === '/api/profile-publication') {
       const result = await handlePublicationRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
+    }
+
+    if (request.url === '/api/profile-ai') {
+      const result = await handleAiLifecycleRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
       return send(result.status, result.body)
     }
 

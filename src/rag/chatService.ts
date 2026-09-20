@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js'
 import type { EmbeddingClient, KnowledgeRepository, KnowledgeSearchResult } from '../knowledge/types.ts'
 import type { ProfileDocument } from '../profile/types.ts'
+import type { ProfileAiStatus } from '../profile/types.ts'
 import { RAG_CONFIG } from './config.ts'
 import { answerProfileQuestion, type GroundedAnswerGenerator, NO_ANSWER } from './profileAnswer.ts'
 import type { PortfolioAnswer } from './types.ts'
@@ -11,6 +12,7 @@ export interface ChatTargetProfile {
   slug: string
   isPublished: boolean
   document: ProfileDocument
+  aiStatus: ProfileAiStatus
 }
 
 export interface ChatServiceDependencies {
@@ -23,6 +25,7 @@ export interface ChatServiceDependencies {
 
 export class InvalidAuthenticationError extends Error {}
 export class ProfileAccessError extends Error {}
+export class ProfileAiUnavailableError extends Error {}
 
 export class ProfileChatService {
   private readonly dependencies: ChatServiceDependencies
@@ -39,6 +42,7 @@ export class ProfileChatService {
       if (!user) throw new InvalidAuthenticationError('Invalid authentication')
     }
     if (!profile.isPublished && user?.id !== profile.userId) throw new ProfileAccessError('Profile not found')
+    if (profile.aiStatus !== 'ready') throw new ProfileAiUnavailableError('AI profile is not ready')
 
     // No provider work occurs until target resolution and authorization are complete.
     const queryEmbedding = await this.dependencies.embeddings.embedText(message)

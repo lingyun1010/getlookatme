@@ -24,8 +24,7 @@ test('persisted ProfileDocuments use database identity instead of the temporary 
   const document = draftToProfileDocument(draft, { profileId: '6cd294a5-f974-4e15-8d3f-51913f33b28e', slug: 'jane-profile' })
   assert.equal(document.profileId, '6cd294a5-f974-4e15-8d3f-51913f33b28e')
   assert.equal(document.slug, 'jane-profile')
-  assert.equal(document.ai.enabled, true)
-  assert.equal(document.ai.unavailableMessage, undefined)
+  assert.equal(document.ai.enabled, false)
 })
 
 test('trusted persisted profile normalization enables AI only for matching database identity', () => {
@@ -36,14 +35,15 @@ test('trusted persisted profile normalization enables AI only for matching datab
   const profileId = '6cd294a5-f974-4e15-8d3f-51913f33b28e'
   stored.profileId = profileId
   stored.slug = 'jane-profile'
-  assert.equal(persistedProfileDocument(stored, profileId)?.ai.enabled, true)
+  assert.equal(persistedProfileDocument(stored, profileId)?.ai.enabled, false)
+  assert.equal(persistedProfileDocument(stored, profileId, true)?.ai.enabled, true)
   assert.equal(persistedProfileDocument(stored, 'another-profile'), null)
 })
 
 test('owner and published loaders normalize persisted documents while public loading still requires publication', async () => {
   const source = await readFile(new URL('../src/profile/repository.ts', import.meta.url), 'utf8')
   assert.match(source, /loadPublicProfile[\s\S]*\.eq\('is_published', true\)[\s\S]*persistedProfileDocument\(data\?\.document/)
-  assert.match(source, /loadCurrentUserProfileDocument[\s\S]*persistedProfileDocument\(profile\.document as ProfileDocument, profile\.id\)/)
+  assert.match(source, /loadCurrentUserProfileDocument[\s\S]*persistedProfileDocument\(profile\.document as ProfileDocument, profile\.id, profile\.ai_enabled && profile\.ai_status === 'ready'\)/)
 })
 
 test('migration enforces owner predicates for profile and onboarding writes', () => {

@@ -14,6 +14,7 @@ const nonOwner = { id: 'owner-b' } as User
 const document = structuredClone({ ...lingyunProfile, profileId: profileAId, slug: 'profile-a' })
 const target = (isPublished: boolean): ChatTargetProfile => ({
   id: profileAId, userId: owner.id, slug: 'profile-a', isPublished, document,
+  aiStatus: 'ready',
 })
 const result = (overrides: Partial<KnowledgeSearchResult> = {}): KnowledgeSearchResult => ({
   profileId: profileAId, chunkId: 'chunk-a', sourceId: 'source-a', content: 'Verified evidence.',
@@ -93,6 +94,14 @@ test('invalid or absent model citations become no-answer', async () => {
   for (const evidenceIds of [[], ['not-retrieved']]) {
     const { service } = harness({ evidenceIds })
     assert.deepEqual(await service.ask('Question?', 'profile-a'), NO_ANSWER)
+  }
+})
+
+test('AI off, indexing, stale, and failed profiles cannot reach embeddings or retrieval', async () => {
+  for (const aiStatus of ['off', 'indexing', 'stale', 'failed'] as const) {
+    const { service, calls } = harness({ resolved: { ...target(true), aiStatus } })
+    await assert.rejects(service.ask('Question?', 'profile-a'), /AI profile is not ready/)
+    assert.deepEqual({ embed: calls.embed, search: calls.search, generate: calls.generate }, { embed: 0, search: 0, generate: 0 })
   }
 })
 

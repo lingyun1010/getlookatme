@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authenticateBearer } from '../auth/server.ts'
 import { OpenAIEmbeddingClient } from '../knowledge/embeddings.ts'
 import { SupabaseKnowledgeRepository } from '../knowledge/repository.ts'
-import type { ProfileDocument } from '../profile/types.ts'
+import type { ProfileAiStatus, ProfileDocument } from '../profile/types.ts'
 import { ProfileChatService, type ChatTargetProfile } from './chatService.ts'
 import { generateGroundedAnswer } from './profileAnswer.ts'
 
@@ -19,12 +19,12 @@ export function createServerChatService(): ProfileChatService {
     authenticate: authenticateBearer,
     resolveProfile: async (slug): Promise<ChatTargetProfile | null> => {
       const { data, error } = await client.from('profiles')
-        .select('id,user_id,slug,is_published,document').eq('slug', slug).maybeSingle()
+        .select('id,user_id,slug,is_published,document,ai_status').eq('slug', slug).maybeSingle()
       if (error) throw error
       if (!data) return null
       const document = data.document as ProfileDocument
       if (!document?.profileId || document.profileId !== data.id) throw new Error('Profile document identity is invalid.')
-      return { id: data.id, userId: data.user_id, slug: data.slug, isPublished: data.is_published, document }
+      return { id: data.id, userId: data.user_id, slug: data.slug, isPublished: data.is_published, document, aiStatus: data.ai_status as ProfileAiStatus }
     },
     embeddings: { embedText: (input) => new OpenAIEmbeddingClient().embedText(input) },
     knowledge: new SupabaseKnowledgeRepository(client),

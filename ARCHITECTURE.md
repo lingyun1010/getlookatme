@@ -42,7 +42,7 @@ Legacy `ProfileDocument.avatarFrameSet` data remains a final compatibility fallb
 
 Vercel redirects `/` to `/lingyun` and rewrites single-segment profile paths to the application shell. A static registry resolves `/lingyun` and the fixture `/aaron` to separate `ProfileDocument` instances. Unknown slugs render an explicit not-found state.
 
-The chat endpoint uses a committed, Lingyun-only RAG index. Retrieval uses OpenAI embeddings, in-memory cosine similarity, deterministic intent reranking, and a grounded structured answer. Aaron's document disables AI, and the shared renderer never calls the endpoint for that profile.
+The active chat endpoint resolves a persisted profile from its requested slug, enforces owner/public access, verifies the server-authoritative AI lifecycle is `ready`, and performs mandatory-profile pgvector retrieval before grounded answer generation. Structured evidence is derived only from retrieved chunks. The legacy committed Lingyun index remains regression tooling and is unreachable from the active endpoint.
 
 M2.0 adds an onboarding surface at `/dashboard/create`. PDF files are semantically extracted with `pdfjs-dist` and DOCX files with Mammoth's raw-text API. Deterministic text utilities remain internal, but pasted text is not a user-facing input. M2.0.1 keeps extraction browser-side and adds a secure server-side semantic mapper. The effective boundary is:
 
@@ -80,7 +80,7 @@ Validation returns classified blocking errors, non-blocking missing information,
 
 ## ProfileDocument
 
-`ProfileDocument` separates immutable internal identity (`profileId`) from mutable public routing identity (`slug`) and includes a version, nested identity and SEO data, stable-ID content collections, suggested questions, an avatar union, minimal presentation configuration, and explicit AI availability.
+`ProfileDocument` separates immutable internal identity (`profileId`) from mutable public routing identity (`slug`) and includes a version, nested identity and SEO data, stable-ID content collections, suggested questions, an avatar union, minimal presentation configuration, and a render-time AI availability projection. Persisted AI enablement/readiness is authoritative on the `profiles` row rather than in the editable document.
 
 Profile-derived content is rendered with DOM construction and `textContent`; the shared renderer does not interpolate profile fields through `innerHTML`. Optional project links and images accept only HTTP(S) URLs. Small presentation hints hold owner-specific section copy, explicit highlight anchors, and featured experience/education intent without turning the document into a page-builder schema.
 
@@ -93,6 +93,7 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 - **Avatar:** owns original photos, generated assets, job lifecycle, gallery, and explicit activation. Pointer-direction behavior remains in the renderer and does not own persistence.
 - **RAG:** chunking, indexing, retrieval, and grounded answering. It must remain independent from portfolio rendering.
 - **Persistent knowledge:** converts the canonical `ProfileDocument` into profile-owned sources and chunks, embeds only invalidated chunks, and exposes mandatory-profile pgvector retrieval. See `docs/PERSISTENT_KNOWLEDGE.md`.
+- **AI lifecycle:** owns persisted `ai_enabled`, `ai_status`, last-indexed time, and safe error state. Owner actions resolve the profile server-side and orchestrate the existing incremental knowledge sync; publication remains independent.
 - **Onboarding:** PDF/DOCX extraction, authenticated server-isolated LLM mapping with deterministic fallback, persisted draft review, classified validation, and owner-only preview. It updates the user's existing profile but does not own avatar state and cannot enable RAG.
 - **API/deployment:** Vercel hosts the static build, job-creation endpoint, and Cron worker. Configuration is environment-driven. Generation remains inside getlookatme rather than depending on an external demo server.
 
@@ -108,6 +109,12 @@ Profiles live under `src/profile/profiles/` and are registered in `src/profile/r
 
 Every knowledge source and chunk carries the immutable profile identity. Owner RLS follows the existing `profiles.user_id` relationship, a composite foreign key prevents attaching a chunk to a source in another profile, and `search_profile_knowledge` has a mandatory profile filter. Future public profile resolution must be server-verified from the requested slug or host; browser-supplied tenant identifiers must not be trusted without resolution and authorization.
 
+## Optional AI lifecycle (PR5.2)
+
+`profiles.ai_enabled` and `profiles.ai_status` are the server-authoritative feature state. New profiles default to `off`. Only an authenticated owner may call the lifecycle endpoint, which derives the target profile from the verified user rather than accepting a browser-provided profile ID. Enabling and retrying set `indexing`; enabled saves set `stale` and then reuse the PR4 deterministic source comparison and incremental sync; success records `ready`, while embedding or persistence failures record a safe `failed` state.
+
+The profile document save commits before post-save indexing, so provider failure cannot discard profile edits. If generated sources are unchanged—including visual-only edits—the sync makes no embedding calls and returns to `ready`. Disabling sets `off` but deliberately retains existing profile-scoped knowledge rows dormant; this keeps re-enable simple and does not alter publication or profile content. Chat is unavailable unless the authoritative status is `ready`, including while stale data is being refreshed.
+
 ## Deliberately deferred after M2
 
-Profile-aware RAG/pgvector, embeddings, document chunking, profile publishing controls, password reset, account deletion, asset garbage collection, teams, roles, billing, analytics, custom domains, job matching, and network integrations remain outside this milestone.
+Password reset, account deletion, asset garbage collection, teams, roles, AI entitlement/billing, analytics, custom domains, job matching, and network integrations remain outside this milestone.

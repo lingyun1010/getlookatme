@@ -14,6 +14,7 @@
 - **M3.1 — Profile-aware grounded Answer API + structured evidence — DONE**
 - **M4.0 — Explicit slug + publish/unpublish lifecycle — DONE**
 - **M4.1 — Profile action semantics/UI cleanup — IN REVIEW**
+- **M4.1.1 — Optional AI knowledge lifecycle + automatic incremental sync — DONE**
 - **M4.2 — Structured editor refinement — PLANNED**
 - **M5 — Analytics**
 - **M6 — Monetization + custom domain**

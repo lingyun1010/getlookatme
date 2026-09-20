@@ -44,3 +44,12 @@ test('shared renderer keeps Aaron AI disabled before any chat request', () => {
   assert.ok(guard >= 0)
   assert.ok(request > guard)
 })
+
+test('the frontend AI guard still prevents true temporary previews from reaching chat', () => {
+  const guard = renderer.indexOf('if (!profile.ai.enabled) return;')
+  const request = renderer.indexOf('fetch(`${apiBaseUrl}/api/chat`')
+  assert.ok(guard >= 0)
+  assert.ok(request > guard)
+  assert.match(renderer, /chatInput\.disabled = !profile\.ai\.enabled/)
+  assert.match(renderer, /chatSubmit\.disabled = !profile\.ai\.enabled/)
+})

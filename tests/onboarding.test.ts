@@ -97,6 +97,7 @@ test('temporary profile uses the canonical renderer contract and cannot use Ling
   const profile = draftToProfileDocument(draft)
   assert.equal(profile.slug, 'preview')
   assert.equal(profile.ai.enabled, false)
+  assert.equal(profile.ai.unavailableMessage, NEUTRAL_PROFILE_DEFAULTS.aiUnavailableMessage)
   assert.equal(profile.avatar.mode, 'placeholder')
   assert.equal(resolveProfile('lingyun')?.profileId, 'profile_lingyun_seed')
   assert.equal(resolveProfile('aaron')?.ai.enabled, false)
@@ -150,4 +151,11 @@ test('onboarding and renderer never assign untrusted strings through innerHTML',
     readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8'),
   ])
   assert.doesNotMatch(sources.join('\n'), /\.innerHTML\s*=/)
+})
+
+test('profile form submit saves and uses the existing publication flow instead of preview navigation', async () => {
+  const source = await readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8')
+  assert.match(source, /ownedProfile\.is_published \? 'Save Changes' : 'Publish Profile'/)
+  assert.match(source, /requestPublication\('publish', ownedProfile\.slug\)/)
+  assert.doesNotMatch(source, /window\.location\.assign\('\/preview'\)/)
 })

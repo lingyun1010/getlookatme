@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-PR4 — persistent, profile-scoped knowledge base — implemented. Persistent RAG answer generation and chat integration remain deferred to PR5.
+PR5.2 — optional profile AI knowledge lifecycle — implemented and locally verified. Profile publication remains independent, while owner-controlled AI enablement now manages initial and incremental knowledge indexing automatically.
 
 ## Completed
 
@@ -29,19 +29,32 @@ PR4 — persistent, profile-scoped knowledge base — implemented. Persistent RA
 - Structured `ProfileDocument` knowledge builder, deterministic entity-aware chunking, canonical hashes, and incremental sync planning.
 - Supabase `knowledge_sources` and `knowledge_chunks` with 1536-dimensional pgvector embeddings, exact cosine search, owner RLS, and cross-profile foreign-key enforcement. ANN indexing is intentionally deferred until multi-tenant retrieval can be measured and tuned.
 - Mandatory-profile `search_profile_knowledge` retrieval RPC and local sync/inspect commands.
+- PR5 profile-aware answer API with trusted slug resolution, owner/public authorization, profile-scoped pgvector retrieval, grounded generation, stable no-answer behavior, and structured evidence metadata.
+- Anonymous published-profile chat and authenticated owner draft chat; invalid bearer tokens are rejected rather than silently downgraded.
+- Persisted owner and published profile loaders enable chat while genuine session-only temporary previews remain AI-disabled.
+- PR5.1 owner-controlled slug availability, normalization, reserved-route protection, atomic row/document slug updates, publish, unpublish, and immediate dashboard state updates.
+- Publication remains independent from AI, embeddings, knowledge sync, subscriptions, and chat availability.
+- Profile action cleanup: published profiles expose “View Published Profile”, drafts show “Unpublished”, the title action is “Working Preview”, and the form action is “Publish Profile” or “Save Changes”.
+- Server-authoritative AI lifecycle on `profiles`: `off → indexing → ready`, `ready → stale → indexing → ready`, and recoverable `failed → indexing` transitions.
+- Owner-only enable, disable, retry, and refresh API; the server resolves the authenticated owner's profile and never accepts a client profile UUID as indexing authority.
+- AI is off by default. Saving, previewing, publishing, changing publication, or making visual-only edits does not create embeddings when AI is disabled.
+- Once enabled, profile saves run the PR4 deterministic incremental sync after the primary save; unchanged sources reuse existing chunks, changed/new sources re-embed, and removed sources are deleted.
+- Indexing failure preserves the saved profile, records a safe failed state, and permits retry. Disabling AI retains knowledge rows dormant for inexpensive re-enable and does not change publication.
+- Chat now requires authoritative `ai_status = ready` in addition to the existing PR5 access rules; off, indexing, stale, and failed profiles cannot reach embedding or retrieval work.
 
 Manual validation has confirmed queued/generating/ready, queued cancellation, failed retry, duplicate active-job protection, automatic local worker consumption, Supabase frame upload, stable polling, gallery updates, non-activation on completion, and explicit activation.
 
 ## Current supported profiles
 
-- Lingyun — complete seed profile, directional avatar, current single-profile RAG.
+- Lingyun — complete seed profile and directional avatar; static legacy RAG tooling remains for regression only.
 - Aaron — fictional fixture, initials avatar fallback, AI disabled.
-- Authenticated user profiles — persistent structured profile data, original photo, generated avatar history, and explicit active-avatar selection.
+- Authenticated user profiles — persistent structured data, owner preview, editable unique slug, publish/unpublish lifecycle, profile-scoped RAG, original photo, generated avatar history, and explicit active-avatar selection.
 
 ## Known limitations
 
-- RAG remains Lingyun-only and is not yet profile-scoped.
-- No end-user publishing control exists; new profiles remain private by default.
+- Indexing is synchronous in the current request lifecycle; large profiles may eventually require a bounded background job design.
+- Legacy Lingyun JSON-index RAG files and scripts remain for regression tooling but are unreachable from the active `/api/chat` path.
+- Slug history, old-slug redirects, and custom domains are not implemented.
 - Deployed Vercel Cron authentication and the configured long-running function limit still require production-environment verification.
 - Cron throughput is intentionally MVP-scale and processes one claimed job per invocation.
 - Replaced CV/photo assets and failed Storage cleanup can leave orphaned files; a production garbage-collection lifecycle is not implemented.
@@ -51,7 +64,7 @@ Manual validation has confirmed queued/generating/ready, queued cancellation, fa
 
 ## Deferred
 
-Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion, full orphaned-file cleanup, analytics, billing, custom domains, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
+AI subscription/entitlement controls, password recovery, account deletion, full orphaned-file cleanup, analytics, billing, custom domains, slug redirects/history, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
 
 ## Remaining production work
 
@@ -63,4 +76,4 @@ Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion,
 
 ## Next exact task
 
-PR5: replace the legacy Lingyun-only retrieval path with authenticated/published-profile resolution, query embedding, persistent profile-scoped retrieval, and grounded answer generation without a global fallback.
+Manually verify the PR5.2 owner lifecycle in the browser and deployed environment, including enable, incremental refresh, failure/retry, disable, and public/owner chat availability.

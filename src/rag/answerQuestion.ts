@@ -6,9 +6,11 @@ import type { PortfolioAnswer, RetrievalResult } from './types.ts'
 
 const insufficientAnswer = (): PortfolioAnswer => ({
   answer: "My portfolio doesn't contain enough information to answer that confidently.",
+  evidence: [],
   sources: [],
   relatedIds: [],
   confidence: 'low',
+  noAnswer: true,
 })
 
 function confidenceFor(results: RetrievalResult[]): PortfolioAnswer['confidence'] {
@@ -54,11 +56,16 @@ export async function answerPortfolioQuestion(
 
   return {
     answer: parsed.answer,
+    evidence: selected.map((id) => {
+      const chunk = allowed.get(id)!
+      return { chunkId: chunk.id, sourceId: chunk.metadata.sourceId ?? chunk.id, sourceType: chunk.type, sourceRef: chunk.metadata.sourceId ?? chunk.id, section: chunk.type, title: chunk.title, metadata: { ...chunk.metadata } }
+    }),
     sources: selected.map((id) => {
       const chunk = allowed.get(id)!
       return { id: chunk.id, type: chunk.type, title: chunk.title }
     }),
     relatedIds: [...new Set(selected.map((id) => allowed.get(id)?.metadata.sourceId).filter((id): id is string => Boolean(id)))],
     confidence: confidenceFor(results),
+    noAnswer: false,
   }
 }

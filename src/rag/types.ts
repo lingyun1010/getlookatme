@@ -43,13 +43,25 @@ export interface RetrievalResult {
 
 export interface PortfolioAnswerSource {
   id: string
-  type: KnowledgeChunkType
+  type: string
   title: string
+}
+
+export interface PortfolioAnswerEvidence {
+  chunkId: string
+  sourceId: string
+  sourceType: string
+  sourceRef: string
+  section: string
+  title: string | null
+  metadata: Record<string, unknown>
 }
 
 export interface PortfolioAnswer {
   answer: string
+  evidence: PortfolioAnswerEvidence[]
   sources: PortfolioAnswerSource[]
   relatedIds: string[]
   confidence: 'high' | 'medium' | 'low'
+  noAnswer: boolean
 }

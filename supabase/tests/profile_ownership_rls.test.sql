@@ -1,6 +1,6 @@
 begin;
 set local search_path = extensions, public;
-select plan(8);
+select plan(14);
 
 select policies_are('public', 'profiles', array[
   'Owners can create profiles', 'Owners can delete profiles', 'Owners can read their profiles',
@@ -15,6 +15,12 @@ select is((select relrowsecurity from pg_class where oid = 'public.onboarding_st
 select has_column('public', 'profiles', 'user_id', 'profiles has user_id');
 select has_column('public', 'onboarding_states', 'profile_id', 'onboarding state has profile_id');
 select col_is_fk('public', 'profiles', 'user_id', 'profiles.user_id references auth.users');
+select col_is_unique('public', 'profiles', 'slug', 'profiles.slug is globally unique');
+select has_column('public', 'profiles', 'ai_enabled', 'profiles has authoritative AI enablement');
+select has_column('public', 'profiles', 'ai_status', 'profiles has authoritative AI lifecycle status');
+select has_column('public', 'profiles', 'ai_last_indexed_at', 'profiles records successful indexing time');
+select has_column('public', 'profiles', 'ai_last_error', 'profiles stores a safe owner-facing error');
+select col_default_is('public', 'profiles', 'ai_enabled', 'false', 'new profiles default to AI off');
 select ok(
   exists (
     select 1 from pg_constraint

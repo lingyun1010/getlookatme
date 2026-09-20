@@ -7,6 +7,8 @@ import { createResumeMappingService } from './mappingCoordinator.ts'
 import { draftToProfileDocument } from './profileDocument.ts'
 import type { ProfileDocumentDraft, ProfileValidationResult } from './types.ts'
 import { validateProfileDraft } from './validation.ts'
+import { requestPublication } from '../profile/publicationClient.ts'
+import { requestAiLifecycle } from '../profile/aiLifecycleClient.ts'
 
 const inputStep = document.querySelector<HTMLElement>('#inputStep')!
 const buildingStep = document.querySelector<HTMLElement>('#buildingStep')!
@@ -15,6 +17,8 @@ const inputError = document.querySelector<HTMLElement>('#inputError')!
 const fileInput = document.querySelector<HTMLInputElement>('#resumeFile')!
 const mappingService = createResumeMappingService()
 const ownedProfile = await getOwnedProfile(await requireAuthenticatedUser())
+const saveProfileButton = document.querySelector<HTMLButtonElement>('#saveProfileButton')!
+saveProfileButton.textContent = ownedProfile.is_published ? 'Save Changes' : 'Publish Profile'
 let draft: ProfileDocumentDraft | null = null
 let cvPath: string | null = null
 
@@ -119,7 +123,12 @@ document.querySelector<HTMLFormElement>('#reviewForm')!.addEventListener('submit
     if (!result.valid) return
     await saveProfileDocument(ownedProfile, draftToProfileDocument(draft, { profileId: ownedProfile.id, slug: ownedProfile.slug }))
     await saveOnboardingState(ownedProfile, { draft, cv_path: cvPath })
-    window.location.assign('/preview')
+    if (!ownedProfile.is_published) await requestPublication('publish', ownedProfile.slug)
+    if (ownedProfile.ai_enabled) {
+      try { await requestAiLifecycle('refresh') }
+      catch (error) { inputError.textContent = error instanceof Error ? error.message : 'Profile saved, but AI refresh failed.'; inputError.hidden = false; return }
+    }
+    window.location.assign('/dashboard')
   } catch (error) {
     inputError.textContent = error instanceof Error ? error.message : 'The profile could not be previewed.'; inputError.hidden = false
   }

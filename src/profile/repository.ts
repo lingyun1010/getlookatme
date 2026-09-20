@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import type { AvatarFrameSet } from 'lookatme-avatar'
-import type { ProfileDocument } from './types.ts'
+import type { ProfileAiStatus, ProfileDocument } from './types.ts'
 import type { ProfileDocumentDraft } from '../onboarding/types.ts'
 import { requireSupabase } from '../auth/supabase.ts'
 import { resolveProfileAvatar } from '../avatar/resolution.ts'
@@ -13,6 +13,10 @@ export interface OwnedProfile {
   document: ProfileDocument | Record<string, never>
   is_published: boolean
   active_avatar_id: string | null
+  ai_enabled: boolean
+  ai_status: ProfileAiStatus
+  ai_last_indexed_at: string | null
+  ai_last_error: string | null
 }
 
 export interface OnboardingState {
@@ -26,6 +30,11 @@ export interface OnboardingState {
   selected_avatar_mode: 'original' | 'dynamic'
 }
 
+export function persistedProfileDocument(document: ProfileDocument | undefined, profileId: string, aiReady = false): ProfileDocument | null {
+  if (!document?.profileId || document.profileId !== profileId) return null
+  return { ...document, ai: aiReady ? { enabled: true } : { enabled: false, unavailableMessage: 'AI profile questions are not currently available.' } }
+}
+
 export function ownedAssetPath(userId: string, profileId: string, kind: string, fileName: string): string {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/\.{2,}/g, '.').replace(/^[.-]+|[.-]+$/g, '') || 'asset'
   return `${userId}/${profileId}/${kind}/${crypto.randomUUID()}-${safeName}`
@@ -37,7 +46,7 @@ export function isOwnedAssetPath(path: string, userId: string, profileId: string
 
 export async function getOwnedProfile(user: User): Promise<OwnedProfile> {
   const client = requireSupabase()
-  const { data, error } = await client.from('profiles').select('id,user_id,slug,document,is_published,active_avatar_id').eq('user_id', user.id).order('created_at').limit(1).single()
+  const { data, error } = await client.from('profiles').select('id,user_id,slug,document,is_published,active_avatar_id,ai_enabled,ai_status,ai_last_indexed_at,ai_last_error').eq('user_id', user.id).order('created_at').limit(1).single()
   if (error) throw error
   return data as OwnedProfile
 }
@@ -105,10 +114,10 @@ export async function persistAvatarFrames(profile: OwnedProfile, frames: AvatarF
 
 export async function loadPublicProfile(slug: string): Promise<ProfileDocument | null> {
   const client = requireSupabase()
-  const { data, error } = await client.from('profiles').select('document').eq('slug', slug).eq('is_published', true).maybeSingle()
+  const { data, error } = await client.from('profiles').select('id,document,ai_enabled,ai_status').eq('slug', slug).eq('is_published', true).maybeSingle()
   if (error) throw error
-  const document = data?.document as ProfileDocument | undefined
-  if (!document?.profileId) return null
+  const document = persistedProfileDocument(data?.document as ProfileDocument | undefined, data?.id as string, data?.ai_enabled === true && data?.ai_status === 'ready')
+  if (!document) return null
   const { data: activeData, error: activeError } = await client.rpc('get_public_active_avatar', { requested_slug: slug }).maybeSingle()
   if (activeError) throw activeError
   const active = activeData as { center_frame_path: string; frame_paths: string[]; frame_metadata: AvatarAsset['frame_metadata'] } | null
@@ -129,8 +138,8 @@ export async function loadCurrentUserProfileDocument(): Promise<ProfileDocument 
   const { data: { user } } = await requireSupabase().auth.getUser()
   if (!user) return null
   const profile = await getOwnedProfile(user)
-  const document = profile.document as ProfileDocument
-  if (document?.profileId !== profile.id) return null
+  const document = persistedProfileDocument(profile.document as ProfileDocument, profile.id, profile.ai_enabled && profile.ai_status === 'ready')
+  if (!document) return null
   const state = await loadOnboardingState(profile)
   let activeFrameSet: AvatarFrameSet | null = null
   if (profile.active_avatar_id) {

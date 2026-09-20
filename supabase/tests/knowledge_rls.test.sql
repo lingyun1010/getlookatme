@@ -1,6 +1,6 @@
 begin;
 set local search_path = extensions, public;
-select plan(21);
+select plan(22);
 
 select is((select relrowsecurity from pg_class where oid = 'public.knowledge_sources'::regclass), true, 'knowledge_sources RLS enabled');
 select is((select relrowsecurity from pg_class where oid = 'public.knowledge_chunks'::regclass), true, 'knowledge_chunks RLS enabled');
@@ -32,7 +32,8 @@ from public.profiles where user_id = '22222222-2222-4222-8222-222222222222';
 
 insert into public.knowledge_chunks (profile_id, source_id, chunk_index, content, embedding, source_type, source_ref, section, metadata, content_hash, embedding_version)
 select profile_id, id, 0, title, array_fill(1::real, array[1536])::vector, source_type, source_ref, 'projects', '{}'::jsonb, content_hash, 'test-v1'
-from public.knowledge_sources;
+from public.knowledge_sources
+where id in ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
 
 do $setup$
 begin
@@ -55,6 +56,11 @@ select is(
   )),
   0::bigint,
   'Lingyun search cannot return Aaron knowledge even with Aaron profile id'
+);
+select is(
+  (select source_title from public.search_profile_knowledge(current_setting('test.lingyun_profile_id')::uuid, array_fill(1::real, array[1536])::vector, 5)),
+  'Lingyun project',
+  'search returns the canonical source title'
 );
 select is(
   (select count(*) from public.search_profile_knowledge(current_setting('test.lingyun_profile_id')::uuid, array_fill(1::real, array[1536])::vector, 5)),

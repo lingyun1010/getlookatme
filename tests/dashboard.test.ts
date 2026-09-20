@@ -17,6 +17,16 @@ test('dashboard is an authenticated product route', () => {
   assert.doesNotMatch(page, /profile\/templates\/kinetic/)
 })
 
+test('profile actions distinguish published profile, working preview, and save publication', () => {
+  assert.match(shell, /View Published Profile/)
+  assert.match(shell, /'Unpublished'/)
+  assert.match(shell, /href=`\/\$\{options\.slug\}`/)
+  assert.match(createPage, /Working Preview ↗/)
+  assert.match(createPage, /id="saveProfileButton"/)
+  assert.match(createWorkspace, /createApp/)
+  assert.match(app, /published:profile\.is_published,slug:profile\.slug/)
+})
+
 test('dashboard derives overview state from owned profile data', () => {
   assert.match(app, /getOwnedProfile\(user\)/)
   assert.match(app, /loadOnboardingState\(profile\)/)
@@ -28,7 +38,8 @@ test('dashboard derives overview state from owned profile data', () => {
 
 test('unfinished dashboard capabilities are visibly disabled', () => {
   assert.match(page, /Persistent knowledge base · Coming soon/)
-  assert.match(app, /Publish · Coming soon/)
+  assert.match(app, /requestPublication/)
+  assert.match(app, /button\('Publish'/)
   assert.match(page, /No activity yet/)
   assert.match(css, /\.dashboard-sidebar \.disabled/)
 })

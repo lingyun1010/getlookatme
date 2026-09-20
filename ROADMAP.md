@@ -10,8 +10,11 @@
 - **M2.1 — Avatar SDK integration — DONE**
 - **M2.2 — Supabase Auth + persistence + profile ownership/RLS foundation — DONE**
 - **M2.3 — Persistent Avatar workspace + background generation queue — DONE**
-- **M3 — Profile-scoped RAG + pgvector tenant isolation — NEXT**
-- **M4 — Structured editor + publishing lifecycle**
+- **M3.0 — Persistent profile knowledge + pgvector tenant isolation — DONE**
+- **M3.1 — Profile-aware grounded Answer API + structured evidence — DONE**
+- **M4.0 — Explicit slug + publish/unpublish lifecycle — DONE**
+- **M4.1 — Profile action semantics/UI cleanup — IN REVIEW**
+- **M4.2 — Structured editor refinement — PLANNED**
 - **M5 — Analytics**
 - **M6 — Monetization + custom domain**
 - **M7 — Beta validation**

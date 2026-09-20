@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-PR4 — persistent, profile-scoped knowledge base — implemented. Persistent RAG answer generation and chat integration remain deferred to PR5.
+PR5.1 — profile publish/unpublish lifecycle — implemented and locally verified. The current UI cleanup gives published-profile viewing, working preview, and save/publish actions distinct meanings.
 
 ## Completed
 
@@ -29,19 +29,26 @@ PR4 — persistent, profile-scoped knowledge base — implemented. Persistent RA
 - Structured `ProfileDocument` knowledge builder, deterministic entity-aware chunking, canonical hashes, and incremental sync planning.
 - Supabase `knowledge_sources` and `knowledge_chunks` with 1536-dimensional pgvector embeddings, exact cosine search, owner RLS, and cross-profile foreign-key enforcement. ANN indexing is intentionally deferred until multi-tenant retrieval can be measured and tuned.
 - Mandatory-profile `search_profile_knowledge` retrieval RPC and local sync/inspect commands.
+- PR5 profile-aware answer API with trusted slug resolution, owner/public authorization, profile-scoped pgvector retrieval, grounded generation, stable no-answer behavior, and structured evidence metadata.
+- Anonymous published-profile chat and authenticated owner draft chat; invalid bearer tokens are rejected rather than silently downgraded.
+- Persisted owner and published profile loaders enable chat while genuine session-only temporary previews remain AI-disabled.
+- PR5.1 owner-controlled slug availability, normalization, reserved-route protection, atomic row/document slug updates, publish, unpublish, and immediate dashboard state updates.
+- Publication remains independent from AI, embeddings, knowledge sync, subscriptions, and chat availability.
+- Profile action cleanup: published profiles expose “View Published Profile”, drafts show “Unpublished”, the title action is “Working Preview”, and the form action is “Publish Profile” or “Save Changes”.
 
 Manual validation has confirmed queued/generating/ready, queued cancellation, failed retry, duplicate active-job protection, automatic local worker consumption, Supabase frame upload, stable polling, gallery updates, non-activation on completion, and explicit activation.
 
 ## Current supported profiles
 
-- Lingyun — complete seed profile, directional avatar, current single-profile RAG.
+- Lingyun — complete seed profile and directional avatar; static legacy RAG tooling remains for regression only.
 - Aaron — fictional fixture, initials avatar fallback, AI disabled.
-- Authenticated user profiles — persistent structured profile data, original photo, generated avatar history, and explicit active-avatar selection.
+- Authenticated user profiles — persistent structured data, owner preview, editable unique slug, publish/unpublish lifecycle, profile-scoped RAG, original photo, generated avatar history, and explicit active-avatar selection.
 
 ## Known limitations
 
-- RAG remains Lingyun-only and is not yet profile-scoped.
-- No end-user publishing control exists; new profiles remain private by default.
+- Knowledge synchronization remains explicit/manual; saving or publishing a profile does not generate embeddings.
+- Legacy Lingyun JSON-index RAG files and scripts remain for regression tooling but are unreachable from the active `/api/chat` path.
+- Slug history, old-slug redirects, and custom domains are not implemented.
 - Deployed Vercel Cron authentication and the configured long-running function limit still require production-environment verification.
 - Cron throughput is intentionally MVP-scale and processes one claimed job per invocation.
 - Replaced CV/photo assets and failed Storage cleanup can leave orphaned files; a production garbage-collection lifecycle is not implemented.
@@ -51,7 +58,7 @@ Manual validation has confirmed queued/generating/ready, queued cancellation, fa
 
 ## Deferred
 
-Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion, full orphaned-file cleanup, analytics, billing, custom domains, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
+Automatic knowledge sync, AI subscription/entitlement controls, password recovery, account deletion, full orphaned-file cleanup, analytics, billing, custom domains, slug redirects/history, employer profiles, job matching, SEEK/LinkedIn integrations, and network features.
 
 ## Remaining production work
 
@@ -63,4 +70,4 @@ Profile-scoped RAG/pgvector, publishing UI, password recovery, account deletion,
 
 ## Next exact task
 
-PR5: replace the legacy Lingyun-only retrieval path with authenticated/published-profile resolution, query embedding, persistent profile-scoped retrieval, and grounded answer generation without a global fallback.
+Complete manual UI review of the PR5.1 profile actions, then define the narrow PR5.2 scope before adding new publication or AI lifecycle behavior.

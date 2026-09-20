@@ -9,8 +9,9 @@ import {
   PhotoAIFrameProducer,
   SharpGeneratedImageValidator,
 } from 'lookatme-avatar/server'
-import { answerPortfolioQuestion } from '../src/rag/answerQuestion.ts'
 import { RAG_CONFIG } from '../src/rag/config.ts'
+import { InvalidAuthenticationError, ProfileAccessError } from '../src/rag/chatService.ts'
+import { createServerChatService } from '../src/rag/serverChat.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
 import { ONBOARDING_MAPPING_CONFIG } from '../src/onboarding/config.ts'
 import { authenticateBearer, createAuthenticatedServerClient } from '../src/auth/server.ts'
@@ -176,13 +177,21 @@ createServer(async (request, response) => {
     }
 
     if (request.url === '/api/chat') {
-      const body = JSON.parse(requestBody.toString()) as { message?: unknown }
+      const body = JSON.parse(requestBody.toString()) as { message?: unknown; profileSlug?: unknown }
       const message = typeof body.message === 'string' ? body.message.trim() : ''
+      const profileSlug = typeof body.profileSlug === 'string' ? body.profileSlug.trim() : ''
       if (!message) return send(400, { error: 'Message cannot be empty' })
+      if (!profileSlug) return send(400, { error: 'Profile slug cannot be empty' })
       if (message.length > RAG_CONFIG.maximumQuestionLength) {
         return send(400, { error: `Message must be ${RAG_CONFIG.maximumQuestionLength} characters or fewer` })
       }
-      return send(200, await answerPortfolioQuestion(message))
+      try {
+        return send(200, await createServerChatService().ask(message, profileSlug, request.headers.authorization))
+      } catch (error) {
+        if (error instanceof InvalidAuthenticationError) return send(401, { error: 'Invalid authentication' })
+        if (error instanceof ProfileAccessError) return send(404, { error: 'Profile not found' })
+        throw error
+      }
     }
 
     if (request.url === '/api/avatar-jobs') {

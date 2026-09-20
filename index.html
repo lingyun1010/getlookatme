@@ -128,7 +128,8 @@
       import { LookAtMeAvatar } from "lookatme-avatar/react";
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
       import { featuredEducation, featuredExperience } from "/src/profile/presentation.ts";
-      import { isSupabaseConfigured } from "/src/auth/supabase.ts";
+      import { isSupabaseConfigured, requireSupabase } from "/src/auth/supabase.ts";
+      import { chatAuthorizationHeaders } from "/src/auth/chatSession.ts";
       import { requireAuthenticatedUser } from "/src/auth/session.ts";
       import { loadCurrentUserProfileDocument, loadPublicProfile } from "/src/profile/repository.ts";
       import * as THREE from "three";
@@ -901,10 +902,16 @@
 
         try {
           const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+          const authorizationHeaders = isSupabaseConfigured
+            ? await chatAuthorizationHeaders(requireSupabase(), { required: window.location.pathname === "/preview" })
+            : {};
           const response = await fetch(`${apiBaseUrl}/api/chat`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message }),
+            headers: {
+              "Content-Type": "application/json",
+              ...authorizationHeaders,
+            },
+            body: JSON.stringify({ message, profileSlug: profile.slug }),
           });
           if (!response.ok) throw new Error("Chat request failed");
           const result = await response.json();

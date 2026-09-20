@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { isOwnedAssetPath, ownedAssetPath } from '../src/profile/repository.ts'
+import { isOwnedAssetPath, ownedAssetPath, persistedProfileDocument } from '../src/profile/repository.ts'
 import { draftToProfileDocument } from '../src/onboarding/profileDocument.ts'
 import { extractedPastedText } from '../src/onboarding/extraction.ts'
 import { parseResumeDeterministically } from '../src/onboarding/parser.ts'
@@ -24,6 +24,26 @@ test('persisted ProfileDocuments use database identity instead of the temporary 
   const document = draftToProfileDocument(draft, { profileId: '6cd294a5-f974-4e15-8d3f-51913f33b28e', slug: 'jane-profile' })
   assert.equal(document.profileId, '6cd294a5-f974-4e15-8d3f-51913f33b28e')
   assert.equal(document.slug, 'jane-profile')
+  assert.equal(document.ai.enabled, true)
+  assert.equal(document.ai.unavailableMessage, undefined)
+})
+
+test('trusted persisted profile normalization enables AI only for matching database identity', () => {
+  const text = `Jane Example\njane@example.com\nSummary\nEngineer building reliable products.\nExperience\nEngineer at Example\nEducation\nBSc | University`
+  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(text)))
+  draft.identity.headline = 'Engineer'
+  const stored = draftToProfileDocument(draft)
+  const profileId = '6cd294a5-f974-4e15-8d3f-51913f33b28e'
+  stored.profileId = profileId
+  stored.slug = 'jane-profile'
+  assert.equal(persistedProfileDocument(stored, profileId)?.ai.enabled, true)
+  assert.equal(persistedProfileDocument(stored, 'another-profile'), null)
+})
+
+test('owner and published loaders normalize persisted documents while public loading still requires publication', async () => {
+  const source = await readFile(new URL('../src/profile/repository.ts', import.meta.url), 'utf8')
+  assert.match(source, /loadPublicProfile[\s\S]*\.eq\('is_published', true\)[\s\S]*persistedProfileDocument\(data\?\.document/)
+  assert.match(source, /loadCurrentUserProfileDocument[\s\S]*persistedProfileDocument\(profile\.document as ProfileDocument, profile\.id\)/)
 })
 
 test('migration enforces owner predicates for profile and onboarding writes', () => {
@@ -52,4 +72,9 @@ test('browser configuration never accepts a service-role key', async () => {
   const source = await readFile(new URL('../src/auth/supabase.ts', import.meta.url), 'utf8')
   assert.doesNotMatch(source, /SERVICE_ROLE/i)
   assert.match(source, /VITE_SUPABASE_PUBLISHABLE_KEY/)
+})
+
+test('server token validation accepts the same legacy anon-key alias as the browser client', async () => {
+  const source = await readFile(new URL('../src/auth/server.ts', import.meta.url), 'utf8')
+  assert.match(source, /VITE_SUPABASE_ANON_KEY/)
 })

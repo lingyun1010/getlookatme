@@ -26,6 +26,11 @@ export interface OnboardingState {
   selected_avatar_mode: 'original' | 'dynamic'
 }
 
+export function persistedProfileDocument(document: ProfileDocument | undefined, profileId: string): ProfileDocument | null {
+  if (!document?.profileId || document.profileId !== profileId) return null
+  return { ...document, ai: { enabled: true } }
+}
+
 export function ownedAssetPath(userId: string, profileId: string, kind: string, fileName: string): string {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/\.{2,}/g, '.').replace(/^[.-]+|[.-]+$/g, '') || 'asset'
   return `${userId}/${profileId}/${kind}/${crypto.randomUUID()}-${safeName}`
@@ -105,10 +110,10 @@ export async function persistAvatarFrames(profile: OwnedProfile, frames: AvatarF
 
 export async function loadPublicProfile(slug: string): Promise<ProfileDocument | null> {
   const client = requireSupabase()
-  const { data, error } = await client.from('profiles').select('document').eq('slug', slug).eq('is_published', true).maybeSingle()
+  const { data, error } = await client.from('profiles').select('id,document').eq('slug', slug).eq('is_published', true).maybeSingle()
   if (error) throw error
-  const document = data?.document as ProfileDocument | undefined
-  if (!document?.profileId) return null
+  const document = persistedProfileDocument(data?.document as ProfileDocument | undefined, data?.id as string)
+  if (!document) return null
   const { data: activeData, error: activeError } = await client.rpc('get_public_active_avatar', { requested_slug: slug }).maybeSingle()
   if (activeError) throw activeError
   const active = activeData as { center_frame_path: string; frame_paths: string[]; frame_metadata: AvatarAsset['frame_metadata'] } | null
@@ -129,8 +134,8 @@ export async function loadCurrentUserProfileDocument(): Promise<ProfileDocument 
   const { data: { user } } = await requireSupabase().auth.getUser()
   if (!user) return null
   const profile = await getOwnedProfile(user)
-  const document = profile.document as ProfileDocument
-  if (document?.profileId !== profile.id) return null
+  const document = persistedProfileDocument(profile.document as ProfileDocument, profile.id)
+  if (!document) return null
   const state = await loadOnboardingState(profile)
   let activeFrameSet: AvatarFrameSet | null = null
   if (profile.active_avatar_id) {

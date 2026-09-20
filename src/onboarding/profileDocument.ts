@@ -34,6 +34,7 @@ export function draftToProfileDocument(
         presentation: { objectFit: 'contain', objectPosition: 'center bottom' },
       }
     : { mode: 'placeholder', alt: `Initials avatar for ${fullName}`, initials: initials(fullName) }
+  const hasPersistedIdentity = Boolean(identity.profileId && identity.slug)
   return {
     profileId: identity.profileId ?? 'temporary_session_profile', slug: identity.slug ?? 'preview', version: 1,
     identity: {
@@ -60,6 +61,8 @@ export function draftToProfileDocument(
     avatarImageUrl: draft.avatarImageUrl || undefined,
     avatarFrameSet,
     presentation: draft.presentation,
-    ai: { enabled: false, unavailableMessage: NEUTRAL_PROFILE_DEFAULTS.aiUnavailableMessage },
+    ai: hasPersistedIdentity
+      ? { enabled: true }
+      : { enabled: false, unavailableMessage: NEUTRAL_PROFILE_DEFAULTS.aiUnavailableMessage },
   }
 }

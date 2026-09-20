@@ -1,6 +1,6 @@
 begin;
 set local search_path = extensions, public;
-select plan(21);
+select plan(22);
 
 select is((select relrowsecurity from pg_class where oid = 'public.knowledge_sources'::regclass), true, 'knowledge_sources RLS enabled');
 select is((select relrowsecurity from pg_class where oid = 'public.knowledge_chunks'::regclass), true, 'knowledge_chunks RLS enabled');
@@ -55,6 +55,11 @@ select is(
   )),
   0::bigint,
   'Lingyun search cannot return Aaron knowledge even with Aaron profile id'
+);
+select is(
+  (select source_title from public.search_profile_knowledge(current_setting('test.lingyun_profile_id')::uuid, array_fill(1::real, array[1536])::vector, 5)),
+  'Lingyun project',
+  'search returns the canonical source title'
 );
 select is(
   (select count(*) from public.search_profile_knowledge(current_setting('test.lingyun_profile_id')::uuid, array_fill(1::real, array[1536])::vector, 5)),

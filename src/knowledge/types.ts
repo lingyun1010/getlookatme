@@ -92,6 +92,7 @@ export interface KnowledgeStatus {
 }
 
 export interface KnowledgeSearchResult {
+  profileId?: string
   chunkId: string
   sourceId: string
   content: string
@@ -99,5 +100,6 @@ export interface KnowledgeSearchResult {
   sourceType: string
   sourceRef: string
   section: string
+  title: string | null
   metadata: KnowledgeMetadata
 }

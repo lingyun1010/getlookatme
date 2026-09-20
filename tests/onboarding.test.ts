@@ -97,6 +97,7 @@ test('temporary profile uses the canonical renderer contract and cannot use Ling
   const profile = draftToProfileDocument(draft)
   assert.equal(profile.slug, 'preview')
   assert.equal(profile.ai.enabled, false)
+  assert.equal(profile.ai.unavailableMessage, NEUTRAL_PROFILE_DEFAULTS.aiUnavailableMessage)
   assert.equal(profile.avatar.mode, 'placeholder')
   assert.equal(resolveProfile('lingyun')?.profileId, 'profile_lingyun_seed')
   assert.equal(resolveProfile('aaron')?.ai.enabled, false)

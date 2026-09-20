@@ -118,6 +118,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
     })
     throwIfError(error)
     return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+      profileId: row.profile_id as string | undefined,
       chunkId: row.chunk_id as string,
       sourceId: row.source_id as string,
       content: row.content as string,
@@ -125,6 +126,7 @@ export class SupabaseKnowledgeRepository implements KnowledgeRepository {
       sourceType: row.source_type as string,
       sourceRef: row.source_ref as string,
       section: row.section as string,
+      title: (row.source_title as string | null | undefined) ?? null,
       metadata: row.metadata as KnowledgeSearchResult['metadata'],
     }))
   }

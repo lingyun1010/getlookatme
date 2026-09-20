@@ -32,7 +32,8 @@ from public.profiles where user_id = '22222222-2222-4222-8222-222222222222';
 
 insert into public.knowledge_chunks (profile_id, source_id, chunk_index, content, embedding, source_type, source_ref, section, metadata, content_hash, embedding_version)
 select profile_id, id, 0, title, array_fill(1::real, array[1536])::vector, source_type, source_ref, 'projects', '{}'::jsonb, content_hash, 'test-v1'
-from public.knowledge_sources;
+from public.knowledge_sources
+where id in ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
 
 do $setup$
 begin

@@ -18,6 +18,7 @@ import { authenticateBearer, createAuthenticatedServerClient } from '../src/auth
 import { isAvatarPreset } from '../src/avatar/types.ts'
 import { isOwnedAssetPath } from '../src/profile/repository.ts'
 import { processNextAvatarJob } from '../src/avatar/worker.ts'
+import { handlePublicationRequest } from '../src/profile/publicationRequest.ts'
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
@@ -192,6 +193,11 @@ createServer(async (request, response) => {
         if (error instanceof ProfileAccessError) return send(404, { error: 'Profile not found' })
         throw error
       }
+    }
+
+    if (request.url === '/api/profile-publication') {
+      const result = await handlePublicationRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
     }
 
     if (request.url === '/api/avatar-jobs') {

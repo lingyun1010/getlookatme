@@ -28,7 +28,8 @@ test('dashboard derives overview state from owned profile data', () => {
 
 test('unfinished dashboard capabilities are visibly disabled', () => {
   assert.match(page, /Persistent knowledge base · Coming soon/)
-  assert.match(app, /Publish · Coming soon/)
+  assert.match(app, /requestPublication/)
+  assert.match(app, /button\('Publish'/)
   assert.match(page, /No activity yet/)
   assert.match(css, /\.dashboard-sidebar \.disabled/)
 })

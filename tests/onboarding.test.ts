@@ -152,3 +152,10 @@ test('onboarding and renderer never assign untrusted strings through innerHTML',
   ])
   assert.doesNotMatch(sources.join('\n'), /\.innerHTML\s*=/)
 })
+
+test('profile form submit saves and uses the existing publication flow instead of preview navigation', async () => {
+  const source = await readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8')
+  assert.match(source, /ownedProfile\.is_published \? 'Save Changes' : 'Publish Profile'/)
+  assert.match(source, /requestPublication\('publish', ownedProfile\.slug\)/)
+  assert.doesNotMatch(source, /window\.location\.assign\('\/preview'\)/)
+})

@@ -5,6 +5,7 @@ import type { ProfileDocumentDraft } from '../onboarding/types.ts'
 import { requireSupabase } from '../auth/supabase.ts'
 import { resolveProfileAvatar } from '../avatar/resolution.ts'
 import type { AvatarAsset } from '../avatar/types.ts'
+import { generateExampleQuestions } from './exampleQuestions.ts'
 
 export interface OwnedProfile {
   id: string
@@ -32,7 +33,10 @@ export interface OnboardingState {
 
 export function persistedProfileDocument(document: ProfileDocument | undefined, profileId: string, aiReady = false): ProfileDocument | null {
   if (!document?.profileId || document.profileId !== profileId) return null
-  return { ...document, ai: aiReady ? { enabled: true } : { enabled: false, unavailableMessage: 'AI profile questions are not currently available.' } }
+  const suggestedQuestions = document.suggestedQuestions?.length >= 3
+    ? document.suggestedQuestions.slice(0, 5)
+    : generateExampleQuestions({ preferredName: document.identity.preferredName, projects: document.projects, skills: document.skills, experience: document.experience, education: document.education })
+  return { ...document, suggestedQuestions, ai: aiReady ? { enabled: true } : { enabled: false, unavailableMessage: 'AI profile questions are not currently available.' } }
 }
 
 export function ownedAssetPath(userId: string, profileId: string, kind: string, fileName: string): string {

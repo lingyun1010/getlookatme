@@ -6,6 +6,10 @@ LookAtMe is a Vite-built static portfolio with Vercel serverless endpoints and S
 
 Product UI and published portfolios have separate visual boundaries. Landing and future SaaS surfaces own their product styles; the public renderer loads the named `kinetic` template stylesheet from `src/profile/templates/kinetic/`. The renderer root exposes both `portfolio-page` and a template-specific class. Future templates must receive their own directory, stylesheet, and root class while continuing to consume the same `ProfileDocument`, avatar, and RAG/chat boundaries. Template selection is publication/presentation state outside `ProfileDocument`, so professional data remains portable across designs.
 
+Chat is an optional portfolio add-on rather than part of the kinetic renderer. Shared behavior, multi-turn state, API access, evidence, and avatar selection live under `src/chat/`. Its compact stylesheet consumes the active template's `--portfolio-*` token contract instead of copying template layout CSS. The current kinetic template provides those tokens in `templates/kinetic/tokens.css`; future templates can present the same add-on by supplying the contract.
+
+`ProfileDocument.suggestedQuestions` is the reusable Chat prompt set for both Quick Chat and the dedicated page. Onboarding deterministically derives three to five grounded questions once from the profile's projects, skills, experience, and education; persisted legacy profiles are normalized on resolution when their set is missing or too short. Chat uses the resolved generated avatar center frame, falling back to the resolved original image, a legacy center frame, then initials.
+
 ## Authentication and ownership
 
 Supabase Auth email/password identities are the stable account boundary. The browser uses the publishable key only and lets `supabase-js` persist and refresh its session. `/dashboard/create`, `/edit`, `/dashboard`, and `/preview` require an authenticated user. Onboarding API requests carry the access token and the server validates it with Supabase Auth; route guards are convenience, not the security boundary.

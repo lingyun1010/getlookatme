@@ -15,6 +15,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/profile/templates/kinetic/kinetic.css" />
+    <link rel="stylesheet" href="/src/profile/templates/kinetic/tokens.css" />
   </head>
   <body class="portfolio-page portfolio-template-kinetic" data-profile-template="kinetic">
     <div class="ghost-cursor" id="ghostCursor" aria-hidden="true"></div>
@@ -25,6 +26,7 @@
           <a href="#about">About</a>
           <a href="#services">Services</a>
           <a href="#projects">Projects</a>
+          <a id="profileChatLink">Chat</a>
           <a href="#contact">Contact</a>
         </nav>
 
@@ -178,6 +180,7 @@
       };
 
       const identity = profile.identity;
+      document.querySelector("#profileChatLink").href = `/${encodeURIComponent(profile.slug)}/chat`;
       const emailHref = identity.email ? `mailto:${identity.email}` : "#contact";
       document.title = profile.seo.title;
       document.querySelector('meta[name="description"]')?.setAttribute("content", profile.seo.description);

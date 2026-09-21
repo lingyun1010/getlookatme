@@ -1,7 +1,7 @@
 body.portfolio-template-kinetic {
-  color: #d7e2ea;
-  background: #0c0c0c;
-  font-family: "Kanit", ui-sans-serif, system-ui, sans-serif;
+  color: var(--portfolio-text);
+  background: var(--portfolio-background);
+  font-family: var(--portfolio-font);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,7 +20,7 @@ body.portfolio-template-kinetic {
 }
 
 html {
-  background: #0c0c0c;
+  background: var(--portfolio-background, #0c0c0c);
   scroll-behavior: smooth;
 }
 
@@ -28,7 +28,7 @@ body.portfolio-template-kinetic {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background: #0c0c0c;
+  background: var(--portfolio-background);
 }
 
 .ghost-cursor {

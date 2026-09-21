@@ -3,6 +3,7 @@ import { NEUTRAL_PROFILE_DEFAULTS } from './defaults.ts'
 import type { ProfileDocumentDraft } from './types.ts'
 import { safeHttpUrl } from './urls.ts'
 import { validateProfileDraft } from './validation.ts'
+import { generateExampleQuestions } from '../profile/exampleQuestions.ts'
 
 function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || '?'
@@ -34,6 +35,10 @@ export function draftToProfileDocument(
         presentation: { objectFit: 'contain', objectPosition: 'center bottom' },
       }
     : { mode: 'placeholder', alt: `Initials avatar for ${fullName}`, initials: initials(fullName) }
+  const suggestedQuestions = generateExampleQuestions({
+    preferredName, projects: draft.projects, skills: draft.skills,
+    experience: draft.experience, education: draft.education,
+  })
   return {
     profileId: identity.profileId ?? 'temporary_session_profile', slug: identity.slug ?? 'preview', version: 1,
     identity: {
@@ -53,7 +58,7 @@ export function draftToProfileDocument(
     education: draft.education.map((item) => ({ ...item, featured: item.id === draft.featured.educationId })),
     projects: draft.projects,
     focusAreas: draft.skills.flatMap(({ items }) => items).slice(0, 8),
-    suggestedQuestions: [],
+    suggestedQuestions,
     avatar,
     avatarMode,
     avatarPreset,

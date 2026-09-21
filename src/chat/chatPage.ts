@@ -7,6 +7,7 @@ import { resolveProfile } from '../profile/resolveProfile.ts'
 import { CHAT_LIMITS } from '../rag/limits.ts'
 import type { ChatHistoryMessage, ChatMessage } from '../rag/types.ts'
 import type { ProfileDocument } from '../profile/types.ts'
+import { renderChatAvatar } from './avatar.ts'
 
 const root = document.querySelector<HTMLElement>('#chatApp')!
 const parts = window.location.pathname.split('/').filter(Boolean)
@@ -26,11 +27,7 @@ if (!profile || parts[1] !== 'chat') {
   throw new Error('Profile chat not found')
 }
 
-const suggested = profile.suggestedQuestions?.slice(0, 4) ?? [
-  `What kind of work does ${profile.identity.preferredName} do?`,
-  'Which projects best show their experience?',
-  'What are their strongest skills?',
-]
+const suggested = profile.suggestedQuestions.slice(0, 5)
 let messages: ChatMessage[] = consumeTransferredConversation(slug)
 let pending = false
 
@@ -49,7 +46,7 @@ root.append(shell)
 shell.querySelector<HTMLHeadingElement>('.chat-identity h1')!.textContent = profile.identity.fullName
 shell.querySelector<HTMLParagraphElement>('.chat-identity p')!.textContent = profile.identity.headline
 const avatar = shell.querySelector<HTMLElement>('.identity-avatar')!
-avatar.textContent = profile.identity.preferredName.slice(0, 1).toUpperCase()
+renderChatAvatar(avatar, profile)
 const list = shell.querySelector<HTMLElement>('.message-list')!
 const scroll = shell.querySelector<HTMLElement>('.message-scroll')!
 const form = shell.querySelector<HTMLFormElement>('.composer')!

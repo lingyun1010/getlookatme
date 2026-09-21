@@ -10,6 +10,7 @@ export default defineConfig({
         if (path === '/') request.url = '/landing.html'
         if (path === '/login' || path === '/signup' || path === '/auth') request.url = `/auth.html${request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : ''}`
         if (path === '/dashboard' || path === '/dashboard/create' || path === '/dashboard/profile' || path === '/dashboard/avatar' || path === '/dashboard/pages') request.url = '/dashboard.html'
+        if (/^\/[^/]+\/chat$/.test(path ?? '')) request.url = '/chat.html'
         if (path === '/create' || path === '/edit') { _response.statusCode = 302; _response.setHeader('Location','/dashboard/create'); _response.end(); return }
         next()
       })
@@ -36,6 +37,7 @@ export default defineConfig({
       input: {
         landing: 'landing.html',
         profile: 'index.html',
+        chat: 'chat.html',
         create: 'create.html',
         auth: 'auth.html',
         dashboard: 'dashboard.html',

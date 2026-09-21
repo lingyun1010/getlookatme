@@ -1,6 +1,7 @@
 import { RAG_CONFIG } from '../src/rag/config.ts'
 import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError } from '../src/rag/chatService.ts'
 import { createServerChatService } from '../src/rag/serverChat.ts'
+import { parseChatHistory } from '../src/rag/history.ts'
 
 interface ApiRequest { method?: string; body?: unknown; headers?: { origin?: string; authorization?: string } }
 interface ApiResponse {
@@ -27,7 +28,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   if (request.method === 'OPTIONS') return response.status(204).end()
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' })
 
-  const body = request.body as { message?: unknown; profileSlug?: unknown } | null
+  const body = request.body as { message?: unknown; profileSlug?: unknown; history?: unknown } | null
   if (!body || typeof body !== 'object' || typeof body.message !== 'string' || typeof body.profileSlug !== 'string') {
     return response.status(400).json({ error: 'Request body must contain message and profileSlug strings' })
   }
@@ -39,9 +40,11 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   }
   const profileSlug = body.profileSlug.trim()
   if (!profileSlug) return response.status(400).json({ error: 'Profile slug cannot be empty' })
+  const history = parseChatHistory(body.history)
+  if (history === null) return response.status(400).json({ error: 'History must contain valid user and assistant messages' })
 
   try {
-    return response.status(200).json(await createServerChatService().ask(message, profileSlug, request.headers?.authorization))
+    return response.status(200).json(await createServerChatService().ask(message, profileSlug, request.headers?.authorization, history))
   } catch (error) {
     if (error instanceof InvalidAuthenticationError) return response.status(401).json({ error: 'Invalid authentication' })
     if (error instanceof ProfileAccessError) return response.status(404).json({ error: 'Profile not found' })

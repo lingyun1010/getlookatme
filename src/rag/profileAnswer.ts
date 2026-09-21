@@ -3,7 +3,7 @@ import type { KnowledgeSearchResult } from '../knowledge/types.ts'
 import type { ProfileDocument } from '../profile/types.ts'
 import { RAG_CONFIG } from './config.ts'
 import { buildProfileGroundedPrompt, profileSystemPrompt } from './profilePrompt.ts'
-import type { PortfolioAnswer, PortfolioAnswerEvidence } from './types.ts'
+import type { ChatHistoryMessage, PortfolioAnswer, PortfolioAnswerEvidence } from './types.ts'
 
 export const NO_ANSWER: Readonly<PortfolioAnswer> = Object.freeze({
   answer: "This profile doesn't contain enough information to answer that confidently.",
@@ -12,15 +12,15 @@ export const NO_ANSWER: Readonly<PortfolioAnswer> = Object.freeze({
 
 export interface GeneratedGroundedAnswer { answer: string; evidenceIds: string[] }
 export type GroundedAnswerGenerator = (
-  question: string, profile: ProfileDocument, results: KnowledgeSearchResult[],
+  question: string, profile: ProfileDocument, results: KnowledgeSearchResult[], history?: ChatHistoryMessage[],
 ) => Promise<GeneratedGroundedAnswer>
 
-export const generateGroundedAnswer: GroundedAnswerGenerator = async (question, profile, results) => {
+export const generateGroundedAnswer: GroundedAnswerGenerator = async (question, profile, results, history = []) => {
   if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required')
   const response = await new OpenAI({ apiKey: process.env.OPENAI_API_KEY }).responses.create({
     model: RAG_CONFIG.answerModel,
     instructions: profileSystemPrompt(profile.identity.fullName),
-    input: buildProfileGroundedPrompt(question, results),
+    input: buildProfileGroundedPrompt(question, results, history),
     text: { format: { type: 'json_schema', name: 'profile_answer', strict: true, schema: {
       type: 'object',
       properties: { answer: { type: 'string' }, evidenceIds: { type: 'array', items: { type: 'string' } } },
@@ -38,9 +38,10 @@ export async function answerProfileQuestion(
   profile: ProfileDocument,
   results: KnowledgeSearchResult[],
   generate: GroundedAnswerGenerator = generateGroundedAnswer,
+  history: ChatHistoryMessage[] = [],
 ): Promise<PortfolioAnswer> {
   if (!results.length) return structuredClone(NO_ANSWER)
-  const generated = await generate(question, profile, results)
+  const generated = await generate(question, profile, results, history)
   const allowed = new Map(results.map((result) => [result.chunkId, result]))
   const selectedIds = [...new Set(generated.evidenceIds)].filter((id) => allowed.has(id))
   if (!selectedIds.length) return structuredClone(NO_ANSWER)

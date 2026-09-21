@@ -10,6 +10,7 @@ import {
   SharpGeneratedImageValidator,
 } from 'lookatme-avatar/server'
 import { RAG_CONFIG } from '../src/rag/config.ts'
+import { parseChatHistory } from '../src/rag/history.ts'
 import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError } from '../src/rag/chatService.ts'
 import { createServerChatService } from '../src/rag/serverChat.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
@@ -179,16 +180,18 @@ createServer(async (request, response) => {
     }
 
     if (request.url === '/api/chat') {
-      const body = JSON.parse(requestBody.toString()) as { message?: unknown; profileSlug?: unknown }
+      const body = JSON.parse(requestBody.toString()) as { message?: unknown; profileSlug?: unknown; history?: unknown }
       const message = typeof body.message === 'string' ? body.message.trim() : ''
       const profileSlug = typeof body.profileSlug === 'string' ? body.profileSlug.trim() : ''
       if (!message) return send(400, { error: 'Message cannot be empty' })
       if (!profileSlug) return send(400, { error: 'Profile slug cannot be empty' })
+      const history = parseChatHistory(body.history)
+      if (history === null) return send(400, { error: 'History must contain valid user and assistant messages' })
       if (message.length > RAG_CONFIG.maximumQuestionLength) {
         return send(400, { error: `Message must be ${RAG_CONFIG.maximumQuestionLength} characters or fewer` })
       }
       try {
-        return send(200, await createServerChatService().ask(message, profileSlug, request.headers.authorization))
+        return send(200, await createServerChatService().ask(message, profileSlug, request.headers.authorization, history))
       } catch (error) {
         if (error instanceof InvalidAuthenticationError) return send(401, { error: 'Invalid authentication' })
         if (error instanceof ProfileAccessError) return send(404, { error: 'Profile not found' })

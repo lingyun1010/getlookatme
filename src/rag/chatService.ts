@@ -4,7 +4,7 @@ import type { ProfileDocument } from '../profile/types.ts'
 import type { ProfileAiStatus } from '../profile/types.ts'
 import { RAG_CONFIG } from './config.ts'
 import { answerProfileQuestion, type GroundedAnswerGenerator, NO_ANSWER } from './profileAnswer.ts'
-import type { PortfolioAnswer } from './types.ts'
+import type { ChatHistoryMessage, PortfolioAnswer } from './types.ts'
 
 export interface ChatTargetProfile {
   id: string
@@ -31,7 +31,7 @@ export class ProfileChatService {
   private readonly dependencies: ChatServiceDependencies
   constructor(dependencies: ChatServiceDependencies) { this.dependencies = dependencies }
 
-  async ask(message: string, profileSlug: string, authorization?: string): Promise<PortfolioAnswer> {
+  async ask(message: string, profileSlug: string, authorization?: string, history: ChatHistoryMessage[] = []): Promise<PortfolioAnswer> {
     const normalizedSlug = profileSlug.trim()
     const profile = normalizedSlug ? await this.dependencies.resolveProfile(normalizedSlug) : null
     if (!profile) throw new ProfileAccessError('Profile not found')
@@ -45,13 +45,16 @@ export class ProfileChatService {
     if (profile.aiStatus !== 'ready') throw new ProfileAiUnavailableError('AI profile is not ready')
 
     // No provider work occurs until target resolution and authorization are complete.
-    const queryEmbedding = await this.dependencies.embeddings.embedText(message)
+    const boundedHistory = history.slice(-RAG_CONFIG.maximumHistoryMessages)
+    const retrievalQuery = [...boundedHistory, { role: 'user' as const, content: message }]
+      .map(({ role, content }) => `${role}: ${content}`).join('\n')
+    const queryEmbedding = await this.dependencies.embeddings.embedText(retrievalQuery)
     const retrieved = await this.dependencies.knowledge.search(profile.id, queryEmbedding, RAG_CONFIG.profileSearchLimit)
     const results = retrieved.filter((result) => {
       if (result.profileId && result.profileId !== profile.id) return false
       return result.similarity >= RAG_CONFIG.minimumProfileSimilarity
     })
     if (!results.length) return structuredClone(NO_ANSWER)
-    return answerProfileQuestion(message, profile.document, results, this.dependencies.generateAnswer)
+    return answerProfileQuestion(message, profile.document, results, this.dependencies.generateAnswer, boundedHistory)
   }
 }

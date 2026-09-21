@@ -315,6 +315,8 @@ body.portfolio-template-kinetic {
   margin-top: 13px;
 }
 
+.continue-chat{display:block;margin:10px auto 0;padding:7px 12px;border:1px solid rgba(255,255,255,.24);border-radius:999px;color:inherit;background:rgba(0,0,0,.18);font:inherit;font-size:11px;cursor:pointer}.continue-chat[hidden]{display:none}
+
 .source-chip,
 .question-chip {
   border: 1px solid rgba(215, 226, 234, 0.2);

@@ -65,3 +65,17 @@ export interface PortfolioAnswer {
   confidence: 'high' | 'medium' | 'low'
   noAnswer: boolean
 }
+
+export type ChatRole = 'user' | 'assistant'
+
+export interface ChatHistoryMessage {
+  role: ChatRole
+  content: string
+}
+
+export interface ChatMessage extends ChatHistoryMessage {
+  id: string
+  evidence?: PortfolioAnswerEvidence[]
+  sources?: PortfolioAnswerSource[]
+  relatedIds?: string[]
+}

@@ -5,7 +5,9 @@ import { SupabaseKnowledgeRepository } from '../knowledge/repository.ts'
 import type { ProfileAiStatus, ProfileDocument } from '../profile/types.ts'
 import { ProfileChatService, type ChatTargetProfile } from './chatService.ts'
 import { generateGroundedAnswer } from './profileAnswer.ts'
-import { recordUsageSafely } from '../monetisation/usage.ts'
+import { getMonthlyUsage, recordUsageSafely } from '../monetisation/usage.ts'
+import { canUseFeature, effectivePlan } from '../monetisation/entitlements.ts'
+import type { Subscription } from '../monetisation/subscription.ts'
 
 function serviceRoleClient(): SupabaseClient {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
@@ -30,6 +32,14 @@ export function createServerChatService(): ProfileChatService {
     embeddings: { embedText: (input) => new OpenAIEmbeddingClient().embedText(input) },
     knowledge: new SupabaseKnowledgeRepository(client),
     generateAnswer: generateGroundedAnswer,
+    authorizeUsage: async (profile) => {
+      const [{ data, error }, usage] = await Promise.all([
+        client.from('subscriptions').select('*').eq('user_id', profile.userId).single(),
+        getMonthlyUsage(client, profile.userId),
+      ])
+      if (error) throw error
+      return canUseFeature(effectivePlan(data as Subscription), 'rag.query', usage.rag_query)
+    },
     recordUsage: (eventType, profile) => recordUsageSafely(client, {
       userId: profile.userId,
       profileId: profile.id,

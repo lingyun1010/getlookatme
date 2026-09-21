@@ -31,8 +31,12 @@ export async function createAvatarJob(profile: OwnedProfile, sourcePhotoPath: st
     headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
     body: JSON.stringify({ profileId: profile.id, sourcePhotoPath, style, preset }),
   })
-  const result = await response.json() as { job?: AvatarGenerationJob; error?: string }
-  if (!response.ok || !result.job) throw new Error(result.error ?? 'Could not queue avatar generation.')
+  const result = await response.json() as { job?: AvatarGenerationJob; error?: string; code?: string }
+  if (!response.ok || !result.job) {
+    const error = new Error(result.error ?? 'Could not queue avatar generation.') as Error & { code?: string }
+    error.code = result.code
+    throw error
+  }
   return result.job
 }
 

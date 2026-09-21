@@ -1,6 +1,9 @@
 import { authenticateBearer, createAuthenticatedServerClient } from '../src/auth/server.ts'
 import { isAvatarPreset } from '../src/avatar/types.ts'
 import { isOwnedAssetPath } from '../src/profile/repository.ts'
+import { canUseFeature, effectivePlan } from '../src/monetisation/entitlements.ts'
+import { getMonthlyUsage } from '../src/monetisation/usage.ts'
+import type { Subscription } from '../src/monetisation/subscription.ts'
 
 interface ApiRequest { method?: string; body?: unknown; headers?: { authorization?: string } }
 interface ApiResponse { status(code: number): ApiResponse; end(): void; json(body: unknown): void; setHeader(name: string, value: string): void }
@@ -25,6 +28,15 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   }
   const { data: profile } = await client.from('profiles').select('id').eq('id', body.profileId).eq('user_id', user.id).maybeSingle()
   if (!profile) return response.status(404).json({ error: 'Profile not found.' })
+  const [{ data: subscription, error: subscriptionError }, usage] = await Promise.all([
+    client.from('subscriptions').select('*').eq('user_id', user.id).single(),
+    getMonthlyUsage(client, user.id),
+  ])
+  if (subscriptionError) return response.status(503).json({ error: 'Plan information is unavailable.' })
+  const plan = effectivePlan(subscription as Subscription)
+  if (!canUseFeature(plan, 'avatar.generate', usage.avatar_generation)) {
+    return response.status(402).json({ code: 'avatar_limit_reached', error: 'Your monthly Avatar limit has been reached. Upgrade to Pro for more generations.' })
+  }
   const { data: job, error } = await client.from('avatar_generation_jobs').insert({
     user_id: user.id, profile_id: body.profileId, source_photo_path: body.sourcePhotoPath,
     style: body.style, preset: body.preset, status: 'queued',

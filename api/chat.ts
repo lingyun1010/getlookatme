@@ -1,5 +1,5 @@
 import { RAG_CONFIG } from '../src/rag/config.ts'
-import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError } from '../src/rag/chatService.ts'
+import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError, ProfileChatLimitError } from '../src/rag/chatService.ts'
 import { createServerChatService } from '../src/rag/serverChat.ts'
 import { parseChatHistory } from '../src/rag/history.ts'
 
@@ -49,6 +49,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     if (error instanceof InvalidAuthenticationError) return response.status(401).json({ error: 'Invalid authentication' })
     if (error instanceof ProfileAccessError) return response.status(404).json({ error: 'Profile not found' })
     if (error instanceof ProfileAiUnavailableError) return response.status(409).json({ error: 'AI profile is not ready' })
+    if (error instanceof ProfileChatLimitError) return response.status(402).json({ code: 'rag_limit_reached', error: error.message })
     console.error('Portfolio chat request failed', error instanceof Error ? error.message : 'Unknown error')
     return response.status(500).json({ error: 'Unable to answer the question right now' })
   }

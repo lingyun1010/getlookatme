@@ -13,6 +13,7 @@
     { "source": "/dashboard/profile", "destination": "/dashboard.html" },
     { "source": "/dashboard/avatar", "destination": "/dashboard.html" },
     { "source": "/dashboard/pages", "destination": "/dashboard.html" },
+    { "source": "/dashboard/pricing", "destination": "/dashboard.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/:slug/chat", "destination": "/chat.html" },
     { "source": "/:slug", "destination": "/index.html" }

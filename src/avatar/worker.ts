@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import type { AvatarImageStorage, GeneratedImage, AvatarFramePreset, AvatarStyleId } from 'lookatme-avatar'
 import { OpenAIImageGenerationProvider, PhotoAIFrameProducer, SharpGeneratedImageValidator } from 'lookatme-avatar/server'
 import type { AvatarGenerationJob } from './types.ts'
-import { recordUsageSafely } from '../monetisation/usage.ts'
 import { recordFunnelEventSafely } from '../analytics/events.ts'
 
 function workerClient() {
@@ -80,7 +79,6 @@ export async function processNextAvatarJob(): Promise<{ processed: boolean; jobI
       status: 'ready', avatar_id: avatar.id, error: null, completed_at: new Date().toISOString(),
     }).eq('id', job.id).eq('status', 'generating')
     if (readyError) throw readyError
-    await recordUsageSafely(client, { userId: job.user_id, profileId: job.profile_id, eventType: 'avatar_generation' })
     await recordFunnelEventSafely(client, { userId: job.user_id, profileId: job.profile_id, eventType: 'avatar_generated' })
     return { processed: true, jobId: job.id, status: 'ready' }
   } catch (cause) {

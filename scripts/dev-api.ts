@@ -15,9 +15,8 @@ import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableErr
 import { createServerChatService } from '../src/rag/serverChat.ts'
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
 import { ONBOARDING_MAPPING_CONFIG } from '../src/onboarding/config.ts'
-import { authenticateBearer, createAuthenticatedServerClient } from '../src/auth/server.ts'
-import { isAvatarPreset } from '../src/avatar/types.ts'
-import { isOwnedAssetPath } from '../src/profile/repository.ts'
+import { authenticateBearer } from '../src/auth/server.ts'
+import { handleAvatarJobRequest } from '../src/avatar/jobRequest.ts'
 import { processNextAvatarJob } from '../src/avatar/worker.ts'
 import { handlePublicationRequest } from '../src/profile/publicationRequest.ts'
 import { handleAiLifecycleRequest } from '../src/profile/aiLifecycleRequest.ts'
@@ -211,15 +210,8 @@ createServer(async (request, response) => {
     }
 
     if (request.url === '/api/avatar-jobs') {
-      const user = await authenticateBearer(request.headers.authorization)
-      const client = createAuthenticatedServerClient(request.headers.authorization)
-      if (!user || !client) return send(401, { error: 'Authentication required' })
-      const body = JSON.parse(requestBody.toString()) as { profileId?: unknown; sourcePhotoPath?: unknown; style?: unknown; preset?: unknown }
-      if (typeof body.profileId !== 'string' || typeof body.sourcePhotoPath !== 'string' || typeof body.style !== 'string' || !isAvatarPreset(body.preset)) return send(400, { error: 'Invalid avatar job request' })
-      if (!isOwnedAssetPath(body.sourcePhotoPath, user.id, body.profileId)) return send(403, { error: 'Source photo is not owned by this profile' })
-      const { data: job, error } = await client.from('avatar_generation_jobs').insert({ user_id: user.id, profile_id: body.profileId, source_photo_path: body.sourcePhotoPath, style: body.style, preset: body.preset }).select('*').single()
-      if (error?.code === '23505') return send(409, { error: 'This profile already has a queued or generating avatar.' })
-      return error ? send(400, { error: 'Could not queue avatar generation' }) : send(202, { job })
+      const result = await handleAvatarJobRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
     }
 
     if (request.url === '/api/avatar-worker') {

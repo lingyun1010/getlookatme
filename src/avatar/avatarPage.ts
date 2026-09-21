@@ -27,7 +27,11 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
   const originalHost = view.querySelector<HTMLElement>('#originalPreview')!
   const currentHost = view.querySelector<HTMLElement>('#currentAvatar')!
   const generateButton = view.querySelector<HTMLButtonElement>('#queueAvatar')!
-  const setMessage = (value: string, error = false) => { message.textContent = value; message.classList.toggle('error', error) }
+  const setMessage = (value: string, error = false, upgrade = false) => {
+    message.replaceChildren(document.createTextNode(value))
+    message.classList.toggle('error', error)
+    if (upgrade) { const link = element('a', 'avatar-upgrade-link', 'View plans →'); link.href = '/dashboard/pricing'; message.append(' ', link) }
+  }
 
   async function cachedOriginalUrl(): Promise<string | null> {
     const path = state?.original_photo_path ?? null
@@ -151,7 +155,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
     if (hasActiveGeneration(jobs)) return
     generateButton.disabled = true; generateButton.textContent = 'Queueing…'
     const style = view.querySelector<HTMLSelectElement>('#avatarStyle')!.value; const preset = view.querySelector<HTMLSelectElement>('#avatarPreset')!.value as AvatarPreset
-    try { const job = await createAvatarJob(profile, state.original_photo_path, style, preset); jobs = [job, ...jobs]; setMessage('Generation queued. You can safely leave this page.'); renderJobsIfChanged(); syncPolling() } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not queue generation.', true); syncGenerateButton() }
+    try { const job = await createAvatarJob(profile, state.original_photo_path, style, preset); jobs = [job, ...jobs]; setMessage('Generation queued. You can safely leave this page.'); renderJobsIfChanged(); syncPolling() } catch (error) { const cause = error as Error & { code?: string }; setMessage(cause instanceof Error ? cause.message : 'Could not queue generation.', true, cause.code === 'avatar_limit_reached'); syncGenerateButton() }
   })
 
   return { view, start, stop() { stopped = true; if (poll !== null) window.clearInterval(poll); poll = null; activePreview?.destroy(); activePreview = null } }

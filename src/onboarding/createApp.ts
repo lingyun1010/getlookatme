@@ -9,20 +9,28 @@ import type { ProfileDocumentDraft, ProfileValidationResult } from './types.ts'
 import { validateProfileDraft } from './validation.ts'
 import { requestPublication } from '../profile/publicationClient.ts'
 import { requestAiLifecycle } from '../profile/aiLifecycleClient.ts'
+import { trackFunnelEvent } from '../analytics/client.ts'
 
-const inputStep = document.querySelector<HTMLElement>('#inputStep')!
-const buildingStep = document.querySelector<HTMLElement>('#buildingStep')!
-const reviewStep = document.querySelector<HTMLElement>('#reviewStep')!
-const inputError = document.querySelector<HTMLElement>('#inputError')!
-const fileInput = document.querySelector<HTMLInputElement>('#resumeFile')!
+const workspace = document.querySelector<HTMLElement>('.create-workspace')
+if (!workspace) throw new Error('The profile workspace is not mounted.')
+const required = <T extends Element>(selector: string): T => {
+  const element = workspace.querySelector<T>(selector)
+  if (!element) throw new Error(`Required profile workspace control is missing: ${selector}`)
+  return element
+}
+const inputStep = required<HTMLElement>('#inputStep')
+const buildingStep = required<HTMLElement>('#buildingStep')
+const reviewStep = required<HTMLElement>('#reviewStep')
+const inputError = required<HTMLElement>('#inputError')
+const fileInput = required<HTMLInputElement>('#resumeFile')
 const mappingService = createResumeMappingService()
 const ownedProfile = await getOwnedProfile(await requireAuthenticatedUser())
-const saveProfileButton = document.querySelector<HTMLButtonElement>('#saveProfileButton')!
+const saveProfileButton = required<HTMLButtonElement>('#saveProfileButton')
 saveProfileButton.textContent = ownedProfile.is_published ? 'Save Changes' : 'Publish Profile'
 let draft: ProfileDocumentDraft | null = null
 let cvPath: string | null = null
 
-const field = <T extends HTMLInputElement | HTMLTextAreaElement>(id: string): T => document.querySelector<T>(`#${id}`)!
+const field = <T extends HTMLInputElement | HTMLTextAreaElement>(id: string): T => required<T>(`#${id}`)
 const lines = (value: string): string[] => value.split('\n').map((line) => line.trim()).filter(Boolean)
 const parts = (value: string): string[] => value.split('|').map((part) => part.trim())
 
@@ -32,7 +40,7 @@ function showStep(step: HTMLElement): void {
 }
 
 function renderIssues(result: ProfileValidationResult): void {
-  const host = document.querySelector<HTMLElement>('#reviewIssues')!
+  const host = required<HTMLElement>('#reviewIssues')
   host.replaceChildren()
   const groups = [['Needs attention', result.blockingErrors], ['Optional information missing', result.missingInformation], ['Review suggested', result.warnings]] as const
   groups.forEach(([title, issues]) => {
@@ -93,16 +101,18 @@ function readReview(): ProfileDocumentDraft {
   }
 }
 
-document.querySelector<HTMLButtonElement>('#buildButton')!.addEventListener('click', async () => {
+required<HTMLButtonElement>('#buildButton').addEventListener('click', async () => {
   inputError.hidden = true
   const file = fileInput.files?.[0]
   if (!file) { inputError.textContent = 'Choose a PDF or DOCX resume.'; inputError.hidden = false; return }
   showStep(buildingStep)
   try {
     const extracted = await extractResumeText(file)
-    document.querySelector<HTMLElement>('#buildingStatus')!.textContent = 'Mapping structured resume information…'
+    required<HTMLElement>('#buildingStatus').textContent = 'Mapping structured resume information…'
     draft = parsedResumeToDraft(await mappingService.mapResume(extracted))
+    void trackFunnelEvent('cv_parsed')
     cvPath = (await uploadProfileAsset(ownedProfile, 'profile-private-assets', 'cv', file, file.name)).path
+    void trackFunnelEvent('cv_uploaded')
     reviewStep.dataset.mapper = draft.mapping.mapper
     populateReview(draft)
     await saveOnboardingState(ownedProfile, { draft, cv_path: cvPath })
@@ -113,9 +123,9 @@ document.querySelector<HTMLButtonElement>('#buildButton')!.addEventListener('cli
   }
 })
 
-document.querySelector('#startOverButton')!.addEventListener('click', () => { draft = null; fileInput.value = ''; showStep(inputStep) })
+required<HTMLButtonElement>('#startOverButton').addEventListener('click', () => { draft = null; fileInput.value = ''; showStep(inputStep) })
 
-document.querySelector<HTMLFormElement>('#reviewForm')!.addEventListener('submit', async (event) => {
+required<HTMLFormElement>('#reviewForm').addEventListener('submit', async (event) => {
   event.preventDefault()
   try {
     draft = readReview()

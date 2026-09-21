@@ -11,16 +11,15 @@ import {
 } from 'lookatme-avatar/server'
 import { RAG_CONFIG } from '../src/rag/config.ts'
 import { parseChatHistory } from '../src/rag/history.ts'
-import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError } from '../src/rag/chatService.ts'
+import { InvalidAuthenticationError, ProfileAccessError, ProfileAiUnavailableError, ProfileChatLimitError } from '../src/rag/chatService.ts'
 import { createServerChatService } from '../src/rag/serverChat.ts'
-import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../src/onboarding/server/service.ts'
+import { handleResumeMappingRequest } from '../src/onboarding/server/request.ts'
 import { ONBOARDING_MAPPING_CONFIG } from '../src/onboarding/config.ts'
-import { authenticateBearer, createAuthenticatedServerClient } from '../src/auth/server.ts'
-import { isAvatarPreset } from '../src/avatar/types.ts'
-import { isOwnedAssetPath } from '../src/profile/repository.ts'
+import { handleAvatarJobRequest } from '../src/avatar/jobRequest.ts'
 import { processNextAvatarJob } from '../src/avatar/worker.ts'
 import { handlePublicationRequest } from '../src/profile/publicationRequest.ts'
 import { handleAiLifecycleRequest } from '../src/profile/aiLifecycleRequest.ts'
+import { handleBillingRequest } from '../src/billing/request.ts'
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
@@ -162,21 +161,12 @@ createServer(async (request, response) => {
     const requestBody = Buffer.concat(chunks)
 
     if (request.url === '/api/onboarding/map-resume') {
-      if (!await authenticateBearer(request.headers.authorization)) return send(401, { error: 'Authentication required' })
-      const body = JSON.parse(requestBody.toString()) as { message?: unknown; text?: unknown; sourceType?: unknown }
-      try {
-        const parsedResume = await mapResumeOnServer(
-          { text: body.text, sourceType: body.sourceType },
-          { diagnostic: (event, details) => console.info('Local onboarding provider diagnostic', { event, ...details }) },
-        )
-        console.info('Local onboarding mapping response', { mapper: 'llm', status: 200 })
-        return send(200, { parsedResume, mapper: 'llm' })
-      } catch (error) {
-        const category = error instanceof ResumeMappingInputError ? 'input_validation' : error instanceof ResumeMappingOutputError ? 'output_validation' : 'provider'
-        const status = error instanceof ResumeMappingInputError ? 400 : 503
-        console.error('Local onboarding mapping failed', { mapper: 'llm', category, fallback: 'client_deterministic', status })
-        return send(status, { error: error instanceof ResumeMappingInputError ? error.message : 'AI-assisted resume mapping is unavailable', category })
-      }
+      const result = await handleResumeMappingRequest(
+        request.headers.authorization,
+        JSON.parse(requestBody.toString()),
+        (event, details) => console.info('Local onboarding provider diagnostic', { event, ...details }),
+      )
+      return send(result.status, result.body)
     }
 
     if (request.url === '/api/chat') {
@@ -196,6 +186,7 @@ createServer(async (request, response) => {
         if (error instanceof InvalidAuthenticationError) return send(401, { error: 'Invalid authentication' })
         if (error instanceof ProfileAccessError) return send(404, { error: 'Profile not found' })
         if (error instanceof ProfileAiUnavailableError) return send(409, { error: 'AI profile is not ready' })
+        if (error instanceof ProfileChatLimitError) return send(402, { code: 'rag_limit_reached', error: error.message })
         throw error
       }
     }
@@ -210,16 +201,14 @@ createServer(async (request, response) => {
       return send(result.status, result.body)
     }
 
+    if (request.url === '/api/billing') {
+      const result = await handleBillingRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
+    }
+
     if (request.url === '/api/avatar-jobs') {
-      const user = await authenticateBearer(request.headers.authorization)
-      const client = createAuthenticatedServerClient(request.headers.authorization)
-      if (!user || !client) return send(401, { error: 'Authentication required' })
-      const body = JSON.parse(requestBody.toString()) as { profileId?: unknown; sourcePhotoPath?: unknown; style?: unknown; preset?: unknown }
-      if (typeof body.profileId !== 'string' || typeof body.sourcePhotoPath !== 'string' || typeof body.style !== 'string' || !isAvatarPreset(body.preset)) return send(400, { error: 'Invalid avatar job request' })
-      if (!isOwnedAssetPath(body.sourcePhotoPath, user.id, body.profileId)) return send(403, { error: 'Source photo is not owned by this profile' })
-      const { data: job, error } = await client.from('avatar_generation_jobs').insert({ user_id: user.id, profile_id: body.profileId, source_photo_path: body.sourcePhotoPath, style: body.style, preset: body.preset }).select('*').single()
-      if (error?.code === '23505') return send(409, { error: 'This profile already has a queued or generating avatar.' })
-      return error ? send(400, { error: 'Could not queue avatar generation' }) : send(202, { job })
+      const result = await handleAvatarJobRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
     }
 
     if (request.url === '/api/avatar-worker') {

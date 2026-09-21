@@ -21,11 +21,14 @@ export interface ChatServiceDependencies {
   embeddings: Pick<EmbeddingClient, 'embedText'>
   knowledge: Pick<KnowledgeRepository, 'search'>
   generateAnswer: GroundedAnswerGenerator
+  recordUsage?(eventType: 'rag_query' | 'embedding', profile: ChatTargetProfile): Promise<void>
+  authorizeUsage?(profile: ChatTargetProfile): Promise<boolean>
 }
 
 export class InvalidAuthenticationError extends Error {}
 export class ProfileAccessError extends Error {}
 export class ProfileAiUnavailableError extends Error {}
+export class ProfileChatLimitError extends Error {}
 
 export class ProfileChatService {
   private readonly dependencies: ChatServiceDependencies
@@ -43,12 +46,17 @@ export class ProfileChatService {
     }
     if (!profile.isPublished && user?.id !== profile.userId) throw new ProfileAccessError('Profile not found')
     if (profile.aiStatus !== 'ready') throw new ProfileAiUnavailableError('AI profile is not ready')
+    if (this.dependencies.authorizeUsage && !await this.dependencies.authorizeUsage(profile)) {
+      throw new ProfileChatLimitError('This profile has reached its monthly AI question limit. The profile owner can upgrade to Pro for more questions.')
+    }
 
     // No provider work occurs until target resolution and authorization are complete.
     const boundedHistory = history.slice(-RAG_CONFIG.maximumHistoryMessages)
     const retrievalQuery = [...boundedHistory, { role: 'user' as const, content: message }]
       .map(({ role, content }) => `${role}: ${content}`).join('\n')
     const queryEmbedding = await this.dependencies.embeddings.embedText(retrievalQuery)
+    await this.dependencies.recordUsage?.('embedding', profile)
+    await this.dependencies.recordUsage?.('rag_query', profile)
     const retrieved = await this.dependencies.knowledge.search(profile.id, queryEmbedding, RAG_CONFIG.profileSearchLimit)
     const results = retrieved.filter((result) => {
       if (result.profileId && result.profileId !== profile.id) return false

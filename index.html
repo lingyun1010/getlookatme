@@ -137,6 +137,7 @@
       import { transferConversation } from "/src/chat/transfer.ts";
       import { requireAuthenticatedUser } from "/src/auth/session.ts";
       import { loadCurrentUserProfileDocument, loadPublicProfile } from "/src/profile/repository.ts";
+      import { trackFunnelEvent } from "/src/analytics/client.ts";
       import * as THREE from "three";
       import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
       import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -163,6 +164,7 @@
         document.body.replaceChildren(notFound);
         throw new Error(`Unknown profile path: ${window.location.pathname}`);
       }
+      if (window.location.pathname !== "/preview") void trackFunnelEvent("public_profile_viewed", profile.slug);
 
       const setText = (id, value) => {
         const element = document.querySelector(`#${id}`);

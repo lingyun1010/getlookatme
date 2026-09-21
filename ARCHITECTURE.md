@@ -8,6 +8,8 @@ Product UI and published portfolios have separate visual boundaries. Landing and
 
 Chat is an optional portfolio add-on rather than part of the kinetic renderer. Shared behavior, multi-turn state, API access, evidence, and avatar selection live under `src/chat/`. Its compact stylesheet consumes the active template's `--portfolio-*` token contract instead of copying template layout CSS. The current kinetic template provides those tokens in `templates/kinetic/tokens.css`; future templates can present the same add-on by supplying the contract.
 
+At present, `chat.html` statically loads the kinetic token provider and applies the kinetic root class. Supporting a second real portfolio template requires route-level resolution of the profile's active template and selection of the matching token provider. That belongs to the future template system and is deliberately outside PR6.
+
 `ProfileDocument.suggestedQuestions` is the reusable Chat prompt set for both Quick Chat and the dedicated page. Onboarding deterministically derives three to five grounded questions once from the profile's projects, skills, experience, and education; persisted legacy profiles are normalized on resolution when their set is missing or too short. Chat uses the resolved generated avatar center frame, falling back to the resolved original image, a legacy center frame, then initials.
 
 ## Authentication and ownership

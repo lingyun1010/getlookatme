@@ -113,7 +113,7 @@ test('evidence and compatibility aliases derive only from retrieved chunks', asy
     chunkId: 'chunk-a', sourceId: 'source-a', sourceType: 'project', sourceRef: 'project-a',
     section: 'projects', title: 'Project A', metadata: { category: 'AI' },
   }])
-  assert.deepEqual(answer.sources, [{ id: 'chunk-a', type: 'project', title: 'Project A' }])
+  assert.deepEqual(answer.sources, [{ id: 'chunk-a', type: 'project', title: 'Project A', sourceRef: 'project-a' }])
   assert.deepEqual(answer.relatedIds, ['project-a'])
 })
 

@@ -21,3 +21,5 @@ Portfolio add-ons own shared behavior while consuming presentation tokens from t
 Chat consumes the canonical profile's persisted `suggestedQuestions`, generated deterministically during profile-document creation from real projects, skills, experience, and education. Legacy documents with fewer than three questions receive the same deterministic normalization when resolved. Both Quick Chat and the dedicated page therefore use one profile-owned set.
 
 The Chat identity uses the resolved generated avatar's neutral center frame, then the resolved original photo, then a legacy embedded center frame, and finally initials. It never generates a Chat-specific asset.
+
+The current `chat.html` still loads `kinetic/tokens.css` and applies the kinetic template root class statically. The `--portfolio-*` contract keeps the add-on itself template-independent, but a second real template will require the chat route to resolve the active profile template and load its corresponding token provider. That is future template-system work, not part of PR6.

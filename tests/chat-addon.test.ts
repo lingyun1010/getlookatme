@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { resolveChatAvatar } from '../src/chat/avatar.ts'
+import { evidenceProfileId } from '../src/chat/evidence.ts'
 import { parsedResumeToDraft } from '../src/onboarding/mapping.ts'
 import { parseResumeDeterministically } from '../src/onboarding/parser.ts'
 import { draftToProfileDocument } from '../src/onboarding/profileDocument.ts'
@@ -77,4 +78,13 @@ test('chat add-on consumes template tokens without importing template layout CSS
   assert.doesNotMatch(page, /kinetic\/kinetic\.css/)
   assert.match(styles, /var\(--portfolio-background\)/)
   assert.match(styles, /var\(--portfolio-font\)/)
+})
+
+test('each evidence source carries its own navigation target when source refs repeat', () => {
+  const sources = [
+    { id: 'chunk-1', type: 'project', title: 'Project A — part 1', sourceRef: 'project-a' },
+    { id: 'chunk-2', type: 'project', title: 'Project A — part 2', sourceRef: 'project-a' },
+    { id: 'chunk-3', type: 'experience', title: 'Experience B', sourceRef: 'experience-b' },
+  ]
+  assert.deepEqual(sources.map(evidenceProfileId), ['project-a', 'project-a', 'experience-b'])
 })

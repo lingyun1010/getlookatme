@@ -1,6 +1,7 @@
 import type { PortfolioAnswerEvidence, PortfolioAnswerSource } from '../rag/types.ts'
 
 export function evidenceProfileId(source: PortfolioAnswerSource): string | null {
+  if (source.sourceRef) return source.sourceRef
   const prefix = `${source.type}-`
   return source.id.startsWith(prefix) ? source.id.slice(prefix.length) : null
 }
@@ -37,11 +38,10 @@ export function createEvidenceCard(profileSlug: string, evidence: PortfolioAnswe
 export function renderEvidenceChips(
   container: HTMLElement,
   sources: PortfolioAnswerSource[],
-  relatedIds: string[],
 ): void {
   container.replaceChildren()
-  sources.slice(0, 3).forEach((source, index) => {
-    const profileId = relatedIds[index] ?? evidenceProfileId(source)
+  sources.slice(0, 3).forEach((source) => {
+    const profileId = evidenceProfileId(source)
     const hasTarget = profileId && document.querySelector(`[data-profile-id="${CSS.escape(profileId)}"]`)
     const chip = document.createElement(hasTarget ? 'button' : 'span')
     chip.className = 'source-chip'

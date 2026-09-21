@@ -62,7 +62,7 @@ export async function answerPortfolioQuestion(
     }),
     sources: selected.map((id) => {
       const chunk = allowed.get(id)!
-      return { id: chunk.id, type: chunk.type, title: chunk.title }
+      return { id: chunk.id, type: chunk.type, title: chunk.title, sourceRef: chunk.metadata.sourceId ?? chunk.id }
     }),
     relatedIds: [...new Set(selected.map((id) => allowed.get(id)?.metadata.sourceId).filter((id): id is string => Boolean(id)))],
     confidence: confidenceFor(results),

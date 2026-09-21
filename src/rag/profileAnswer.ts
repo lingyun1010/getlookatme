@@ -56,7 +56,7 @@ export async function answerProfileQuestion(
   return {
     answer: generated.answer,
     evidence,
-    sources: evidence.map((item) => ({ id: item.chunkId, type: item.sourceType, title: item.title ?? item.section })),
+    sources: evidence.map((item) => ({ id: item.chunkId, type: item.sourceType, title: item.title ?? item.section, sourceRef: item.sourceRef })),
     relatedIds: [...new Set(evidence.map(({ sourceRef }) => sourceRef))],
     confidence: confidenceFor(results),
     noAnswer: false,

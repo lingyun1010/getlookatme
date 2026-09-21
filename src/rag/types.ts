@@ -45,6 +45,7 @@ export interface PortfolioAnswerSource {
   id: string
   type: string
   title: string
+  sourceRef: string
 }
 
 export interface PortfolioAnswerEvidence {

@@ -21,6 +21,7 @@ export interface ChatServiceDependencies {
   embeddings: Pick<EmbeddingClient, 'embedText'>
   knowledge: Pick<KnowledgeRepository, 'search'>
   generateAnswer: GroundedAnswerGenerator
+  recordUsage?(eventType: 'rag_query' | 'embedding', profile: ChatTargetProfile): Promise<void>
 }
 
 export class InvalidAuthenticationError extends Error {}
@@ -49,6 +50,8 @@ export class ProfileChatService {
     const retrievalQuery = [...boundedHistory, { role: 'user' as const, content: message }]
       .map(({ role, content }) => `${role}: ${content}`).join('\n')
     const queryEmbedding = await this.dependencies.embeddings.embedText(retrievalQuery)
+    await this.dependencies.recordUsage?.('embedding', profile)
+    await this.dependencies.recordUsage?.('rag_query', profile)
     const retrieved = await this.dependencies.knowledge.search(profile.id, queryEmbedding, RAG_CONFIG.profileSearchLimit)
     const results = retrieved.filter((result) => {
       if (result.profileId && result.profileId !== profile.id) return false

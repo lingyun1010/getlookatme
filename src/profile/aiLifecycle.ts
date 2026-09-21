@@ -7,7 +7,7 @@ export interface AiStateRepository {
   findOwnedProfile(userId: string): Promise<AiProfileState | null>
   updateState(profileId: string, userId: string, values: { enabled?: boolean; status?: ProfileAiStatus; lastIndexedAt?: string | null; lastError?: string | null }): Promise<AiProfileState>
 }
-export interface AiLifecycleDependencies { state: AiStateRepository; knowledge: KnowledgeRepository; embeddings: EmbeddingClient; now(): string }
+export interface AiLifecycleDependencies { state: AiStateRepository; knowledge: KnowledgeRepository; embeddings: EmbeddingClient; now(): string; recordEmbeddingUsage?(profile: AiProfileState, quantity: number): Promise<void> }
 export class AiLifecycleError extends Error {}
 
 async function owned(userId: string, state: AiStateRepository) {
@@ -20,6 +20,7 @@ async function index(profile: AiProfileState, dependencies: AiLifecycleDependenc
   await dependencies.state.updateState(profile.id, profile.userId, { enabled: true, status: 'indexing', lastError: null })
   try {
     const sync = await syncProfileKnowledge(profile.id, dependencies.knowledge, dependencies.embeddings)
+    if (sync.embeddingsGenerated > 0) await dependencies.recordEmbeddingUsage?.(profile, sync.embeddingsGenerated)
     if (sync.sourceCount === 0 || sync.chunkCount === 0) throw new Error('No usable profile knowledge was produced.')
     const ready = await dependencies.state.updateState(profile.id, profile.userId, { enabled: true, status: 'ready', lastIndexedAt: dependencies.now(), lastError: null })
     return { profile: ready, sync }

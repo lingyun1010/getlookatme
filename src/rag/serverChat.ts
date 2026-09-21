@@ -5,6 +5,7 @@ import { SupabaseKnowledgeRepository } from '../knowledge/repository.ts'
 import type { ProfileAiStatus, ProfileDocument } from '../profile/types.ts'
 import { ProfileChatService, type ChatTargetProfile } from './chatService.ts'
 import { generateGroundedAnswer } from './profileAnswer.ts'
+import { recordUsageSafely } from '../monetisation/usage.ts'
 
 function serviceRoleClient(): SupabaseClient {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
@@ -29,5 +30,10 @@ export function createServerChatService(): ProfileChatService {
     embeddings: { embedText: (input) => new OpenAIEmbeddingClient().embedText(input) },
     knowledge: new SupabaseKnowledgeRepository(client),
     generateAnswer: generateGroundedAnswer,
+    recordUsage: (eventType, profile) => recordUsageSafely(client, {
+      userId: profile.userId,
+      profileId: profile.id,
+      eventType,
+    }),
   })
 }

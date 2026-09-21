@@ -1,5 +1,6 @@
 import { mapResumeOnServer, ResumeMappingInputError, ResumeMappingOutputError } from '../../src/onboarding/server/service.ts'
-import { authenticateBearer } from '../../src/auth/server.ts'
+import { authenticateBearer, createAuthenticatedServerClient, createServiceRoleServerClient } from '../../src/auth/server.ts'
+import { recordUsageSafely } from '../../src/monetisation/usage.ts'
 
 interface ApiRequest { method?: string; body?: unknown; headers?: { origin?: string; authorization?: string } }
 interface ApiResponse { status(code: number): ApiResponse; end(): void; json(body: unknown): void; setHeader(name: string, value: string): void }
@@ -15,11 +16,16 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   response.setHeader('Vary', 'Origin')
   if (request.method === 'OPTIONS') return response.status(204).end()
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' })
-  if (!await authenticateBearer(request.headers?.authorization)) return response.status(401).json({ error: 'Authentication required' })
+  const user = await authenticateBearer(request.headers?.authorization)
+  const client = createAuthenticatedServerClient(request.headers?.authorization)
+  if (!user || !client) return response.status(401).json({ error: 'Authentication required' })
   const body = request.body as { text?: unknown; sourceType?: unknown } | null
   if (!body || typeof body !== 'object') return response.status(400).json({ error: 'Invalid request body' })
   try {
     const parsedResume = await mapResumeOnServer({ text: body.text, sourceType: body.sourceType })
+    const { data: profile } = await client.from('profiles').select('id').eq('user_id', user.id).order('created_at').limit(1).maybeSingle()
+    const usageClient = createServiceRoleServerClient()
+    if (profile?.id && usageClient) await recordUsageSafely(usageClient, { userId: user.id, profileId: profile.id, eventType: 'cv_parse' })
     return response.status(200).json({ parsedResume, mapper: 'llm' })
   } catch (error) {
     const inputError = error instanceof ResumeMappingInputError

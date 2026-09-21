@@ -19,6 +19,7 @@ import { handleAvatarJobRequest } from '../src/avatar/jobRequest.ts'
 import { processNextAvatarJob } from '../src/avatar/worker.ts'
 import { handlePublicationRequest } from '../src/profile/publicationRequest.ts'
 import { handleAiLifecycleRequest } from '../src/profile/aiLifecycleRequest.ts'
+import { handleBillingRequest } from '../src/billing/request.ts'
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
@@ -197,6 +198,11 @@ createServer(async (request, response) => {
 
     if (request.url === '/api/profile-ai') {
       const result = await handleAiLifecycleRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
+    }
+
+    if (request.url === '/api/billing') {
+      const result = await handleBillingRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
       return send(result.status, result.body)
     }
 

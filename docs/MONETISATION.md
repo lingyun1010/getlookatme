@@ -12,6 +12,8 @@ Avatar usage is counted atomically when a new generation job is accepted; retryi
 
 Set `MOCK_BILLING_ENABLED=true` only in local or non-production development. The API refuses mock billing whenever `VERCEL_ENV` or `NODE_ENV` is production, even if the flag is present. The dashboard mock checkout can activate, cancel, and reactivate the authenticated user's own Pro subscription without collecting payment details.
 
+Locally, the browser sends authenticated `POST /api/billing` requests through Vite's API proxy. Actions are JSON body values: `start`, `complete`, `cancel`, and `reactivate`. The local API and deployed handler share the same request boundary and `MockBillingProvider`; neither accepts a browser-supplied user ID.
+
 Future Stripe work should implement the `BillingProvider` interface, keep Stripe session and webhook handling inside the billing boundary, and update the same subscription fields. Entitlements, usage enforcement, and product UI should not need Stripe-specific branches.
 
 ## Beta funnel

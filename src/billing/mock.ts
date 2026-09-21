@@ -3,6 +3,8 @@ import type { BillingSession, DevelopmentBillingProvider } from './provider.ts'
 
 const sessionFor = (userId: string): BillingSession => ({ id: `mock:${userId}:${crypto.randomUUID()}`, provider: 'mock' })
 
+export class MockBillingSessionError extends Error {}
+
 export class MockBillingProvider implements DevelopmentBillingProvider {
   private readonly client: SupabaseClient
   constructor(client: SupabaseClient) { this.client = client }
@@ -16,7 +18,7 @@ export class MockBillingProvider implements DevelopmentBillingProvider {
   }
 
   async completeCheckoutSession(userId: string, sessionId: string): Promise<void> {
-    if (!sessionId.startsWith(`mock:${userId}:`)) throw new Error('Invalid mock checkout session.')
+    if (!sessionId.startsWith(`mock:${userId}:`)) throw new MockBillingSessionError('Invalid mock checkout session.')
     const periodEnd = new Date(); periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1)
     const { error } = await this.client.from('subscriptions').update({
       plan: 'pro', status: 'active', provider: 'mock',

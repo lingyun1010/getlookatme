@@ -13,3 +13,13 @@ When another template is added:
 5. Reuse the existing profile, avatar, and chat behavior instead of copying those data/application boundaries into the template.
 
 Template styles may define their own typography, colors, spacing, layout, and animation. They must not import `src/landing/landing.css`, onboarding styles, or other product UI styles. Product pages must likewise never import a portfolio-template stylesheet.
+
+## Optional add-ons
+
+Portfolio add-ons own shared behavior while consuming presentation tokens from the active template. The Chat add-on lives under `src/chat/`; it does not import the kinetic layout stylesheet. `kinetic/tokens.css` exposes the template font, colors, borders, radii, spacing, shadows, and content width through `--portfolio-*` variables used by both the portfolio and the small Chat add-on stylesheet.
+
+Chat consumes the canonical profile's persisted `suggestedQuestions`, generated deterministically during profile-document creation from real projects, skills, experience, and education. Legacy documents with fewer than three questions receive the same deterministic normalization when resolved. Both Quick Chat and the dedicated page therefore use one profile-owned set.
+
+The Chat identity uses the resolved generated avatar's neutral center frame, then the resolved original photo, then a legacy embedded center frame, and finally initials. It never generates a Chat-specific asset.
+
+The current `chat.html` still loads `kinetic/tokens.css` and applies the kinetic template root class statically. The `--portfolio-*` contract keeps the add-on itself template-independent, but a second real template will require the chat route to resolve the active profile template and load its corresponding token provider. That is future template-system work, not part of PR6.

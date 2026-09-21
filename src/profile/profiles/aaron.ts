@@ -75,8 +75,9 @@ export const aaronProfile = {
   ],
   focusAreas: ['Product engineering', 'TypeScript', 'Prototyping', 'Testing'],
   suggestedQuestions: [
-    'What is this fixture profile?',
-    'What skills are demonstrated?',
+    'Tell me about Fixture Project.',
+    'What experience does Aaron have with TypeScript and Web APIs?',
+    'What did Aaron do as Product Engineer at Example Studio?',
   ],
   avatar: {
     mode: 'placeholder',

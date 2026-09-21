@@ -1,0 +1,16 @@
+.portfolio-template-kinetic {
+  --portfolio-font: "Kanit", ui-sans-serif, system-ui, sans-serif;
+  --portfolio-background: #0c0c0c;
+  --portfolio-surface: #171615;
+  --portfolio-surface-raised: #24211e;
+  --portfolio-text: #d7e2ea;
+  --portfolio-text-muted: rgba(215, 226, 234, 0.66);
+  --portfolio-border: rgba(215, 226, 234, 0.16);
+  --portfolio-accent: #f0ff63;
+  --portfolio-accent-text: #171512;
+  --portfolio-radius: 18px;
+  --portfolio-radius-small: 12px;
+  --portfolio-content-width: 1080px;
+  --portfolio-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+  --portfolio-space: clamp(16px, 3vw, 28px);
+}

@@ -1,3 +1,5 @@
+import { CHAT_LIMITS } from './limits.ts'
+
 export const RAG_CONFIG = {
   embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small',
   answerModel: process.env.OPENAI_ANSWER_MODEL ?? 'gpt-5-mini',
@@ -7,5 +9,5 @@ export const RAG_CONFIG = {
   minimumSimilarity: 0.3,
   minimumIntentSimilarity: 0.17,
   intentTypeBoost: 1.18,
-  maximumQuestionLength: 500,
+  ...CHAT_LIMITS,
 } as const

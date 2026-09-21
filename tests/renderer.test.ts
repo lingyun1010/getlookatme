@@ -40,14 +40,14 @@ test('shared renderer uses explicit featured selectors instead of array position
 
 test('shared renderer keeps Aaron AI disabled before any chat request', () => {
   const guard = renderer.indexOf('if (!profile.ai.enabled) return;')
-  const request = renderer.indexOf('fetch(`${apiBaseUrl}/api/chat`')
+  const request = renderer.indexOf('await askProfile(profile.slug')
   assert.ok(guard >= 0)
   assert.ok(request > guard)
 })
 
 test('the frontend AI guard still prevents true temporary previews from reaching chat', () => {
   const guard = renderer.indexOf('if (!profile.ai.enabled) return;')
-  const request = renderer.indexOf('fetch(`${apiBaseUrl}/api/chat`')
+  const request = renderer.indexOf('await askProfile(profile.slug')
   assert.ok(guard >= 0)
   assert.ok(request > guard)
   assert.match(renderer, /chatInput\.disabled = !profile\.ai\.enabled/)

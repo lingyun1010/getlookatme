@@ -45,6 +45,7 @@ export interface PortfolioAnswerSource {
   id: string
   type: string
   title: string
+  sourceRef: string
 }
 
 export interface PortfolioAnswerEvidence {
@@ -64,4 +65,18 @@ export interface PortfolioAnswer {
   relatedIds: string[]
   confidence: 'high' | 'medium' | 'low'
   noAnswer: boolean
+}
+
+export type ChatRole = 'user' | 'assistant'
+
+export interface ChatHistoryMessage {
+  role: ChatRole
+  content: string
+}
+
+export interface ChatMessage extends ChatHistoryMessage {
+  id: string
+  evidence?: PortfolioAnswerEvidence[]
+  sources?: PortfolioAnswerSource[]
+  relatedIds?: string[]
 }

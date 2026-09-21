@@ -15,6 +15,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/profile/templates/kinetic/kinetic.css" />
+    <link rel="stylesheet" href="/src/profile/templates/kinetic/tokens.css" />
   </head>
   <body class="portfolio-page portfolio-template-kinetic" data-profile-template="kinetic">
     <div class="ghost-cursor" id="ghostCursor" aria-hidden="true"></div>
@@ -25,6 +26,7 @@
           <a href="#about">About</a>
           <a href="#services">Services</a>
           <a href="#projects">Projects</a>
+          <a id="profileChatLink">Chat</a>
           <a href="#contact">Contact</a>
         </nav>
 
@@ -51,6 +53,7 @@
           <div class="avatar-speech" id="avatarSpeech" data-state="idle" role="status" aria-live="polite">
             <p id="avatarAnswer">Ask me about my work.</p>
             <div class="source-list" id="avatarSources" aria-label="Answer sources"></div>
+            <button class="continue-chat" id="continueChat" type="button">Continue conversation →</button>
           </div>
           <form class="avatar-chat-form" id="avatarChatForm">
             <input id="avatarQuestion" name="message" type="text" maxlength="500" autocomplete="off" placeholder="Ask me anything..." aria-label="Ask a portfolio question" />
@@ -128,8 +131,10 @@
       import { LookAtMeAvatar } from "lookatme-avatar/react";
       import { resolveProfile } from "/src/profile/resolveProfile.ts";
       import { featuredEducation, featuredExperience } from "/src/profile/presentation.ts";
-      import { isSupabaseConfigured, requireSupabase } from "/src/auth/supabase.ts";
-      import { chatAuthorizationHeaders } from "/src/auth/chatSession.ts";
+      import { isSupabaseConfigured } from "/src/auth/supabase.ts";
+      import { askProfile } from "/src/chat/client.ts";
+      import { renderEvidenceChips } from "/src/chat/evidence.ts";
+      import { transferConversation } from "/src/chat/transfer.ts";
       import { requireAuthenticatedUser } from "/src/auth/session.ts";
       import { loadCurrentUserProfileDocument, loadPublicProfile } from "/src/profile/repository.ts";
       import * as THREE from "three";
@@ -175,6 +180,7 @@
       };
 
       const identity = profile.identity;
+      document.querySelector("#profileChatLink").href = `/${encodeURIComponent(profile.slug)}/chat`;
       const emailHref = identity.email ? `mailto:${identity.email}` : "#contact";
       document.title = profile.seo.title;
       document.querySelector('meta[name="description"]')?.setAttribute("content", profile.seo.description);
@@ -684,12 +690,14 @@
       const speechBubble = document.querySelector("#avatarSpeech");
       const answerText = document.querySelector("#avatarAnswer");
       const sourceList = document.querySelector("#avatarSources");
+      const continueChat = document.querySelector("#continueChat");
       const characterStage = document.querySelector(".character-stage");
       const suggestedQuestionList = document.querySelector("#suggestedQuestions");
       /** @typedef {"idle" | "thinking" | "answered" | "error"} AvatarChatState */
       /** @type {AvatarChatState} */
       let avatarChatState = "idle";
       let currentRelatedIds = [];
+      let currentConversation = [];
       let thinkingDotsTimer = 0;
 
       const questionButtons = suggestedQuestions.map((question) => {
@@ -860,35 +868,8 @@
         }
       }
 
-      function profileIdForSource(source) {
-        const prefix = `${source.type}-`;
-        return source.id.startsWith(prefix) ? source.id.slice(prefix.length) : null;
-      }
-
-      function navigateToProfileId(profileId) {
-        const target = profileId ? document.querySelector(`[data-profile-id="${CSS.escape(profileId)}"]`) : null;
-        if (!target) return;
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-        target.classList.remove("profile-highlight");
-        requestAnimationFrame(() => target.classList.add("profile-highlight"));
-        window.setTimeout(() => target.classList.remove("profile-highlight"), 1900);
-      }
-
       function renderSources(sources) {
-        sourceList.replaceChildren();
-        sources.slice(0, 3).forEach((source) => {
-          const profileId = profileIdForSource(source);
-          const hasTarget = profileId && currentRelatedIds.includes(profileId)
-            && document.querySelector(`[data-profile-id="${CSS.escape(profileId)}"]`);
-          const chip = document.createElement(hasTarget ? "button" : "span");
-          chip.className = "source-chip";
-          chip.textContent = source.title;
-          if (hasTarget) {
-            chip.type = "button";
-            chip.addEventListener("click", () => navigateToProfileId(profileId));
-          }
-          sourceList.append(chip);
-        });
+        renderEvidenceChips(sourceList, sources);
       }
 
       async function askAvatar(question) {
@@ -901,28 +882,17 @@
         setAvatarChatState("thinking", "...");
 
         try {
-          const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-          const authorizationHeaders = isSupabaseConfigured
-            ? await chatAuthorizationHeaders(requireSupabase(), { required: window.location.pathname === "/preview" })
-            : {};
-          const response = await fetch(`${apiBaseUrl}/api/chat`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...authorizationHeaders,
-            },
-            body: JSON.stringify({ message, profileSlug: profile.slug }),
-          });
-          if (!response.ok) throw new Error("Chat request failed");
-          const result = await response.json();
-          if (!result || typeof result.answer !== "string" || !Array.isArray(result.sources)) {
-            throw new Error("Unexpected chat response");
-          }
+          const result = await askProfile(profile.slug, message, [], window.location.pathname === "/preview");
           currentRelatedIds = Array.isArray(result.relatedIds)
             ? result.relatedIds.filter((id) => typeof id === "string")
             : [];
           setAvatarChatState("answered", result.answer);
           renderSources(result.sources);
+          currentConversation = [
+            { id: crypto.randomUUID(), role: "user", content: message },
+            { id: crypto.randomUUID(), role: "assistant", content: result.answer, evidence: result.evidence, sources: result.sources, relatedIds: result.relatedIds },
+          ];
+          continueChat.hidden = false;
         } catch {
           sourceList.replaceChildren();
           setAvatarChatState("error", "I couldn't answer that just now. Please try again.");
@@ -933,6 +903,8 @@
         event.preventDefault();
         askAvatar(chatInput.value);
       });
+
+      continueChat.addEventListener("click", () => transferConversation(profile.slug, currentConversation));
 
       document.querySelector("#suggestedQuestions").addEventListener("click", (event) => {
         const button = event.target.closest("[data-question]");

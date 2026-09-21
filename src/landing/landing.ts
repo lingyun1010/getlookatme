@@ -3,7 +3,27 @@ import { lingyunAvatar } from '../avatar/lingyun.ts'
 import { currentUser } from '../auth/session.ts'
 import { isSupabaseConfigured } from '../auth/supabase.ts'
 import { AuthModal } from '../auth/AuthModal.ts'
+import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
 import '../auth/auth.css'
+
+const pricingPlans = document.querySelector<HTMLElement>('#pricingPlans')
+if (pricingPlans) {
+  pricingPlans.replaceChildren(...PUBLIC_PLAN_IDS.map((planId) => {
+    const plan = PLAN_CONFIG[planId]
+    const article = document.createElement('article')
+    if (planId === 'pro') article.classList.add('featured-plan')
+    const suffix = plan.price?.amount ? ` <small>/${plan.price.interval}</small>` : ''
+    article.innerHTML = `
+      ${planId === 'pro' ? '<span class="plan-label">More capacity</span>' : ''}
+      <h3>${plan.name}</h3>
+      <p class="plan-price">${formatPlanPrice(plan)}${suffix}</p>
+      <p class="plan-description">${plan.description}</p>
+      <ul>${plan.highlights.map((highlight) => `<li>${highlight}</li>`).join('')}</ul>
+      <a class="button auth-cta" data-auth-mode="sign-up" href="/signup">Create my profile</a>
+    `
+    return article
+  }))
+}
 
 const avatarHost = document.querySelector<HTMLElement>('#heroAvatar')
 if (avatarHost) {
@@ -39,4 +59,4 @@ menuButton?.addEventListener('click', () => {
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('is-visible') })
 }, { threshold: 0.12 })
-document.querySelectorAll('.reveal, .steps li, .value-grid article, .profile-preview, .testimonial-grid figure').forEach((element) => observer.observe(element))
+document.querySelectorAll('.reveal, .steps li, .value-grid article, .profile-preview, .pricing-grid article').forEach((element) => observer.observe(element))

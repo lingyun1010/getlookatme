@@ -1,4 +1,5 @@
-import { authenticateBearer } from '../auth/server.ts'
+import { authenticateBearer, createServiceRoleServerClient } from '../auth/server.ts'
+import { recordFunnelEventSafely } from '../analytics/events.ts'
 import { checkSlugAvailability, PublicationError, publishProfile, unpublishProfile, updateProfileSlug } from './publication.ts'
 import { createPublicationRepository } from './publicationServer.ts'
 
@@ -13,6 +14,8 @@ export async function handlePublicationRequest(authorization: string | undefined
     if (action === 'save-slug' && typeof slug === 'string') return { status: 200, body: { profile: await updateProfileSlug(user.id, slug, repository) } }
     if (action === 'publish' && typeof slug === 'string') {
       const profile = await publishProfile(user.id, slug, repository)
+      const analyticsClient = createServiceRoleServerClient()
+      if (analyticsClient) await recordFunnelEventSafely(analyticsClient, { userId: user.id, profileId: profile.id, eventType: 'profile_published' })
       return { status: 200, body: { profile, publicUrl: `/${profile.slug}` } }
     }
     if (action === 'unpublish') return { status: 200, body: { profile: await unpublishProfile(user.id, repository) } }

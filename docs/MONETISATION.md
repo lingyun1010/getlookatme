@@ -12,6 +12,10 @@ Set `MOCK_BILLING_ENABLED=true` only in local or non-production development. The
 
 Future Stripe work should implement the `BillingProvider` interface, keep Stripe session and webhook handling inside the billing boundary, and update the same subscription fields. Entitlements, usage enforcement, and product UI should not need Stripe-specific branches.
 
+## Beta funnel
+
+`analytics_events` stores only the event name, owner/profile identifiers, timestamps, and optional small metadata. The shared analytics boundary records signup, CV upload/parse, Avatar completion, publication, public views, RAG questions, upgrade clicks, checkout starts, and subscription activation. Public views are resolved from a published slug on the server; CV content and chat text are never analytics metadata. Analytics failures are logged but do not fail the product action.
+
 ## Manual plan testing
 
 Use the Supabase SQL editor or another trusted service-role context; subscription rows are intentionally not browser-writable.

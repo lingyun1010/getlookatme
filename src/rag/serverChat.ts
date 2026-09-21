@@ -8,6 +8,7 @@ import { generateGroundedAnswer } from './profileAnswer.ts'
 import { getMonthlyUsage, recordUsageSafely } from '../monetisation/usage.ts'
 import { canUseFeature, effectivePlan } from '../monetisation/entitlements.ts'
 import type { Subscription } from '../monetisation/subscription.ts'
+import { recordFunnelEventSafely } from '../analytics/events.ts'
 
 function serviceRoleClient(): SupabaseClient {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
@@ -40,10 +41,9 @@ export function createServerChatService(): ProfileChatService {
       if (error) throw error
       return canUseFeature(effectivePlan(data as Subscription), 'rag.query', usage.rag_query)
     },
-    recordUsage: (eventType, profile) => recordUsageSafely(client, {
-      userId: profile.userId,
-      profileId: profile.id,
-      eventType,
-    }),
+    recordUsage: async (eventType, profile) => {
+      await recordUsageSafely(client, { userId: profile.userId, profileId: profile.id, eventType })
+      if (eventType === 'rag_query') await recordFunnelEventSafely(client, { userId: profile.userId, profileId: profile.id, eventType: 'rag_question_asked' })
+    },
   })
 }

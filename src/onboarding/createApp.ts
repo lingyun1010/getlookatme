@@ -9,6 +9,7 @@ import type { ProfileDocumentDraft, ProfileValidationResult } from './types.ts'
 import { validateProfileDraft } from './validation.ts'
 import { requestPublication } from '../profile/publicationClient.ts'
 import { requestAiLifecycle } from '../profile/aiLifecycleClient.ts'
+import { trackFunnelEvent } from '../analytics/client.ts'
 
 const inputStep = document.querySelector<HTMLElement>('#inputStep')!
 const buildingStep = document.querySelector<HTMLElement>('#buildingStep')!
@@ -102,7 +103,9 @@ document.querySelector<HTMLButtonElement>('#buildButton')!.addEventListener('cli
     const extracted = await extractResumeText(file)
     document.querySelector<HTMLElement>('#buildingStatus')!.textContent = 'Mapping structured resume information…'
     draft = parsedResumeToDraft(await mappingService.mapResume(extracted))
+    void trackFunnelEvent('cv_parsed')
     cvPath = (await uploadProfileAsset(ownedProfile, 'profile-private-assets', 'cv', file, file.name)).path
+    void trackFunnelEvent('cv_uploaded')
     reviewStep.dataset.mapper = draft.mapping.mapper
     populateReview(draft)
     await saveOnboardingState(ownedProfile, { draft, cv_path: cvPath })

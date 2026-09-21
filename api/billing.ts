@@ -1,5 +1,6 @@
 import { authenticateBearer, createServiceRoleServerClient } from '../src/auth/server.ts'
 import { MockBillingProvider, mockBillingEnabled } from '../src/billing/mock.ts'
+import { recordUserFunnelEventSafely } from '../src/analytics/events.ts'
 
 interface ApiRequest { method?: string; body?: unknown; headers?: { authorization?: string } }
 interface ApiResponse { status(code: number): ApiResponse; end(): void; json(body: unknown): void; setHeader(name: string, value: string): void }
@@ -16,9 +17,14 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const body = request.body as { action?: unknown; sessionId?: unknown } | null
   const provider = new MockBillingProvider(client)
   try {
-    if (body?.action === 'start') return response.status(200).json({ session: await provider.createCheckoutSession(user.id) })
+    if (body?.action === 'start') {
+      const session = await provider.createCheckoutSession(user.id)
+      await recordUserFunnelEventSafely(client, user.id, 'checkout_started')
+      return response.status(200).json({ session })
+    }
     if (body?.action === 'complete' && typeof body.sessionId === 'string') {
       await provider.completeCheckoutSession(user.id, body.sessionId)
+      await recordUserFunnelEventSafely(client, user.id, 'subscription_activated')
       return response.status(200).json({ status: 'active', plan: 'pro' })
     }
     if (body?.action === 'cancel') { await provider.cancelSubscription(user.id); return response.status(200).json({ status: 'cancelled' }) }

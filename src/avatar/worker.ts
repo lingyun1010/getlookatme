@@ -3,6 +3,7 @@ import type { AvatarImageStorage, GeneratedImage, AvatarFramePreset, AvatarStyle
 import { OpenAIImageGenerationProvider, PhotoAIFrameProducer, SharpGeneratedImageValidator } from 'lookatme-avatar/server'
 import type { AvatarGenerationJob } from './types.ts'
 import { recordUsageSafely } from '../monetisation/usage.ts'
+import { recordFunnelEventSafely } from '../analytics/events.ts'
 
 function workerClient() {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
@@ -80,6 +81,7 @@ export async function processNextAvatarJob(): Promise<{ processed: boolean; jobI
     }).eq('id', job.id).eq('status', 'generating')
     if (readyError) throw readyError
     await recordUsageSafely(client, { userId: job.user_id, profileId: job.profile_id, eventType: 'avatar_generation' })
+    await recordFunnelEventSafely(client, { userId: job.user_id, profileId: job.profile_id, eventType: 'avatar_generated' })
     return { processed: true, jobId: job.id, status: 'ready' }
   } catch (cause) {
     const errorName = cause instanceof Error ? cause.name : 'UnknownError'

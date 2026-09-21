@@ -6,6 +6,8 @@ Every Auth user has one private `subscriptions` row. New and backfilled users st
 
 Server boundaries write `cv_parse`, `avatar_generation`, `rag_query`, and `embedding` rows to `usage_events`. Users can read only their own usage, and browsers cannot insert it. Avatar and RAG checks compare current-month totals with the central entitlement limits.
 
+Avatar usage is counted atomically when a new generation job is accepted; retrying that job does not add usage. RAG query and query-embedding usage is counted only after the request passes its limit check and reaches the RAG execution path. CV parsing is counted after successful server mapping. Knowledge indexing records the number of new embeddings produced by one sync, without recounting unchanged chunks.
+
 ## Mock billing
 
 Set `MOCK_BILLING_ENABLED=true` only in local or non-production development. The API refuses mock billing whenever `VERCEL_ENV` or `NODE_ENV` is production, even if the flag is present. The dashboard mock checkout can activate, cancel, and reactivate the authenticated user's own Pro subscription without collecting payment details.

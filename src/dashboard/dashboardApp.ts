@@ -17,7 +17,8 @@ import { trackFunnelEvent } from '../analytics/client.ts'
 
 const initialRoute=`${location.pathname}${location.hash}`
 const user=await requireAuthenticatedUser(initialRoute)
-const [profile,subscription,monthlyUsage]=await Promise.all([getOwnedProfile(user),getSubscription(user),getCurrentUserMonthlyUsage(user)])
+const [profile,subscription,initialMonthlyUsage]=await Promise.all([getOwnedProfile(user),getSubscription(user),getCurrentUserMonthlyUsage(user)])
+let monthlyUsage=initialMonthlyUsage
 const plan=effectivePlan(subscription),planConfig=PLAN_CONFIG[plan]
 let state=await loadOnboardingState(profile)
 const profileDocument=profile.document as ProfileDocument
@@ -26,6 +27,7 @@ const shell=mountDashboardShell({user,name,published:profile.is_published,slug:p
 let activeAvatarPage:ReturnType<typeof createAvatarPage>|null=null
 const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
 const text=(root:ParentNode,id:string,value:string)=>{const element=root.querySelector<HTMLElement>(`#${id}`);if(element)element.textContent=value}
+function renderUsage(){const avatarLimit=planConfig.entitlements['avatar.generate'].limit,ragLimit=planConfig.entitlements['rag.query'].limit;text(overview,'usageSummary',`This month: ${monthlyUsage.avatar_generation}${avatarLimit===null?'':` / ${avatarLimit}`} Avatars · ${monthlyUsage.rag_query}${ragLimit===null?'':` / ${ragLimit}`} AI questions`)}
 async function initialiseOverview(){
   const [avatars,jobs]=await Promise.all([listAvatarAssets(profile),listAvatarJobs(profile)])
   const generating=jobs.some(job=>job.status==='queued'||job.status==='generating'),ready=jobs.some(job=>job.status==='ready')
@@ -35,8 +37,7 @@ async function initialiseOverview(){
   text(overview,'avatarCopy',hasAvatar?'Your current avatar is connected to your profile.':'Add a portrait, then keep it natural or generate a living avatar.')
   text(overview,'currentPlanTitle',planConfig.name)
   text(overview,'planDescription',planConfig.description)
-  const avatarLimit=planConfig.entitlements['avatar.generate'].limit,ragLimit=planConfig.entitlements['rag.query'].limit
-  text(overview,'usageSummary',`This month: ${monthlyUsage.avatar_generation}${avatarLimit===null?'':` / ${avatarLimit}`} Avatars · ${monthlyUsage.rag_query}${ragLimit===null?'':` / ${ragLimit}`} AI questions`)
+  renderUsage()
   const upgradeAction=overview.querySelector<HTMLAnchorElement>('#upgradeAction')!;upgradeAction.textContent=plan==='free'?'Upgrade to Pro':'View plan details'
   if(plan==='free')upgradeAction.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'))
   let aiEnabled=profile.ai_enabled,aiStatus=profile.ai_status
@@ -70,7 +71,7 @@ function createPricingView(){const main=document.createElement('main');main.clas
 const pricingView=createPricingView()
 function createUpgradeView(){const main=document.createElement('main');main.className='dashboard-content';const heading=document.createElement('header');heading.className='dashboard-heading';const headingCopy=document.createElement('div');const title=document.createElement('h1');title.textContent='Mock checkout';const copy=document.createElement('p');copy.textContent='Development-only billing simulation. No payment details are collected.';headingCopy.append(title,copy);heading.append(headingCopy);const card=document.createElement('section');card.className='card';const feedback=document.createElement('p');const button=document.createElement('button');button.type='button';button.className='primary-action';const run=async(action:'start'|'complete'|'cancel'|'reactivate',sessionId?:string)=>{button.disabled=true;feedback.textContent='Updating…';try{const result=await requestMockBilling(action,sessionId);if(action==='start'&&result.session){feedback.textContent='Mock checkout is ready. Simulate payment success to activate Pro.';button.textContent='Simulate successful payment';button.disabled=false;button.onclick=()=>void run('complete',result.session!.id);return}location.assign('/dashboard')}catch(error){feedback.textContent=error instanceof Error?error.message:'Mock billing failed.';button.disabled=false}};if(subscription.plan==='pro'&&subscription.status==='cancelled'){feedback.textContent='Your mock Pro subscription is cancelled.';button.textContent='Reactivate mock subscription';button.onclick=()=>void run('reactivate')}else if(plan==='pro'){feedback.textContent='Your mock Pro subscription is active.';button.textContent='Cancel mock subscription';button.onclick=()=>void run('cancel')}else{feedback.textContent='Start a mock checkout to test the Free → Pro entitlement refresh.';button.textContent='Start mock checkout';button.onclick=()=>void run('start')}card.append(feedback,button);main.append(heading,card);return main}
 const upgradeView=createUpgradeView()
-async function renderRoute(){activeAvatarPage?.stop();activeAvatarPage=null;const path=location.pathname;let section:DashboardSection='dashboard',view=overview;if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);activeAvatarPage=createAvatarPage(profile,state);view=activeAvatarPage.view}else if(path==='/dashboard/create'||path==='/dashboard/profile'){section='profile';view=await getCreateWorkspace()}else if(path==='/dashboard/pages'){section='pages';view=pagesView}else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}else if(path==='/dashboard/upgrade'){section='pricing';view=upgradeView}shell.content.replaceChildren(view);shell.setActive(section);if(activeAvatarPage)await activeAvatarPage.start();else if(view!==overview&&view!==pagesView&&view!==pricingView&&view!==upgradeView)await startCreateWorkspace()}
+async function renderRoute(){activeAvatarPage?.stop();activeAvatarPage=null;const path=location.pathname;let section:DashboardSection='dashboard',view=overview;if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);activeAvatarPage=createAvatarPage(profile,state);view=activeAvatarPage.view}else if(path==='/dashboard/create'||path==='/dashboard/profile'){section='profile';view=await getCreateWorkspace()}else if(path==='/dashboard/pages'){section='pages';view=pagesView}else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}else if(path==='/dashboard/upgrade'){section='pricing';view=upgradeView}else{monthlyUsage=await getCurrentUserMonthlyUsage(user);renderUsage()}shell.content.replaceChildren(view);shell.setActive(section);if(activeAvatarPage)await activeAvatarPage.start();else if(view!==overview&&view!==pagesView&&view!==pricingView&&view!==upgradeView)await startCreateWorkspace()}
 function navigate(url:string){const target=new URL(url,location.href);history.pushState({},'',`${target.pathname}${target.search}${target.hash}`);void renderRoute()}
 document.addEventListener('click',event=>{const anchor=(event.target as Element).closest<HTMLAnchorElement>('a[href^="\/dashboard"]');if(!anchor||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;const target=new URL(anchor.href);if(!target.pathname.startsWith('/dashboard'))return;event.preventDefault();navigate(`${target.pathname}${target.search}${target.hash}`)})
 window.addEventListener('popstate',()=>void renderRoute())

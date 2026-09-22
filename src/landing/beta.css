@@ -94,6 +94,16 @@
   width: 100%;
 }
 
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.site-footer nav a:hover {
+  color: var(--blue);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pricing-grid article {
     opacity: 1;

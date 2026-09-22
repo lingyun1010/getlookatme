@@ -1081,7 +1081,10 @@ button.source-chip:focus-visible {
   text-decoration: underline;
   text-decoration-color: rgba(255, 120, 207, 0.6);
   text-underline-offset: 5px;
+  overflow-wrap: anywhere;
 }
+
+[hidden] { display: none !important; }
 
 .experience-layout,
 .contact-layout {

@@ -206,6 +206,22 @@
       };
       setOptionalLink("#profileGitHub", identity.githubUrl);
       setOptionalLink("#profileLinkedIn", identity.linkedinUrl);
+      const toggleSection = (selector, visible) => {
+        const section = document.querySelector(selector);
+        if (section) section.hidden = !visible;
+      };
+      const hasSkills = profile.skills.some((group) => group.items.length > 0);
+      toggleSection("#work", profile.highlights.length > 0);
+      toggleSection("#profileSkills", hasSkills);
+      toggleSection("#services", profile.services.length > 0);
+      toggleSection("#projects", profile.projects.length > 0);
+      toggleSection("#experience", profile.experience.length > 0);
+      const educationColumn = document.querySelector("#profileEducation")?.parentElement;
+      if (educationColumn) educationColumn.hidden = profile.education.length === 0;
+      [["#services", profile.services.length > 0], ["#projects", profile.projects.length > 0], ["#experience", profile.experience.length > 0]].forEach(([href, visible]) => {
+        const link = document.querySelector(`.nav a[href="${href}"]`);
+        if (link) link.hidden = !visible;
+      });
       document.querySelector(".avatar-chat")?.setAttribute("aria-label", `Ask ${identity.preferredName}'s portfolio avatar`);
       document.querySelector("#avatarQuestion")?.setAttribute("aria-label", `Ask ${identity.preferredName} a question`);
 
@@ -656,8 +672,7 @@
         });
         experienceCard.replaceChildren(experiencePeriod, experienceRole, experienceCompany, experienceHighlights);
       } else {
-        setText("profileExperienceSummary", "Experience not provided");
-        experienceCard.textContent = "Add experience from the profile creation screen.";
+        experienceCard.replaceChildren();
       }
 
       const educationLine = (item) => [item.institution, item.description, item.honours, `${item.startDate} - ${item.endDate}`]
@@ -678,8 +693,7 @@
         record.append(detail);
         return record;
       });
-      if (educationNodes.length) educationContainer.replaceChildren(...educationNodes);
-      else educationContainer.textContent = "Education not provided.";
+      educationContainer.replaceChildren(...educationNodes);
 
       const suggestedQuestions = profile.suggestedQuestions;
 

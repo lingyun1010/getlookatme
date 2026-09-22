@@ -20,6 +20,7 @@
         <h2 class="panel-title">Upload your CV</h2>
         <p class="lede">Upload a PDF or DOCX resume. Your private onboarding state is saved to your account and is not published.</p>
         <p class="linkedin-guidance">Using LinkedIn? Download your LinkedIn profile as a PDF, then upload it here.</p>
+        <div class="source-actions"><button class="btn btn-secondary" id="manualProfileButton" type="button">Create manually</button></div>
         <div class="input-grid cv-only-grid">
           <div class="resume-stack">
             <label class="upload-card" for="resumeFile">
@@ -41,46 +42,11 @@
       </section>
 
       <section class="create-panel" id="reviewStep" hidden>
-        <h2 class="panel-title">Profile details</h2>
-        <p class="lede">Edit the information shown on your public profile. Optional details can be left blank.</p>
+        <h2 class="panel-title">Profile content</h2>
+        <p class="lede">Edit each section independently. Changes are saved only when you choose Save.</p>
         <div class="issues issues-compact" id="reviewIssues" aria-live="polite"></div>
-        <form id="reviewForm">
-          <fieldset>
-            <legend>Identity</legend>
-            <div class="field-grid">
-              <label>Full name <input id="fullName" required /></label>
-              <label>Preferred name <input id="preferredName" required /></label>
-              <label>Location / base <input id="location" /></label>
-              <label>Headline <input id="headline" required /></label>
-              <label>Email <input id="email" type="email" required /></label>
-            </div>
-            <label>Summary / about <textarea id="summary" rows="5" required></textarea></label>
-          </fieldset>
-          <fieldset>
-            <legend>Links</legend>
-            <div class="field-grid">
-              <label>LinkedIn <input id="linkedinUrl" type="url" placeholder="https://linkedin.com/in/…" /></label>
-              <label>GitHub <input id="githubUrl" type="url" placeholder="https://github.com/…" /></label>
-              <label>Portfolio / website <input id="websiteUrl" type="url" placeholder="https://…" /></label>
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>Content</legend>
-            <label>Skills <small>One per line</small><textarea id="skills" rows="6"></textarea></label>
-            <label>Experience <small>One per line: Role | Company | Start | End | Summary</small><textarea id="experience" rows="7"></textarea></label>
-            <label>Education <small>One per line: Degree | Institution | Start | End</small><textarea id="education" rows="5"></textarea></label>
-            <label>Projects <small>One per line: Title | Category | Description | URL</small><textarea id="projects" rows="6"></textarea></label>
-          </fieldset>
-          <fieldset>
-            <legend>Presentation</legend>
-            <label>Services intro <textarea id="servicesIntro" rows="2"></textarea></label>
-            <label>Contact heading <input id="contactHeading" /></label>
-          </fieldset>
-          <div class="actions">
-            <button class="btn btn-secondary secondary" id="startOverButton" type="button">Start over</button>
-            <button class="btn btn-primary primary" id="saveProfileButton" type="submit">Publish Profile</button>
-          </div>
-        </form>
+        <div id="structuredProfileEditor" class="structured-editor"></div>
+        <div class="actions"><button class="btn btn-secondary secondary" id="startOverButton" type="button">Start over</button><a class="btn btn-primary" href="/preview">Preview profile</a></div>
       </section>
     </main></template>
   </body>

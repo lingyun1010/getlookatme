@@ -62,6 +62,8 @@ The current local pgTAP suite passes and covers profile, avatar, and knowledge o
 
 Use `.env.production.example` as a placeholder contract only. Production Supabase URLs and credentials must come from the deployment platform's environment settings, never from local Supabase or a committed env file. `.env.production.local` may be used for ignored machine-local testing, but must never be committed.
 
+Before production smoke testing, follow [the Production Beta configuration checklist](docs/PRODUCTION_BETA_CONFIG.md), including confirming that every repository migration is present in the production migration history.
+
 Validation:
 
 ```bash

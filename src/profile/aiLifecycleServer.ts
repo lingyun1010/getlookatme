@@ -6,7 +6,7 @@ import type { ProfileAiStatus } from './types.ts'
 import type { AiLifecycleDependencies, AiProfileState, AiStateRepository } from './aiLifecycle.ts'
 import { recordUsageSafely } from '../monetisation/usage.ts'
 
-function client(): SupabaseClient { const url=process.env.SUPABASE_URL??process.env.VITE_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error('AI lifecycle requires Supabase server configuration.');return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}) }
+function client(): SupabaseClient { const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error('AI lifecycle requires Supabase server configuration.');return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}) }
 const mapped=(row:Record<string,unknown>):AiProfileState=>({id:row.id as string,userId:row.user_id as string,enabled:row.ai_enabled as boolean,status:row.ai_status as ProfileAiStatus,isPublished:row.is_published as boolean})
 class SupabaseAiStateRepository implements AiStateRepository{
   private readonly db:SupabaseClient;constructor(db:SupabaseClient){this.db=db}

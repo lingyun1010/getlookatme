@@ -1,0 +1,10 @@
+.feedback-card form { display: grid; gap: 12px; margin-top: 18px; }
+.feedback-card label { display: grid; gap: 7px; color: var(--body); font-size: 12px; font-weight: 700; }
+.feedback-card select, .feedback-card textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: #fff; font: inherit; }
+.feedback-card textarea { min-height: 110px; resize: vertical; }
+.feedback-card .feedback-actions { display: flex; align-items: center; gap: 14px; }
+.feedback-card button { border: 0; cursor: pointer; }
+.feedback-card button:disabled { cursor: wait; opacity: .65; }
+.feedback-status { margin: 0!important; font-size: 12px!important; }
+.feedback-status[data-kind="success"] { color: #26725a; }
+.feedback-status[data-kind="error"] { color: #a03f4b; }

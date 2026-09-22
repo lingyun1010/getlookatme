@@ -1,6 +1,6 @@
 begin;
 set local search_path = extensions, public;
-select plan(14);
+select plan(16);
 
 select policies_are('public', 'profiles', array[
   'Owners can create profiles', 'Owners can delete profiles', 'Owners can read their profiles',
@@ -21,6 +21,14 @@ select has_column('public', 'profiles', 'ai_status', 'profiles has authoritative
 select has_column('public', 'profiles', 'ai_last_indexed_at', 'profiles records successful indexing time');
 select has_column('public', 'profiles', 'ai_last_error', 'profiles stores a safe owner-facing error');
 select col_default_is('public', 'profiles', 'ai_enabled', 'false', 'new profiles default to AI off');
+select ok(
+  has_column_privilege('anon', 'public.profiles', 'document', 'SELECT'),
+  'anonymous visitors can read the public profile document'
+);
+select ok(
+  not has_column_privilege('anon', 'public.profiles', 'user_id', 'SELECT'),
+  'anonymous visitors cannot read the owner user id'
+);
 select ok(
   exists (
     select 1 from pg_constraint

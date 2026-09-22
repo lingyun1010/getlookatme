@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type FunnelEventType =
+  | 'create_profile_clicked'
   | 'signup_completed'
   | 'cv_uploaded'
   | 'cv_parsed'
@@ -13,16 +14,16 @@ export type FunnelEventType =
   | 'subscription_activated'
 
 export interface FunnelEventInput {
-  userId: string
-  profileId: string
+  userId?: string | null
+  profileId?: string | null
   eventType: FunnelEventType
   metadata?: Record<string, string | number | boolean | null>
 }
 
 export async function recordFunnelEvent(client: SupabaseClient, event: FunnelEventInput): Promise<void> {
   const { error } = await client.from('analytics_events').insert({
-    user_id: event.userId,
-    profile_id: event.profileId,
+    user_id: event.userId ?? null,
+    profile_id: event.profileId ?? null,
     event_type: event.eventType,
     metadata: event.metadata ?? {},
   })

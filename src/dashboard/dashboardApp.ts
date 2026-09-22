@@ -14,6 +14,7 @@ import { getSubscription } from '../monetisation/subscription.ts'
 import { getCurrentUserMonthlyUsage } from '../monetisation/usage.ts'
 import { requestMockBilling } from '../billing/client.ts'
 import { trackFunnelEvent } from '../analytics/client.ts'
+import { bindBetaFeedbackForm } from '../feedback/form.ts'
 
 const initialRoute=`${location.pathname}${location.hash}`
 const user=await requireAuthenticatedUser(initialRoute)
@@ -29,6 +30,7 @@ const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTem
 const text=(root:ParentNode,id:string,value:string)=>{const element=root.querySelector<HTMLElement>(`#${id}`);if(element)element.textContent=value}
 function renderUsage(){const avatarLimit=planConfig.entitlements['avatar.generate'].limit,ragLimit=planConfig.entitlements['rag.query'].limit;text(overview,'usageSummary',`This month: ${monthlyUsage.avatar_generation}${avatarLimit===null?'':` / ${avatarLimit}`} Avatars · ${monthlyUsage.rag_query}${ragLimit===null?'':` / ${ragLimit}`} AI questions`)}
 async function initialiseOverview(){
+  bindBetaFeedbackForm(overview,user.id,profile.id)
   const [avatars,jobs]=await Promise.all([listAvatarAssets(profile),listAvatarJobs(profile)])
   const generating=jobs.some(job=>job.status==='queued'||job.status==='generating'),ready=jobs.some(job=>job.status==='ready')
   const hasAvatar=Boolean(profile.active_avatar_id||state?.original_photo_path),hasCv=Boolean(state?.cv_path)

@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, requireSupabase } from '../auth/supabase.ts'
 
-export async function trackFunnelEvent(eventType: 'cv_uploaded' | 'cv_parsed' | 'upgrade_clicked' | 'public_profile_viewed', profileSlug?: string): Promise<void> {
+export async function trackFunnelEvent(eventType: 'create_profile_clicked' | 'cv_uploaded' | 'cv_parsed' | 'upgrade_clicked' | 'public_profile_viewed', profileSlug?: string): Promise<void> {
   try {
     const session = isSupabaseConfigured ? (await requireSupabase().auth.getSession()).data.session : null
     await fetch('/api/analytics', {

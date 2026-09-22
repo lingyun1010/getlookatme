@@ -10,7 +10,7 @@ Avatar usage is counted atomically when a new generation job is accepted; retryi
 
 ## Mock billing
 
-Set `MOCK_BILLING_ENABLED=true` only in local or non-production development. The API refuses mock billing whenever `VERCEL_ENV` or `NODE_ENV` is production, even if the flag is present. The dashboard mock checkout can activate, cancel, and reactivate the authenticated user's own Pro subscription without collecting payment details.
+Set `APP_ENV=development` and `MOCK_BILLING_ENABLED=true` only for local development. The API enables mock billing only when the resolved runtime (`VERCEL_ENV`, then `APP_ENV`, then `NODE_ENV`) is exactly `development`; the flag cannot enable it in production. The dashboard mock checkout can activate, cancel, and reactivate the authenticated user's own Pro subscription without collecting payment details.
 
 Locally, the browser sends authenticated `POST /api/billing` requests through Vite's API proxy. Actions are JSON body values: `start`, `complete`, `cancel`, and `reactivate`. The local API and deployed handler share the same request boundary and `MockBillingProvider`; neither accepts a browser-supplied user ID.
 
@@ -18,7 +18,7 @@ Future Stripe work should implement the `BillingProvider` interface, keep Stripe
 
 ## Beta funnel
 
-`analytics_events` stores only the event name, owner/profile identifiers, timestamps, and optional small metadata. The shared analytics boundary records signup, CV upload/parse, Avatar completion, publication, public views, RAG questions, upgrade clicks, checkout starts, and subscription activation. Public views are resolved from a published slug on the server; CV content and chat text are never analytics metadata. Analytics failures are logged but do not fail the product action.
+`analytics_events` stores only the event name, optional owner/profile identifiers, timestamps, and optional small metadata. The shared analytics boundary records landing create-profile intent, signup, CV upload/parse, Avatar completion, publication, public views, RAG questions, upgrade clicks, checkout starts, and subscription activation. Public views are resolved from a published slug on the server; anonymous landing intent has no identifier; CV content and chat text are never analytics metadata. Analytics failures are logged but do not fail the product action. The canonical event map is in `docs/BETA_FUNNEL.md`.
 
 ## Manual plan testing
 

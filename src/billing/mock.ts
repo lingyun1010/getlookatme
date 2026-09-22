@@ -41,6 +41,6 @@ export class MockBillingProvider implements DevelopmentBillingProvider {
 }
 
 export function mockBillingEnabled(environment: NodeJS.ProcessEnv = process.env): boolean {
-  const production = environment.VERCEL_ENV === 'production' || environment.NODE_ENV === 'production'
-  return !production && environment.MOCK_BILLING_ENABLED === 'true'
+  const runtime = environment.VERCEL_ENV ?? environment.APP_ENV ?? environment.NODE_ENV
+  return runtime === 'development' && environment.MOCK_BILLING_ENABLED === 'true'
 }

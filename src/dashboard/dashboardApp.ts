@@ -11,6 +11,7 @@ import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/p
 import { getSubscription } from '../monetisation/subscription.ts'
 import { requestMockBilling } from '../billing/client.ts'
 import { trackFunnelEvent } from '../analytics/client.ts'
+import { bindBetaFeedbackForm } from '../feedback/form.ts'
 
 const initialRoute=`${location.pathname}${location.hash}`
 const user=await requireAuthenticatedUser(initialRoute)
@@ -20,6 +21,7 @@ let state=await loadOnboardingState(profile)
 const profileDocument=profile.document as ProfileDocument
 const hasProfile=profileDocument?.profileId===profile.id,name=hasProfile?profileDocument.identity.preferredName:(user.email?.split('@')[0]??'Your account')
 const shell=mountDashboardShell({user,name,published:profile.is_published,slug:profile.slug})
+bindBetaFeedbackForm(shell.feedbackRoot,user.id,profile.id)
 let activeAvatarPage:ReturnType<typeof createAvatarPage>|null=null
 const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
 const text=(root:ParentNode,id:string,value:string)=>{const element=root.querySelector<HTMLElement>(`#${id}`);if(element)element.textContent=value}

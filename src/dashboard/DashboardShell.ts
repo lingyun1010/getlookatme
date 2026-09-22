@@ -191,12 +191,49 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
 
   const content=document.createElement('div')
   content.id='dashboardView'
-  main.append(top,content)
-  shell.append(side,main)
+
+  const footer=document.createElement('footer')
+  footer.className='dashboard-footer'
+  const copy=document.createElement('span')
+  copy.textContent='© 2026 Get Look At Me'
+  footer.append(copy)
+  const openFeedback=()=>{dialog.showModal()}
+  for(const [label,href] of [['Help',''],['Privacy','/privacy'],['Terms','/terms'],['Feedback','']] as const){
+    if(href){
+      const a=document.createElement('a')
+      a.href=href
+      a.textContent=label
+      footer.append(a)
+    }else{
+      const button=document.createElement('button')
+      button.type='button'
+      button.textContent=label
+      button.onclick=openFeedback
+      footer.append(button)
+    }
+  }
+
+  const dialog=document.createElement('dialog')
+  dialog.className='feedback-dialog'
+  dialog.innerHTML=`<form method="dialog" class="feedback-dialog-close"><button value="cancel" aria-label="Close">×</button></form>
+    <section class="card feedback-card" aria-labelledby="feedbackTitle">
+      <p class="label">Beta feedback</p>
+      <h2 id="feedbackTitle">Tell us what you think</h2>
+      <p>Share a problem, idea, or quick note. Please do not include sensitive personal information.</p>
+      <form id="betaFeedbackForm">
+        <label>Category<select id="feedbackCategory" name="category"><option value="feedback">Feedback</option><option value="bug">Report a problem</option><option value="idea">Idea</option></select></label>
+        <label>Message<textarea id="feedbackMessage" name="message" maxlength="4000" required></textarea></label>
+        <div class="feedback-actions"><button class="primary-action" type="submit">Send feedback</button><p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p></div>
+      </form>
+    </section>`
+
+  main.append(top,content,footer)
+  shell.append(side,main,dialog)
   root.replaceChildren(shell)
 
   return{
     content,
+    feedbackRoot:dialog,
     setActive(section:DashboardSection){
       nav.querySelectorAll('a').forEach(a=>a.classList.toggle('active',a.dataset.section===section))
       settings.classList.toggle('active',section==='settings')

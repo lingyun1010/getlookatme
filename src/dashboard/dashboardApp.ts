@@ -67,47 +67,81 @@ await initialiseOverview()
 
 function createPagesView(){
   const main=document.createElement('main')
-  main.className='dashboard-content'
+  main.className='dashboard-content pages-workspace'
   const heading=document.createElement('header')
   heading.className='dashboard-heading'
   const headingCopy=document.createElement('div')
   const title=document.createElement('h1')
   title.textContent='Pages'
   const copy=document.createElement('p')
-  copy.textContent='Manage your public profile page, URL, and publication status.'
+  copy.textContent='Manage where and how your profile appears online.'
   headingCopy.append(title,copy)
   heading.append(headingCopy)
 
   const card=document.createElement('article')
-  card.className='card profile-card pages-manage-card'
-  const body=document.createElement('div')
+  card.className='card pages-manage-card'
   const label=document.createElement('p')
   label.className='label'
   label.textContent='Public profile'
+  const titleRow=document.createElement('div')
+  titleRow.className='title-row'
   const pageTitle=document.createElement('h2')
   pageTitle.id='pageTitle'
-  const pageCopy=document.createElement('p')
-  pageCopy.id='pageCopy'
+  pageTitle.className='panel-title'
+  pageTitle.textContent=name
   const status=document.createElement('span')
   status.className='status-badge'
   status.id='profileStatus'
-  const url=document.createElement('code')
+  titleRow.append(pageTitle,status)
+  const pageCopy=document.createElement('p')
+  pageCopy.id='pageCopy'
+
+  const urlBlock=document.createElement('div')
+  urlBlock.className='pages-url-block'
+  const urlLabel=document.createElement('p')
+  urlLabel.className='choice-label'
+  urlLabel.textContent='Public URL'
+  const url=document.createElement('div')
   url.id='profileUrl'
-  body.append(label,status,pageTitle,pageCopy,url)
+  url.className='pages-url-row'
+  const editUrl=document.createElement('button')
+  editUrl.type='button'
+  editUrl.className='btn btn-tertiary'
+  editUrl.textContent='Edit URL'
+  urlBlock.append(urlLabel,url,editUrl)
 
   const actions=document.createElement('div')
-  actions.className='card-actions'
+  actions.className='action-row'
   actions.id='pageActions'
-  card.append(body,actions)
-  main.append(heading,card)
+  card.append(label,titleRow,pageCopy,urlBlock,actions)
+
+  const future=document.createElement('section')
+  future.className='pages-future'
+  future.innerHTML='<p class="label">Coming later</p><p class="settings-note">SEO, social preview, and custom domain controls will live here.</p>'
+
+  main.append(heading,card,future)
 
   const slugInput=document.createElement('input')
   slugInput.value=currentSlug
   slugInput.className='slug-input'
   slugInput.ariaLabel='Public profile URL slug'
+  slugInput.hidden=true
   const feedback=document.createElement('small')
   feedback.className='slug-feedback'
-  url.replaceChildren(document.createTextNode(`${location.host}/`),slugInput,feedback)
+  const hostSpan=document.createElement('span')
+  hostSpan.className='pages-url-host'
+  hostSpan.textContent=`${location.host}/`
+  const slugText=document.createElement('strong')
+  slugText.textContent=currentSlug
+  url.append(hostSpan,slugText,slugInput,feedback)
+
+  editUrl.onclick=()=>{
+    slugInput.hidden=false
+    slugText.hidden=true
+    editUrl.hidden=true
+    slugInput.focus()
+    slugInput.select()
+  }
 
   const button=(labelText:string,run:()=>Promise<void>,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('button');item.type='button';item.className=`btn btn-${kind}`;item.textContent=labelText;item.onclick=()=>void run();return item}
   const link=(labelText:string,href:string,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('a');item.className=`btn btn-${kind}`;item.textContent=labelText;item.href=href;return item}
@@ -116,14 +150,18 @@ function createPagesView(){
     feedback.textContent='Checking…'
     try{
       const result=await requestPublication(action,slugInput.value)
-      if(result.slug){slugInput.value=result.slug;feedback.textContent=`✓ /${result.slug} is available`;return}
+      if(result.slug){slugInput.value=result.slug;slugText.textContent=result.slug;feedback.textContent=`✓ /${result.slug} is available`;return}
       const next=result.profile as {slug:string;isPublished:boolean}|undefined
       if(next){
         currentSlug=next.slug
         published=next.isPublished
         slugInput.value=currentSlug
-        feedback.textContent=action==='unpublish'?'Profile unpublished.':'Saved.'
+        slugText.textContent=currentSlug
+        feedback.textContent=action==='unpublish'?'Profile unpublished.':action==='save-slug'?'URL saved.':'Saved.'
         shell.setPublication({published,slug:currentSlug})
+        slugInput.hidden=true
+        slugText.hidden=false
+        editUrl.hidden=false
         renderPublication()
       }
     }catch(error){
@@ -145,11 +183,16 @@ function createPagesView(){
   function renderPublication(){
     status.textContent=published?'Published':'Draft'
     status.classList.toggle('published',published)
-    pageTitle.textContent=published?'Your profile is live':'Draft profile'
-    pageCopy.textContent=published?'Recruiters can open and explore your public profile.':'Your profile is private while it is in draft.'
-    actions.replaceChildren(link('Preview','/preview','secondary'),button('Save URL',()=>run('save-slug'),'secondary'))
-    if(published)actions.append(link('View profile ↗',`/${currentSlug}`,'tertiary'),button('Copy link',copyLink,'tertiary'),button('Unpublish',()=>run('unpublish'),'tertiary'))
-    else actions.append(button('Publish',()=>run('publish'),'primary'))
+    pageTitle.textContent=name
+    pageCopy.textContent=published
+      ?'Your profile is live. Recruiters can open and explore it.'
+      :'Your profile is currently private while it is in draft.'
+    actions.replaceChildren(
+      link('Preview page','/preview','secondary'),
+      button('Save URL',()=>run('save-slug'),'secondary'),
+    )
+    if(published)actions.append(link('View live page',`/${currentSlug}`,'tertiary'),button('Copy link',copyLink,'tertiary'),button('Unpublish',()=>run('unpublish'),'tertiary'))
+    else actions.append(button('Publish profile',()=>run('publish'),'primary'))
   }
   renderPublication()
   return main

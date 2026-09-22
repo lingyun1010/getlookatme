@@ -120,3 +120,11 @@
 .dashboard-sidebar nav .nav-soon{opacity:.72;font-size:13px;font-weight:500}
 .dashboard-sidebar nav .nav-soon small{opacity:.85}
 .dashboard-topbar .btn[hidden],.dashboard-topbar button[hidden],.dashboard-topbar a[hidden]{display:none!important}
+
+.pages-manage-card{display:grid;gap:16px}
+.pages-manage-card .panel-title{margin:0;font-family:"DM Sans",system-ui,sans-serif;font-size:22px;font-weight:700}
+.pages-url-block{display:grid;gap:8px;padding-top:4px}
+.pages-url-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#5f62c9;font-size:14px}
+.pages-url-host{color:var(--body)}
+.pages-future{margin-top:22px;padding:18px 20px;border:1px dashed var(--line);border-radius:16px;background:rgba(255,255,255,.55)}
+.choice-label{margin:0;color:#5e6780;font-size:12px;font-weight:700}

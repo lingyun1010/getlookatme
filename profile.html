@@ -219,6 +219,7 @@
         frameHost?.setAttribute("hidden", "true");
         frameHost?.setAttribute("aria-hidden", "true");
         if (imageUrl) {
+          article.classList.add("has-media");
           frameImage.src = imageUrl;
           frameImage.style.objectFit = "cover";
           frameImage.style.objectPosition = "center center";
@@ -509,6 +510,7 @@
           image.src = imageUrl;
           image.alt = project.imageAlt ?? project.title;
           image.loading = "lazy";
+          image.addEventListener("error", () => { media.remove(); article.classList.remove("has-media"); });
           media.append(image);
           article.append(media);
         }

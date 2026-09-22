@@ -100,6 +100,14 @@ test('hero summary rejects content over 280 characters without truncating it', (
   assert.equal(draft.identity.summary.length, 281)
 })
 
+test('project image URLs use the existing optional project media field', () => {
+  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
+  draft.projects[0].image = 'https://example.com/project.png'
+  assert.equal(validateProfileDraft(draft).blockingErrors.some(({ field }) => field.endsWith('.image')), false)
+  draft.projects[0].image = 'javascript:alert(1)'
+  assert.equal(validateProfileDraft(draft).blockingErrors.some(({ field }) => field.endsWith('.image')), true)
+})
+
 test('temporary profile uses the canonical renderer contract and cannot use Lingyun RAG', () => {
   const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
   draft.identity.headline = 'Senior Engineer'

@@ -17,6 +17,7 @@ export function validateProfileDraft(draft: ProfileDocumentDraft): ProfileValida
     if (value && !safeHttpUrl(value)) blockingErrors.push({ severity: 'blocking', field: `identity.${field}`, message: `${field} must be an HTTP(S) URL.` })
   })
   draft.projects.forEach((project, projectIndex) => {
+    if (project.image && !safeHttpUrl(project.image)) blockingErrors.push({ severity: 'blocking', field: `projects.${projectIndex}.image`, message: `Project image for ${project.title || `project ${projectIndex + 1}`} must be an HTTP(S) URL.` })
     project.links?.forEach((link, linkIndex) => {
       if (!safeHttpUrl(link.url)) blockingErrors.push({
         severity: 'blocking',

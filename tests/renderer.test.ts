@@ -38,6 +38,12 @@ test('shared renderer uses explicit featured selectors instead of array position
   assert.doesNotMatch(renderer, /profile\.experience\[0\]/)
 })
 
+test('project media is optional and removes broken images without reserving space', () => {
+  assert.match(renderer, /safeExternalUrl\(project\.image\)/)
+  assert.match(renderer, /article\.classList\.add\("has-media"\)/)
+  assert.match(renderer, /media\.remove\(\)/)
+})
+
 test('shared renderer keeps Aaron AI disabled before any chat request', () => {
   const guard = renderer.indexOf('if (!profile.ai.enabled) return;')
   const request = renderer.indexOf('await askProfile(profile.slug')

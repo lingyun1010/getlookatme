@@ -38,7 +38,7 @@ export function mountStructuredProfileEditor(host:HTMLElement,initial:ProfileDoc
   const linkSpecs:FieldSpec[]=[{key:'linkedinUrl',label:'LinkedIn',type:'url'},{key:'githubUrl',label:'GitHub',type:'url'},{key:'websiteUrl',label:'Portfolio / website',type:'url'},{key:'contactHeading',label:'Contact heading'}]
   const experienceSpecs:FieldSpec[]=[{key:'role',label:'Role',required:true},{key:'company',label:'Company',required:true},{key:'location',label:'Location'},{key:'startDate',label:'Start'},{key:'endDate',label:'End'},{key:'summary',label:'Description',type:'textarea'}]
   const educationSpecs:FieldSpec[]=[{key:'degree',label:'Degree',required:true},{key:'institution',label:'Institution'},{key:'startDate',label:'Start'},{key:'endDate',label:'End'},{key:'description',label:'Description',type:'textarea'}]
-  const projectSpecs:FieldSpec[]=[{key:'title',label:'Project title',required:true},{key:'category',label:'Category'},{key:'shortDescription',label:'Description',type:'textarea',required:true},{key:'url',label:'Project link',type:'url'}]
+  const projectSpecs:FieldSpec[]=[{key:'title',label:'Project title',required:true},{key:'category',label:'Category'},{key:'shortDescription',label:'Description',type:'textarea',required:true},{key:'url',label:'Project link',type:'url'},{key:'image',label:'Image URL',type:'url'}]
   const serviceSpecs:FieldSpec[]=[{key:'name',label:'Service name',required:true},{key:'description',label:'Description',type:'textarea',required:true}]
 
   function editObject<T extends {id:string}>(sectionKey:string,index:number,specs:FieldSpec[],value:T,build:(values:Record<string,string>,current:T)=>T,isNew=false){
@@ -71,7 +71,7 @@ export function mountStructuredProfileEditor(host:HTMLElement,initial:ProfileDoc
     }
     repeatable<Experience>('experience','Experience',draft.experience,experienceSpecs,item=>item.role,item=>[item.company,item.startDate&&item.endDate?`${item.startDate} – ${item.endDate}`:item.startDate||item.endDate].filter(Boolean).join(' · '),()=>({id:id(),role:'',company:''}),(v,current)=>({...current,...v}))
     repeatable<Education>('education','Education',draft.education,educationSpecs,item=>item.degree,item=>[item.institution,item.startDate&&item.endDate?`${item.startDate} – ${item.endDate}`:item.startDate||item.endDate].filter(Boolean).join(' · '),()=>({id:id(),degree:''}),(v,current)=>({...current,...v}))
-    repeatable<Project>('projects','Projects',draft.projects,projectSpecs,item=>item.title,item=>item.category||item.shortDescription,()=>({id:id(),title:'',category:'',shortDescription:''}),(v,current)=>({...current,title:v.title,category:v.category,shortDescription:v.shortDescription,links:v.url?[{label:'Project',url:v.url}]:[]}))
+    repeatable<Project>('projects','Projects',draft.projects,projectSpecs,item=>item.title,item=>item.category||item.shortDescription,()=>({id:id(),title:'',category:'',shortDescription:''}),(v,current)=>({...current,title:v.title,category:v.category,shortDescription:v.shortDescription,image:v.image||undefined,links:v.url?[{label:'Project',url:v.url}]:[]}))
 
     const skills=section('Skills','Edit',()=>open('skills'))
     if(editing==='skills'){

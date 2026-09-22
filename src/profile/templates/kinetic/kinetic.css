@@ -231,6 +231,10 @@ body.portfolio-template-kinetic {
   letter-spacing: -0.05em;
 }
 
+.character-placeholder[hidden] {
+  display: none !important;
+}
+
 .character-stage[data-state="thinking"] .character-glow {
   animation: avatar-thinking 1.25s ease-in-out infinite alternate;
 }

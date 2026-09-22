@@ -36,21 +36,44 @@ const parts = (value: string): string[] => value.split('|').map((part) => part.t
 
 function showStep(step: HTMLElement): void {
   ;[inputStep, buildingStep, reviewStep].forEach((item) => { item.hidden = item !== step })
+  const workspace = reviewStep.closest('.create-workspace')
+  if (workspace) workspace.classList.toggle('profile-editor', step === reviewStep)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function renderIssues(result: ProfileValidationResult): void {
   const host = required<HTMLElement>('#reviewIssues')
   host.replaceChildren()
-  const groups = [['Needs attention', result.blockingErrors], ['Optional information missing', result.missingInformation], ['Review suggested', result.warnings]] as const
-  groups.forEach(([title, issues]) => {
-    if (!issues.length) return
-    const section = document.createElement('section'); section.className = 'issue-group'
-    const heading = document.createElement('strong'); heading.textContent = title
+  if (result.blockingErrors.length) {
+    const section = document.createElement('section'); section.className = 'issue-group issue-blocking'
+    const heading = document.createElement('strong'); heading.textContent = 'Needs attention'
     const list = document.createElement('ul')
-    issues.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
+    result.blockingErrors.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
     section.append(heading, list); host.append(section)
-  })
+  }
+  if (result.missingInformation.length) {
+    const section = document.createElement('section'); section.className = 'issue-group issue-compact'
+    const count = result.missingInformation.length
+    const heading = document.createElement('p'); heading.className = 'issue-summary'
+    heading.textContent = `${count} optional detail${count === 1 ? '' : 's'} ${count === 1 ? 'is' : 'are'} missing. Adding them can make your profile more complete.`
+    const details = document.createElement('details')
+    const summary = document.createElement('summary'); summary.textContent = 'Review missing details'
+    const list = document.createElement('ul')
+    result.missingInformation.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
+    details.append(summary, list)
+    section.append(heading, details); host.append(section)
+  }
+  if (result.warnings.length) {
+    const section = document.createElement('section'); section.className = 'issue-group issue-note'
+    const heading = document.createElement('p'); heading.className = 'issue-summary'
+    heading.textContent = 'Some CV fields may need review.'
+    const details = document.createElement('details')
+    const summary = document.createElement('summary'); summary.textContent = 'Show parser notes'
+    const list = document.createElement('ul')
+    result.warnings.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
+    details.append(summary, list)
+    section.append(heading, details); host.append(section)
+  }
 }
 
 function populateReview(value: ProfileDocumentDraft): void {

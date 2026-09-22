@@ -13,11 +13,11 @@
   </head>
   <body class="dashboard-page"><div id="dashboardRoot"></div><template id="createWorkspaceTemplate">
     <main class="dashboard-content create-workspace">
-      <header class="create-workspace-heading"><div><div class="title-row"><h1>Create your profile</h1><span class="status-badge" id="profileStatus">Draft</span></div><p>Build the professional profile recruiters will see and explore.</p></div><a class="secondary" href="/preview">Working Preview ↗</a></header>
+      <header class="create-workspace-heading"><div><div class="title-row"><h1>Profile</h1><span class="status-badge" id="profileStatus">Draft</span></div><p>Manage the information shown on your public profile.</p></div><a class="btn btn-secondary" href="/preview">Preview profile</a></header>
 
       <section class="create-panel" id="inputStep">
-        <p class="step-label">Step 1 of 3</p>
-        <h1>Create your profile</h1>
+        <p class="step-label onboarding-step">Getting started</p>
+        <h2 class="panel-title">Upload your CV</h2>
         <p class="lede">Upload a PDF or DOCX resume. Your private onboarding state is saved to your account and is not published.</p>
         <p class="linkedin-guidance">Using LinkedIn? Download your LinkedIn profile as a PDF, then upload it here.</p>
         <div class="input-grid cv-only-grid">
@@ -30,21 +30,20 @@
           </div>
         </div>
         <p class="error" id="inputError" role="alert" hidden></p>
-        <button class="primary" id="buildButton" type="button">Build temporary profile</button>
+        <button class="btn btn-primary primary" id="buildButton" type="button">Build temporary profile</button>
       </section>
 
       <section class="create-panel building" id="buildingStep" hidden aria-live="polite">
-        <p class="step-label">Step 2 of 3</p>
+        <p class="step-label onboarding-step">Building</p>
         <div class="spinner" aria-hidden="true"></div>
-        <h1>Building your profile</h1>
+        <h2 class="panel-title">Building your profile</h2>
         <p id="buildingStatus">Extracting resume text…</p>
       </section>
 
       <section class="create-panel" id="reviewStep" hidden>
-        <p class="step-label">Step 3 of 3</p>
-        <h1>Review your profile</h1>
-        <p class="lede">Edit anything that was missed or mapped incorrectly. Missing optional details can be left blank.</p>
-        <div class="issues" id="reviewIssues" aria-live="polite"></div>
+        <h2 class="panel-title">Profile details</h2>
+        <p class="lede">Edit the information shown on your public profile. Optional details can be left blank.</p>
+        <div class="issues issues-compact" id="reviewIssues" aria-live="polite"></div>
         <form id="reviewForm">
           <fieldset>
             <legend>Identity</legend>
@@ -78,8 +77,8 @@
             <label>Contact heading <input id="contactHeading" /></label>
           </fieldset>
           <div class="actions">
-            <button class="secondary" id="startOverButton" type="button">Start over</button>
-            <button class="primary" id="saveProfileButton" type="submit">Publish Profile</button>
+            <button class="btn btn-secondary secondary" id="startOverButton" type="button">Start over</button>
+            <button class="btn btn-primary primary" id="saveProfileButton" type="submit">Publish Profile</button>
           </div>
         </form>
       </section>

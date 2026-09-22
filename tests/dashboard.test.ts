@@ -21,7 +21,7 @@ test('profile actions distinguish published profile, working preview, and save p
   assert.match(shell, /Preview/)
   assert.match(shell, /Publish/)
   assert.match(shell, /statusBadge\.textContent=published\?'Published':'Draft'/)
-  assert.match(createPage, /Working Preview ↗/)
+  assert.match(createPage, /Preview profile/)
   assert.match(createPage, /id="saveProfileButton"/)
   assert.match(createWorkspace, /createApp/)
   assert.match(app, /published,slug:currentSlug/)

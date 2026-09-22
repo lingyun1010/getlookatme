@@ -186,13 +186,25 @@ function createUpgradeView(){
       feedback.textContent='Start a mock checkout to test the Free → Pro entitlement refresh.';button.textContent='Start mock checkout';button.onclick=()=>void run('start')
     }
   }else{
-    feedback.textContent=plan==='pro'
-      ?'Your Pro plan is active. Subscription management arrives with Customer Portal support.'
-      :'Continue to Stripe Checkout to activate Pro. Entitlements update after the payment webhook confirms.'
-    button.textContent=plan==='pro'?'Back to dashboard':'Continue to Stripe Checkout'
-    if(plan==='pro'){
+    const openPortal=()=>void (async()=>{
+      button.disabled=true;feedback.textContent='Opening Stripe…'
+      try{
+        const result=await requestBilling('portal')
+        if(!result.session?.url)throw new Error('Stripe Customer Portal is unavailable.')
+        location.assign(result.session.url)
+      }catch(error){feedback.textContent=error instanceof Error?error.message:'Could not open the customer portal.';button.disabled=false}
+    })()
+    if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
+      feedback.textContent='Manage billing, payment method, or cancellation in the Stripe Customer Portal.'
+      button.textContent='Manage subscription'
+      button.onclick=openPortal
+    }else if(plan==='pro'){
+      feedback.textContent='Your Pro plan is active.'
+      button.textContent='Back to dashboard'
       button.onclick=()=>location.assign('/dashboard')
     }else{
+      feedback.textContent='Continue to Stripe Checkout to activate Pro. Entitlements update after the payment webhook confirms.'
+      button.textContent='Continue to Stripe Checkout'
       button.onclick=()=>void (async()=>{
         button.disabled=true;feedback.textContent='Starting Checkout…'
         try{
@@ -261,7 +273,21 @@ function createSettingsView(){
   const billing=card('Plan / Billing',planConfig.name)
   const planCopy=document.createElement('p');planCopy.textContent=planConfig.description
   const planLink=document.createElement('a');planLink.className='primary-action';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
-  billing.append(planCopy,planLink);grid.append(billing)
+  billing.append(planCopy,planLink)
+  if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
+    const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
+    const manageNote=document.createElement('p');manageNote.className='settings-note'
+    manage.onclick=()=>void (async()=>{
+      manage.disabled=true;manageNote.textContent='Opening Stripe…'
+      try{
+        const result=await requestBilling('portal')
+        if(!result.session?.url)throw new Error('Stripe Customer Portal is unavailable.')
+        location.assign(result.session.url)
+      }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
+    })()
+    billing.append(manage,manageNote)
+  }
+  grid.append(billing)
   const legal=card('Privacy / legal','Policies')
   const links=document.createElement('div');links.className='settings-links'
   for(const [labelText,href] of [['Privacy','/privacy'],['Terms','/terms'],['Refunds','/refunds']] as const){

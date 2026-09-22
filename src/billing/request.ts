@@ -19,7 +19,8 @@ export async function handleBillingRequest(
     action !== 'complete' &&
     action !== 'cancel' &&
     action !== 'reactivate' &&
-    action !== 'checkout'
+    action !== 'checkout' &&
+    action !== 'portal'
   ) {
     return { status: 400, body: { code: 'invalid_billing_action', error: 'Unsupported billing action.' } }
   }
@@ -28,7 +29,7 @@ export async function handleBillingRequest(
   if (!client) return { status: 503, body: { code: 'billing_unavailable', error: 'Billing is unavailable.' } }
 
   const mockActions = action === 'start' || action === 'complete' || action === 'cancel' || action === 'reactivate'
-  const stripeActions = action === 'checkout'
+  const stripeActions = action === 'checkout' || action === 'portal'
 
   if (mockActions) {
     if (!mockBillingEnabled(environment)) {
@@ -70,8 +71,12 @@ export async function handleBillingRequest(
     }
     try {
       const provider = new StripeBillingProvider(client, requireStripeBillingConfig(environment))
-      const session = await provider.createCheckoutSession(user.id)
-      await recordUserFunnelEventSafely(client, user.id, 'checkout_started')
+      if (action === 'checkout') {
+        const session = await provider.createCheckoutSession(user.id)
+        await recordUserFunnelEventSafely(client, user.id, 'checkout_started')
+        return { status: 200, body: { session } }
+      }
+      const session = await provider.createPortalSession(user.id)
       return { status: 200, body: { session } }
     } catch (error) {
       if (error instanceof StripeConfigError || error instanceof StripeBillingError) {

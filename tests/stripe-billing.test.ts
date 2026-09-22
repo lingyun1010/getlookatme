@@ -64,3 +64,14 @@ test('stripe webhook verifies signatures and maps subscription lifecycle events'
   assert.match(route, /stripe-signature/)
   assert.doesNotMatch(webhook, /authenticateBearer/)
 })
+
+test('customer portal is an authenticated billing action for stripe customers', async () => {
+  const request = await readFile(new URL('../src/billing/request.ts', import.meta.url), 'utf8')
+  const provider = await readFile(new URL('../src/billing/stripe.ts', import.meta.url), 'utf8')
+  const dashboard = await readFile(new URL('../src/dashboard/dashboardApp.ts', import.meta.url), 'utf8')
+  assert.match(request, /action === 'portal'/)
+  assert.match(request, /createPortalSession\(user\.id\)/)
+  assert.match(provider, /billingPortal\.sessions\.create/)
+  assert.match(dashboard, /Manage subscription/)
+  assert.doesNotMatch(request, /body\.customerId|body\.provider_customer_id/)
+})

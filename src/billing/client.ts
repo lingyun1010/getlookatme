@@ -8,7 +8,7 @@ export interface BillingResult {
   provider?: BillingProviderName
 }
 
-export type BillingAction = 'start' | 'complete' | 'cancel' | 'reactivate' | 'checkout'
+export type BillingAction = 'start' | 'complete' | 'cancel' | 'reactivate' | 'checkout' | 'portal'
 
 export async function requestBilling(action: BillingAction, sessionId?: string): Promise<BillingResult> {
   const { data: { session } } = await requireSupabase().auth.getSession()

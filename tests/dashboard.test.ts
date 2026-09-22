@@ -19,14 +19,13 @@ test('dashboard is an authenticated product route', () => {
 
 test('profile actions distinguish published profile, working preview, and save publication', () => {
   assert.match(shell, /Preview/)
-  assert.match(shell, /Publish/)
-  assert.match(shell, /statusBadge\.textContent=published\?'Published':'Draft'/)
+  assert.doesNotMatch(shell, /statusBadge/)
   assert.match(createPage, /Preview profile/)
   assert.match(createPage, /id="saveProfileButton"/)
   assert.match(createWorkspace, /createApp/)
   assert.match(app, /published,slug:currentSlug/)
   assert.match(app, /requestPublication/)
-  assert.match(app, /button\('Save URL'/)
+  assert.match(app, /saveUrl\.onclick/)
   assert.match(app, /Publish profile|button\('Publish'/)
   assert.match(app, /id='profileUrl'/)
   assert.match(app, /\/dashboard\/pages/)
@@ -103,8 +102,8 @@ test('dashboard actions use a consistent button hierarchy', () => {
 })
 
 test('global publish is limited to the pages workspace', () => {
-  assert.match(shell, /showPublish=section==='pages'/)
-  assert.match(shell, /showPreview=section==='dashboard'\|\|section==='profile'\|\|section==='avatar'\|\|section==='pages'/)
+  assert.doesNotMatch(shell, /topbar-publish/)
+  assert.match(shell, /showPreview=section==='dashboard'/)
   assert.match(shell, /Billing \/ Plans/)
   assert.doesNotMatch(shell, /link\('Plan'/)
 })

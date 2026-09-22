@@ -134,8 +134,8 @@
 .pages-manage-card .panel-title{font-size:22px}
 .pages-url-block{display:grid;gap:8px;padding-top:4px}
 .pages-url-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#5f62c9;font-size:14px}
+.pages-url-actions{display:flex;align-items:center;gap:8px}
 .pages-url-host{color:var(--body)}
-.pages-future{margin-top:22px;padding:18px 20px;border:1px dashed var(--line);border-radius:16px;background:rgba(255,255,255,.55)}
 .choice-label{margin:0;color:#5e6780;font-size:12px;font-weight:700}
 
 
@@ -158,7 +158,6 @@
 .settings-row span{color:var(--body)}
 .settings-row strong{text-align:right;font-weight:700}
 .pages-url-row .slug-input{min-width:10rem}
-.pages-future .label{margin-bottom:6px}
 @media(max-width:900px){
   .overview-grid{grid-template-columns:1fr}
 }

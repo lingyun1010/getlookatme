@@ -1,6 +1,5 @@
 import type { User } from '@supabase/supabase-js'
 import { signOut } from '../auth/session.ts'
-import { requestPublication } from '../profile/publicationClient.ts'
 
 export type DashboardSection='dashboard'|'profile'|'avatar'|'pages'|'pricing'|'settings'
 
@@ -108,14 +107,7 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   const sectionTitle=document.createElement('h1')
   sectionTitle.className='topbar-title'
   sectionTitle.textContent='Dashboard'
-  const statusBadge=document.createElement('span')
-  statusBadge.className='status-badge'
-  const syncBadge=()=>{
-    statusBadge.textContent=published?'Published':'Draft'
-    statusBadge.classList.toggle('published',published)
-  }
-  syncBadge()
-  topLeft.append(sectionTitle,statusBadge)
+  topLeft.append(sectionTitle)
 
   const topRight=document.createElement('div')
   topRight.className='topbar-right'
@@ -124,28 +116,6 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   preview.className='btn btn-secondary topbar-action'
   preview.href='/preview'
   preview.textContent='Preview'
-
-  const publish=document.createElement('button')
-  publish.type='button'
-  publish.className='btn btn-primary topbar-publish'
-  const syncPublish=()=>{
-    publish.textContent=published?'Unpublish':'Publish'
-    publish.disabled=false
-  }
-  syncPublish()
-  publish.onclick=()=>void (async()=>{
-    publish.disabled=true
-    try{
-      const result=await requestPublication(published?'unpublish':'publish',slug)
-      const next=result.profile as {slug:string;isPublished:boolean}|undefined
-      if(next){slug=next.slug;published=next.isPublished}
-      else published=!published
-      syncBadge();syncPublish()
-    }catch(error){
-      publish.textContent=error instanceof Error?error.message:'Could not update'
-      window.setTimeout(syncPublish,2200)
-    }finally{publish.disabled=false}
-  })()
 
   const accountWrap=document.createElement('div')
   accountWrap.className='account-menu'
@@ -192,7 +162,7 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   panel.addEventListener('click',event=>event.stopPropagation())
   accountWrap.append(accountBtn,panel)
 
-  topRight.append(preview,publish,accountWrap)
+  topRight.append(preview,accountWrap)
   top.append(menu,topLeft,topRight)
 
   const content=document.createElement('div')
@@ -244,11 +214,9 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
       nav.querySelectorAll('a').forEach(a=>a.classList.toggle('active',a.dataset.section===section))
       settings.classList.toggle('active',section==='settings')
       sectionTitle.textContent=SECTION_TITLE[section]
-      const showPreview=section==='dashboard'||section==='profile'||section==='avatar'||section==='pages'
-      const showPublish=section==='pages'
+      const showPreview=section==='dashboard'
       preview.hidden=!showPreview
-      publish.hidden=!showPublish
-      preview.textContent=section==='pages'?'Preview page':'Preview profile'
+      preview.textContent='Preview profile'
       side.classList.remove('open')
       menu.setAttribute('aria-expanded','false')
       closeMenu()
@@ -256,8 +224,6 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
     setPublication(next:{published:boolean;slug:string}){
       published=next.published
       slug=next.slug
-      syncBadge()
-      syncPublish()
     },
   }
 }

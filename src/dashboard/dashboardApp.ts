@@ -108,18 +108,19 @@ function createPagesView(){
   editUrl.type='button'
   editUrl.className='btn btn-tertiary'
   editUrl.textContent='Edit URL'
-  urlBlock.append(urlLabel,url,editUrl)
+  const editActions=document.createElement('div')
+  editActions.className='pages-url-actions'
+  const saveUrl=document.createElement('button');saveUrl.type='button';saveUrl.className='btn btn-primary';saveUrl.textContent='Save'
+  const cancelEdit=document.createElement('button');cancelEdit.type='button';cancelEdit.className='btn btn-tertiary';cancelEdit.textContent='Cancel'
+  editActions.append(saveUrl,cancelEdit);editActions.hidden=true
+  urlBlock.append(urlLabel,url,editUrl,editActions)
 
   const actions=document.createElement('div')
   actions.className='action-row'
   actions.id='pageActions'
   card.append(label,titleRow,pageCopy,urlBlock,actions)
 
-  const future=document.createElement('section')
-  future.className='pages-future'
-  future.innerHTML='<p class="label">Coming later</p><p class="settings-note">SEO, social preview, and custom domain controls will live here.</p>'
-
-  main.append(heading,card,future)
+  main.append(heading,card)
 
   const slugInput=document.createElement('input')
   slugInput.value=currentSlug
@@ -139,6 +140,8 @@ function createPagesView(){
     slugInput.hidden=false
     slugText.hidden=true
     editUrl.hidden=true
+    editActions.hidden=false
+    feedback.textContent=''
     slugInput.focus()
     slugInput.select()
   }
@@ -162,6 +165,7 @@ function createPagesView(){
         slugInput.hidden=true
         slugText.hidden=false
         editUrl.hidden=false
+        editActions.hidden=true
         renderPublication()
       }
     }catch(error){
@@ -174,6 +178,16 @@ function createPagesView(){
     window.clearTimeout(availabilityTimer)
     availabilityTimer=window.setTimeout(()=>void run('availability'),350)
   })
+  saveUrl.onclick=()=>void run('save-slug')
+  cancelEdit.onclick=()=>{
+    window.clearTimeout(availabilityTimer)
+    slugInput.value=currentSlug
+    slugInput.hidden=true
+    slugText.hidden=false
+    editUrl.hidden=false
+    editActions.hidden=true
+    feedback.textContent=''
+  }
 
   async function copyLink(){
     await navigator.clipboard.writeText(`${location.origin}/${currentSlug}`)
@@ -187,12 +201,9 @@ function createPagesView(){
     pageCopy.textContent=published
       ?'Your profile is live. Recruiters can open and explore it.'
       :'Your profile is currently private while it is in draft.'
-    actions.replaceChildren(
-      link('Preview page','/preview','secondary'),
-      button('Save URL',()=>run('save-slug'),'secondary'),
-    )
-    if(published)actions.append(link('View live page',`/${currentSlug}`,'tertiary'),button('Copy link',copyLink,'tertiary'),button('Unpublish',()=>run('unpublish'),'tertiary'))
-    else actions.append(button('Publish profile',()=>run('publish'),'primary'))
+    actions.replaceChildren()
+    if(published)actions.append(link('View live page ↗',`/${currentSlug}`,'secondary'),button('Copy link',copyLink,'tertiary'),button('Unpublish',()=>run('unpublish'),'tertiary'))
+    else actions.append(link('Preview page','/preview','secondary'),button('Publish profile',()=>run('publish'),'primary'))
   }
   renderPublication()
   return main

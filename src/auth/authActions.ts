@@ -1,6 +1,6 @@
 import { requireSupabase } from './supabase.ts'
 
-export function safeAuthRedirect(value: string | null | undefined, fallback = '/dashboard/create', origin = globalThis.location?.origin ?? 'http://localhost'): string {
+export function safeAuthRedirect(value: string | null | undefined, fallback = '/dashboard', origin = globalThis.location?.origin ?? 'http://localhost'): string {
   if (!value?.startsWith('/') || value.startsWith('//') || value.includes('\\')) return fallback
   try { const url = new URL(value, origin); return url.origin === origin ? `${url.pathname}${url.search}${url.hash}` : fallback } catch { return fallback }
 }

@@ -24,7 +24,7 @@
   ],
   "functions": {
     "api/chat.ts": { "includeFiles": "{src/rag/**,src/knowledge/**,src/profile/**,src/auth/**,src/monetisation/**,src/analytics/**}" },
-    "api/avatar-worker.ts": { "maxDuration": 800 }
+    "api/avatar-worker.ts": { "maxDuration": 300 }
   },
   "crons": [{ "path": "/api/avatar-worker", "schedule": "* * * * *" }]
 }

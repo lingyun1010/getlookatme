@@ -74,7 +74,14 @@ test('browser configuration never accepts a service-role key', async () => {
   assert.match(source, /VITE_SUPABASE_PUBLISHABLE_KEY/)
 })
 
-test('server token validation accepts the same legacy anon-key alias as the browser client', async () => {
+test('server token validation uses server-side Supabase configuration only', async () => {
   const source = await readFile(new URL('../src/auth/server.ts', import.meta.url), 'utf8')
-  assert.match(source, /VITE_SUPABASE_ANON_KEY/)
+
+  assert.match(source, /SUPABASE_URL/)
+  assert.match(source, /SUPABASE_PUBLISHABLE_KEY/)
+  assert.match(source, /SUPABASE_ANON_KEY/)
+
+  assert.doesNotMatch(source, /VITE_SUPABASE_URL/)
+  assert.doesNotMatch(source, /VITE_SUPABASE_PUBLISHABLE_KEY/)
+  assert.doesNotMatch(source, /VITE_SUPABASE_ANON_KEY/)
 })

@@ -33,4 +33,11 @@
 .structured-field:has(textarea){grid-column:1/-1}
 .structured-field textarea{min-height:100px}
 .structured-editor-actions{display:flex;justify-content:flex-end;gap:8px;grid-column:1/-1}
+.hero-summary-guidance{display:block;margin-top:7px;text-align:right}
+.hero-summary-guidance.warning{color:#9b5a22}
+.skills-chip-editor{grid-template-columns:1fr}
+.skills-chip-list{display:flex;flex-wrap:wrap;gap:8px}
+.skill-edit-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid #dfe2ed;border-radius:999px;background:#fff;color:#303a59;font-size:13px;font-weight:700}
+.skill-edit-chip button{min-width:0!important;padding:0!important;border:0;background:transparent;color:#737b94;line-height:1}
+.skills-chip-editor>input{margin:0!important}
 @media(max-width:720px){.structured-inline-editor{grid-template-columns:1fr}.structured-field:has(textarea),.structured-editor-actions{grid-column:auto}.profile-section-head,.profile-entry{gap:10px}.profile-entry{align-items:flex-start;flex-direction:column}.profile-entry-actions{align-self:flex-end}}

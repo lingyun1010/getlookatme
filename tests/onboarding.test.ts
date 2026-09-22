@@ -91,6 +91,15 @@ test('validation classifies blocking, missing, and warning issues', () => {
   assert.ok(result.warnings.some(({ message }) => /Low confidence/.test(message)))
 })
 
+test('hero summary rejects content over 280 characters without truncating it', () => {
+  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
+  draft.identity.summary = 'x'.repeat(281)
+  const result = validateProfileDraft(draft)
+  assert.equal(result.valid, false)
+  assert.match(result.blockingErrors.map(({ message }) => message).join(' '), /280 characters/)
+  assert.equal(draft.identity.summary.length, 281)
+})
+
 test('temporary profile uses the canonical renderer contract and cannot use Lingyun RAG', () => {
   const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
   draft.identity.headline = 'Senior Engineer'

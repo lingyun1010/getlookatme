@@ -450,22 +450,17 @@
       });
       document.querySelector("#profileMarquee")?.replaceChildren(...marqueeNodes);
 
-      const skillNodes = profile.skills.map((group, index) => {
+      const skillNodes = profile.skills.flatMap((group) => group.items).map((item, index) => {
         const article = document.createElement("article");
         article.className = "skill-card reveal-on-scroll";
         article.style.setProperty("--reveal-delay", `${index * 90}ms`);
-        article.dataset.profileId = group.id;
+        article.dataset.profileId = `skill-${index + 1}`;
         const edge = document.createElement("span");
         edge.className = "edge-light";
         edge.setAttribute("aria-hidden", "true");
-        const category = document.createElement("strong");
-        category.textContent = group.category;
-        const items = group.items.map((item) => {
-          const label = document.createElement("span");
-          label.textContent = item;
-          return label;
-        });
-        article.append(edge, category, ...items);
+        const label = document.createElement("span");
+        label.textContent = item;
+        article.append(edge, label);
         return article;
       });
       document.querySelector("#profileSkills")?.replaceChildren(...skillNodes);

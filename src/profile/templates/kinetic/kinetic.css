@@ -736,9 +736,10 @@ button.source-chip:focus-visible {
 }
 
 .skills-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
   width: min(1120px, 100%);
   margin: 0 auto;
 }
@@ -901,8 +902,9 @@ button.source-chip:focus-visible {
 }
 
 .skill-card {
-  min-height: 280px;
-  padding: 24px;
+  min-height: 0;
+  padding: 4px;
+  border-radius: 999px;
 }
 
 .skill-card strong {
@@ -925,6 +927,7 @@ button.source-chip:focus-visible {
   font-size: 0.92rem;
   font-weight: 400;
 }
+.skill-card>span:not(.edge-light){margin:0;padding:10px 15px;white-space:normal}
 
 .services {
   border-radius: clamp(38px, 5vw, 64px) clamp(38px, 5vw, 64px) 0 0;
@@ -1272,7 +1275,6 @@ button.source-chip:focus-visible {
   }
 
   .content-band,
-  .skills-grid,
   .experience-layout,
   .contact-layout,
   .service-item {
@@ -1284,6 +1286,11 @@ button.source-chip:focus-visible {
     min-height: 420px;
     margin-bottom: 72px;
   }
+}
+
+@media (max-width: 700px) {
+  .hero-bottom p { max-width: min(72vw, 420px); line-height: 1.35; }
+  .skills-grid { justify-content: flex-start; }
 }
 
 @media (max-width: 540px) {

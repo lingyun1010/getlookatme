@@ -212,7 +212,7 @@ function createPricingView(){
   const heading=document.createElement('header');heading.className='dashboard-heading'
   const headingCopy=document.createElement('div')
   const title=document.createElement('h1');title.textContent='Plans'
-  const copy=document.createElement('p');copy.textContent='Publish on Free, then upgrade only when you need more Avatar and AI usage.'
+  const copy=document.createElement('p');copy.textContent='Compare Free and Pro. Upgrade only when you need more Avatar and AI usage.'
   headingCopy.append(title,copy);heading.append(headingCopy)
   const statusNote=document.createElement('p');statusNote.className='settings-note';statusNote.hidden=true
   const grid=document.createElement('section');grid.className='overview-grid'
@@ -232,9 +232,11 @@ function createPricingView(){
     const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className='card';card.id=planId
     const label=document.createElement('p');label.className='label'
     if(planId===plan)label.textContent='Current plan'
-    else if(planId==='free'&&(plan==='pro'||plan==='founding'))label.textContent='Included'
+    else if(planId==='free'&&plan==='pro')label.textContent='Included in Pro'
+    else if(planId==='free'&&plan==='founding')label.textContent='Included in Founding'
+    else if(planId==='pro'&&plan==='founding')label.textContent='Included in Founding'
     else label.textContent='Plan'
-    const name=document.createElement('h2');name.textContent=item.name
+    const name=document.createElement('h2');name.className='panel-title';name.textContent=item.name
     const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`
     const description=document.createElement('p');description.textContent=item.description
     const list=document.createElement('ul');for(const feature of item.highlights){const row=document.createElement('li');row.textContent=feature;list.append(row)}
@@ -242,12 +244,12 @@ function createPricingView(){
 
     if(planId==='free'){
       const action=document.createElement('a');action.className='btn btn-primary'
-      if(plan==='free'){action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
-      else {action.textContent=plan==='founding'?'Included in Founding':'Included in Pro';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      if(plan==='free'){action.className='btn btn-secondary';action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      else {action.className='btn btn-secondary';action.textContent=plan==='founding'?'Included in Founding':'Included in Pro';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
       card.append(action)
     }else if(planId==='pro'){
       if(plan==='pro'){
-        const action=document.createElement('a');action.className='btn btn-primary';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        const action=document.createElement('a');action.className='btn btn-secondary';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
         if(stripePro&&!founding){
           const actions=document.createElement('div');actions.className='card-actions';actions.style.marginTop='14px';actions.style.flexWrap='wrap'
           const manage=document.createElement('button');manage.type='button';manage.className='btn btn-tertiary';manage.textContent='Manage subscription'
@@ -292,7 +294,7 @@ function createPricingView(){
           card.append(actions)
         }
       }else if(plan==='founding'){
-        const action=document.createElement('a');action.className='btn btn-primary';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        const action=document.createElement('a');action.className='btn btn-secondary';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
       }else{
         const action=document.createElement('a');action.className='btn btn-primary';action.textContent=item.ctaLabel;action.href='/dashboard/upgrade';action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'));card.append(action)
       }
@@ -418,7 +420,7 @@ function createSettingsView(){
   const title=document.createElement('h1')
   title.textContent='Settings'
   const copy=document.createElement('p')
-  copy.textContent='Account details already available for this signed-in profile.'
+  copy.textContent='Account, billing, and privacy for this signed-in profile.'
   headingCopy.append(title,copy)
   heading.append(headingCopy)
   const grid=document.createElement('section')
@@ -427,7 +429,7 @@ function createSettingsView(){
     const article=document.createElement('article')
     article.className='card'
     const kicker=document.createElement('p');kicker.className='label';kicker.textContent=labelText
-    const h=document.createElement('h2');h.textContent=titleText
+    const h=document.createElement('h2');h.className='panel-title';h.textContent=titleText
     article.append(kicker,h);return article
   }
   function row(labelText:string,value:string){
@@ -451,17 +453,14 @@ function createSettingsView(){
     })()
     account.append(reset,note)
   }
+  const pagesNote=document.createElement('p');pagesNote.className='settings-note'
+  pagesNote.textContent='Public URL and publish controls live on Pages.'
+  const pagesLink=document.createElement('a');pagesLink.className='btn btn-tertiary';pagesLink.href='/dashboard/pages';pagesLink.dataset.dashboardRoute='';pagesLink.textContent='Open Pages'
+  account.append(pagesNote,pagesLink)
   grid.append(account)
-  const identity=card('Profile identity','Public profile')
-  identity.append(row('Username',currentSlug||'Not set yet'))
-  if(currentSlug){
-    const link=document.createElement('a');link.className='text-action';link.href=`/${currentSlug}`;link.textContent=`${location.host}/${currentSlug}`
-    identity.append(link)
-  }
-  grid.append(identity)
-  const billing=card('Plan / Billing',planConfig.name)
+  const billing=card('Billing',planConfig.name)
   const planCopy=document.createElement('p');planCopy.textContent=planConfig.description
-  const planLink=document.createElement('a');planLink.className='btn btn-primary';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
+  const planLink=document.createElement('a');planLink.className='btn btn-secondary';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
   billing.append(planCopy,planLink)
   if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
     let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
@@ -507,7 +506,7 @@ function createSettingsView(){
     billing.append(manage,cancelBtn,manageNote)
   }
   grid.append(billing)
-  const legal=card('Privacy / legal','Policies')
+  const legal=card('Privacy','Policies')
   const links=document.createElement('div');links.className='settings-links'
   for(const [labelText,href] of [['Privacy','/privacy'],['Terms','/terms'],['Refunds','/refunds']] as const){
     const a=document.createElement('a');a.href=href;a.textContent=labelText;links.append(a)

@@ -122,7 +122,8 @@
 .dashboard-topbar .btn[hidden],.dashboard-topbar button[hidden],.dashboard-topbar a[hidden]{display:none!important}
 
 .pages-manage-card{display:grid;gap:16px}
-.pages-manage-card .panel-title{margin:0;font-family:"DM Sans",system-ui,sans-serif;font-size:22px;font-weight:700}
+.panel-title{margin:0;font-family:"DM Sans",system-ui,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em}
+.pages-manage-card .panel-title{font-size:22px}
 .pages-url-block{display:grid;gap:8px;padding-top:4px}
 .pages-url-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#5f62c9;font-size:14px}
 .pages-url-host{color:var(--body)}

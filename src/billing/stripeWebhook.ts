@@ -14,7 +14,7 @@ type SubscriptionRow = {
 }
 
 function periodEndIso(subscription: Stripe.Subscription): string | null {
-  const end = subscription.current_period_end
+  const end = subscription.items.data[0]?.current_period_end
   return typeof end === 'number' ? new Date(end * 1000).toISOString() : null
 }
 

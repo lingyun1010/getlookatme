@@ -14,7 +14,7 @@ Set `APP_ENV=development` and `MOCK_BILLING_ENABLED=true` only for local develop
 
 Locally, the browser sends authenticated `POST /api/billing` requests through Vite's API proxy. Actions are JSON body values: `start`, `complete`, `cancel`, and `reactivate`. The local API and deployed handler share the same request boundary and `MockBillingProvider`; neither accepts a browser-supplied user ID.
 
-Future Stripe work should implement the `BillingProvider` interface, keep Stripe session and webhook handling inside the billing boundary, and update the same subscription fields. Entitlements, usage enforcement, and product UI should not need Stripe-specific branches.
+Stripe Checkout, webhooks, and Customer Portal implement the same `BillingProvider` boundary (`src/billing/stripe.ts`, `src/billing/stripeWebhook.ts`) and update the same subscription fields. Entitlements, usage enforcement, and product UI still must not call Stripe directly. Operator setup: `docs/STRIPE_SETUP.md`.
 
 ## Beta funnel
 

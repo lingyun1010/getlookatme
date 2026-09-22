@@ -1,6 +1,10 @@
+export type BillingProviderName = 'mock' | 'stripe'
+
 export interface BillingSession {
   id: string
-  provider: 'mock'
+  provider: BillingProviderName
+  /** Present for hosted Stripe Checkout / Customer Portal redirects. */
+  url?: string
 }
 
 export interface BillingProvider {

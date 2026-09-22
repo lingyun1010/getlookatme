@@ -24,6 +24,7 @@
     "mammoth": "^1.12.3",
     "openai": "^7.15.0",
     "pdfjs-dist": "^6.3.289",
+    "stripe": "^18.5.0",
     "three": "^0.186.0"
   },
   "devDependencies": {

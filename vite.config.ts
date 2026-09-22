@@ -9,7 +9,7 @@ export default defineConfig({
         const path = request.url?.split('?')[0]
         if (path === '/login' || path === '/signup' || path === '/auth') request.url = `/auth.html${request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : ''}`
         if (path === '/privacy' || path === '/terms' || path === '/refunds') request.url = `/${path.slice(1)}.html`
-        if (path === '/dashboard' || path === '/dashboard/create' || path === '/dashboard/profile' || path === '/dashboard/avatar' || path === '/dashboard/pages' || path === '/dashboard/pricing' || path === '/dashboard/upgrade') request.url = '/dashboard.html'
+        if (path === '/dashboard' || path === '/dashboard/create' || path === '/dashboard/profile' || path === '/dashboard/avatar' || path === '/dashboard/pages' || path === '/dashboard/pricing' || path === '/dashboard/upgrade' || path === '/dashboard/settings') request.url = '/dashboard.html'
         if (/^\/[^/]+\/chat$/.test(path ?? '')) request.url = '/chat.html'
         if (path === '/create' || path === '/edit') { _response.statusCode = 302; _response.setHeader('Location','/dashboard/create'); _response.end(); return }
         if (/^\/[^/.]+$/.test(path ?? '') && !['/login', '/signup', '/auth', '/privacy', '/terms', '/refunds', '/dashboard'].includes(path ?? '')) request.url = '/profile.html'

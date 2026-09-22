@@ -25,3 +25,11 @@
 .topbar-title{font-size:18px}
 .topbar-action{padding:8px 10px}
 }
+
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.settings-row{display:flex;justify-content:space-between;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
+.settings-row span{color:var(--body)}
+.settings-note{margin:10px 0 0;color:var(--body);font-size:12px}
+.settings-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+.settings-links a{color:#5b5dcc;font-size:13px;font-weight:700}
+@media(max-width:680px){.settings-grid{grid-template-columns:1fr}}

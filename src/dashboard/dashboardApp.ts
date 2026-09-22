@@ -1,4 +1,5 @@
 import { requireAuthenticatedUser } from '../auth/session.ts'
+import { sendPasswordReset } from '../auth/authActions.ts'
 import { getOwnedProfile, loadOnboardingState } from '../profile/repository.ts'
 import type { ProfileDocument } from '../profile/types.ts'
 import { getCreateWorkspace, startCreateWorkspace } from '../onboarding/createWorkspaceApp.ts'
@@ -66,7 +67,112 @@ function createPricingView(){const main=document.createElement('main');main.clas
 const pricingView=createPricingView()
 function createUpgradeView(){const main=document.createElement('main');main.className='dashboard-content';const heading=document.createElement('header');heading.className='dashboard-heading';const headingCopy=document.createElement('div');const title=document.createElement('h1');title.textContent='Mock checkout';const copy=document.createElement('p');copy.textContent='Development-only billing simulation. No payment details are collected.';headingCopy.append(title,copy);heading.append(headingCopy);const card=document.createElement('section');card.className='card';const feedback=document.createElement('p');const button=document.createElement('button');button.type='button';button.className='primary-action';const run=async(action:'start'|'complete'|'cancel'|'reactivate',sessionId?:string)=>{button.disabled=true;feedback.textContent='Updating…';try{const result=await requestMockBilling(action,sessionId);if(action==='start'&&result.session){feedback.textContent='Mock checkout is ready. Simulate payment success to activate Pro.';button.textContent='Simulate successful payment';button.disabled=false;button.onclick=()=>void run('complete',result.session!.id);return}location.assign('/dashboard')}catch(error){feedback.textContent=error instanceof Error?error.message:'Mock billing failed.';button.disabled=false}};if(subscription.plan==='pro'&&subscription.status==='cancelled'){feedback.textContent='Your mock Pro subscription is cancelled.';button.textContent='Reactivate mock subscription';button.onclick=()=>void run('reactivate')}else if(plan==='pro'){feedback.textContent='Your mock Pro subscription is active.';button.textContent='Cancel mock subscription';button.onclick=()=>void run('cancel')}else{feedback.textContent='Start a mock checkout to test the Free → Pro entitlement refresh.';button.textContent='Start mock checkout';button.onclick=()=>void run('start')}card.append(feedback,button);main.append(heading,card);return main}
 const upgradeView=createUpgradeView()
-async function renderRoute(){activeAvatarPage?.stop();activeAvatarPage=null;const path=location.pathname;let section:DashboardSection='dashboard',view=overview;if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);activeAvatarPage=createAvatarPage(profile,state);view=activeAvatarPage.view}else if(path==='/dashboard/create'||path==='/dashboard/profile'){section='profile';view=await getCreateWorkspace()}else if(path==='/dashboard/pages'){section='pages';view=pagesView}else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}else if(path==='/dashboard/upgrade'){section='pricing';view=upgradeView}shell.content.replaceChildren(view);shell.setActive(section);if(activeAvatarPage)await activeAvatarPage.start();else if(view!==overview&&view!==pagesView&&view!==pricingView&&view!==upgradeView)await startCreateWorkspace()}
+
+function createSettingsView(){
+  const main=document.createElement('main')
+  main.className='dashboard-content settings-content'
+  const heading=document.createElement('header')
+  heading.className='dashboard-heading'
+  const headingCopy=document.createElement('div')
+  const title=document.createElement('h1')
+  title.textContent='Settings'
+  const copy=document.createElement('p')
+  copy.textContent='Account details already available for this signed-in profile.'
+  headingCopy.append(title,copy)
+  heading.append(headingCopy)
+
+  const grid=document.createElement('section')
+  grid.className='settings-grid'
+
+  function card(label:string,title:string){
+    const article=document.createElement('article')
+    article.className='card'
+    const kicker=document.createElement('p')
+    kicker.className='label'
+    kicker.textContent=label
+    const h=document.createElement('h2')
+    h.textContent=title
+    article.append(kicker,h)
+    return article
+  }
+  function row(label:string,value:string){
+    const item=document.createElement('div')
+    item.className='settings-row'
+    const dt=document.createElement('span')
+    dt.textContent=label
+    const dd=document.createElement('strong')
+    dd.textContent=value||'—'
+    item.append(dt,dd)
+    return item
+  }
+
+  const account=card('Account','Your account')
+  account.append(row('Display name',name),row('Email',user.email??''))
+  const provider=(user.app_metadata as {provider?:string}|undefined)?.provider
+    || user.identities?.[0]?.provider
+  if(provider)account.append(row('Sign-in provider',provider))
+  if(user.email){
+    const reset=document.createElement('button')
+    reset.type='button'
+    reset.className='text-action'
+    reset.textContent='Send password reset email'
+    const status=document.createElement('p')
+    status.className='settings-note'
+    reset.onclick=()=>void (async()=>{
+      reset.disabled=true
+      status.textContent='Sending…'
+      try{
+        const {error}=await sendPasswordReset(user.email!,`${location.origin}/login?recovery=1`)
+        if(error)throw error
+        status.textContent='Check your inbox for a secure reset link.'
+      }catch(error){
+        status.textContent=error instanceof Error?error.message:'Could not send reset email.'
+      }finally{reset.disabled=false}
+    })()
+    account.append(reset,status)
+  }
+  grid.append(account)
+
+  const identity=card('Profile identity','Public profile')
+  identity.append(row('Username',profile.slug||'Not set yet'))
+  if(profile.slug){
+    const link=document.createElement('a')
+    link.className='text-action'
+    link.href=`/${profile.slug}`
+    link.textContent=`${location.host}/${profile.slug}`
+    identity.append(link)
+  }
+  grid.append(identity)
+
+  const billing=card('Plan / Billing',planConfig.name)
+  const planCopy=document.createElement('p')
+  planCopy.textContent=planConfig.description
+  const planLink=document.createElement('a')
+  planLink.className='primary-action'
+  planLink.href='/dashboard/pricing'
+  planLink.dataset.dashboardRoute=''
+  planLink.textContent='View plans'
+  billing.append(planCopy,planLink)
+  grid.append(billing)
+
+  const legal=card('Privacy / legal','Policies')
+  const links=document.createElement('div')
+  links.className='settings-links'
+  for(const [label,href] of [['Privacy','/privacy'],['Terms','/terms'],['Refunds','/refunds']] as const){
+    const a=document.createElement('a')
+    a.href=href
+    a.textContent=label
+    links.append(a)
+  }
+  legal.append(links)
+  grid.append(legal)
+
+  main.append(heading,grid)
+  return main
+}
+const settingsView=createSettingsView()
+
+async function renderRoute(){activeAvatarPage?.stop();activeAvatarPage=null;const path=location.pathname;let section:DashboardSection='dashboard',view=overview;if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);activeAvatarPage=createAvatarPage(profile,state);view=activeAvatarPage.view}else if(path==='/dashboard/create'||path==='/dashboard/profile'){section='profile';view=await getCreateWorkspace()}else if(path==='/dashboard/pages'){section='pages';view=pagesView}else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}else if(path==='/dashboard/upgrade'){section='pricing';view=upgradeView}else if(path==='/dashboard/settings'){section='settings';view=settingsView}shell.content.replaceChildren(view);shell.setActive(section);if(activeAvatarPage)await activeAvatarPage.start();else if(view!==overview&&view!==pagesView&&view!==pricingView&&view!==upgradeView&&view!==settingsView)await startCreateWorkspace()}
 function navigate(url:string){const target=new URL(url,location.href);history.pushState({},'',`${target.pathname}${target.search}${target.hash}`);void renderRoute()}
 document.addEventListener('click',event=>{const anchor=(event.target as Element).closest<HTMLAnchorElement>('a[href^="\/dashboard"]');if(!anchor||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;const target=new URL(anchor.href);if(!target.pathname.startsWith('/dashboard'))return;event.preventDefault();navigate(`${target.pathname}${target.search}${target.hash}`)})
 window.addEventListener('popstate',()=>void renderRoute())

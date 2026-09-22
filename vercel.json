@@ -17,6 +17,7 @@
     { "source": "/dashboard/pages", "destination": "/dashboard.html" },
     { "source": "/dashboard/pricing", "destination": "/dashboard.html" },
     { "source": "/dashboard/upgrade", "destination": "/dashboard.html" },
+    { "source": "/dashboard/settings", "destination": "/dashboard.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/:slug/chat", "destination": "/chat.html" },
     { "source": "/:slug", "destination": "/profile.html" }

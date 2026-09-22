@@ -30,8 +30,6 @@
 .settings-row{display:flex;justify-content:space-between;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
 .settings-row span{color:var(--body)}
 .settings-note{margin:10px 0 0;color:var(--body);font-size:12px}
-.settings-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
-.settings-links a{color:#5b5dcc;font-size:13px;font-weight:700}
 .billing-price{margin:0!important;color:var(--ink)!important;font-size:18px!important;font-weight:700}
 .billing-details{display:grid}
 .billing-usage-title{margin:8px 0 0;font-size:13px}
@@ -45,8 +43,10 @@
 .dashboard-main{display:flex;flex-direction:column;min-height:100vh}
 #dashboardView{flex:1;min-width:0}
 .dashboard-footer{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:18px 28px 28px;color:#8a92a9;font-size:12px}
+.dashboard-footer>span:first-child{margin-right:auto}
 .dashboard-footer a,.dashboard-footer button{border:0;padding:0;background:transparent;color:#8a92a9;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 .dashboard-footer a:hover,.dashboard-footer button:hover{color:var(--ink)}
+@media(max-width:540px){.dashboard-footer{justify-content:flex-end}.dashboard-footer>span:first-child{width:100%;margin-right:0}}
 .feedback-dialog{border:0;padding:0;background:transparent;max-width:min(520px,calc(100vw - 32px))}
 .feedback-dialog::backdrop{background:rgba(18,26,58,.45)}
 .feedback-dialog .feedback-card{margin:0}

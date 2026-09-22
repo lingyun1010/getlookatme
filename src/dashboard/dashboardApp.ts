@@ -477,12 +477,6 @@ function createSettingsView(){
   }
   billing.append(planLink)
   grid.append(billing)
-  const legal=card('Privacy','Policies')
-  const links=document.createElement('div');links.className='settings-links'
-  for(const [labelText,href] of [['Privacy','/privacy'],['Terms','/terms'],['Refunds','/refunds']] as const){
-    const a=document.createElement('a');a.href=href;a.textContent=labelText;links.append(a)
-  }
-  legal.append(links);grid.append(legal)
   main.append(heading,grid);return main
 }
 const settingsView=createSettingsView()

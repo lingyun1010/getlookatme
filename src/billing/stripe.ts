@@ -18,6 +18,16 @@ type SubscriptionRow = {
   provider_customer_id: string | null
   provider_subscription_id: string | null
   current_period_end: string | null
+  cancel_at_period_end?: boolean
+}
+
+export type StripeSubscriptionMutationResult = {
+  plan: string
+  status: string
+  provider: 'stripe'
+  cancel_at_period_end: boolean
+  current_period_end: string | null
+  provider_subscription_id: string
 }
 
 export function createStripeClient(config: StripeBillingConfig): Stripe {
@@ -84,6 +94,71 @@ export class StripeBillingProvider implements BillingProvider {
       return_url: portalReturn,
     })
     return { id: session.id, provider: 'stripe', url: session.url }
+  }
+
+
+  async scheduleCancellation(userId: string): Promise<StripeSubscriptionMutationResult> {
+    const { subscription } = await this.loadBillingContext(userId)
+    if (subscription.plan === 'founding') throw new StripeBillingError('Founding access is managed manually and cannot be cancelled here.')
+    if (subscription.provider !== 'stripe' || !subscription.provider_subscription_id) {
+      throw new StripeBillingError('No Stripe subscription is linked to this account.')
+    }
+    if (!(subscription.status === 'active' || subscription.status === 'trialing')) {
+      throw new StripeBillingError('Only an active Stripe Pro subscription can be cancelled.')
+    }
+    const updated = await this.stripe.subscriptions.update(subscription.provider_subscription_id, {
+      cancel_at_period_end: true,
+    })
+    const currentPeriodEnd = updated.items.data[0]?.current_period_end
+      ? new Date(updated.items.data[0].current_period_end * 1000).toISOString()
+      : subscription.current_period_end
+    const { error } = await this.client.from('subscriptions').update({
+      cancel_at_period_end: true,
+      current_period_end: currentPeriodEnd,
+      provider: 'stripe',
+      provider_subscription_id: updated.id,
+    }).eq('user_id', userId)
+    if (error) throw error
+    return {
+      plan: subscription.plan,
+      status: subscription.status,
+      provider: 'stripe',
+      cancel_at_period_end: true,
+      current_period_end: currentPeriodEnd,
+      provider_subscription_id: updated.id,
+    }
+  }
+
+  async resumeSubscription(userId: string): Promise<StripeSubscriptionMutationResult> {
+    const { subscription } = await this.loadBillingContext(userId)
+    if (subscription.plan === 'founding') throw new StripeBillingError('Founding access is managed manually.')
+    if (subscription.provider !== 'stripe' || !subscription.provider_subscription_id) {
+      throw new StripeBillingError('No Stripe subscription is linked to this account.')
+    }
+    if (!(subscription.status === 'active' || subscription.status === 'trialing')) {
+      throw new StripeBillingError('Only an active Stripe Pro subscription can be resumed.')
+    }
+    const updated = await this.stripe.subscriptions.update(subscription.provider_subscription_id, {
+      cancel_at_period_end: false,
+    })
+    const currentPeriodEnd = updated.items.data[0]?.current_period_end
+      ? new Date(updated.items.data[0].current_period_end * 1000).toISOString()
+      : subscription.current_period_end
+    const { error } = await this.client.from('subscriptions').update({
+      cancel_at_period_end: false,
+      current_period_end: currentPeriodEnd,
+      provider: 'stripe',
+      provider_subscription_id: updated.id,
+    }).eq('user_id', userId)
+    if (error) throw error
+    return {
+      plan: subscription.plan,
+      status: subscription.status,
+      provider: 'stripe',
+      cancel_at_period_end: false,
+      current_period_end: currentPeriodEnd,
+      provider_subscription_id: updated.id,
+    }
   }
 
   private async loadBillingContext(userId: string): Promise<{ subscription: SubscriptionRow; profileId: string; email: string | null }> {

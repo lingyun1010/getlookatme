@@ -24,12 +24,14 @@ function mapStripeSubscription(subscription: Stripe.Subscription): {
   provider_customer_id: string
   provider_subscription_id: string
   current_period_end: string | null
+  cancel_at_period_end: boolean
 } {
   const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
   const base = {
     provider_customer_id: customerId,
     provider_subscription_id: subscription.id,
     current_period_end: periodEndIso(subscription),
+    cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
   }
   if (subscription.status === 'active') {
     return { plan: 'pro', status: 'active', ...base }
@@ -41,10 +43,10 @@ function mapStripeSubscription(subscription: Stripe.Subscription): {
     return { plan: 'pro', status: 'past_due', ...base }
   }
   if (subscription.status === 'canceled' || subscription.status === 'unpaid' || subscription.status === 'incomplete_expired') {
-    return { plan: 'free', status: 'free', ...base }
+    return { plan: 'free', status: 'free', ...base, cancel_at_period_end: false }
   }
   // incomplete / paused / etc. keep non-elevating free behavior
-  return { plan: 'free', status: 'free', ...base }
+  return { plan: 'free', status: 'free', ...base, cancel_at_period_end: false }
 }
 
 async function resolveUserId(
@@ -99,6 +101,7 @@ async function applySubscriptionState(
       provider_customer_id: next.provider_customer_id,
       provider_subscription_id: next.provider_subscription_id,
       current_period_end: next.current_period_end,
+      cancel_at_period_end: next.cancel_at_period_end,
     }).eq('user_id', userId)
     if (error) throw error
     return { activated: false }
@@ -114,6 +117,7 @@ async function applySubscriptionState(
     provider_customer_id: next.provider_customer_id,
     provider_subscription_id: next.provider_subscription_id,
     current_period_end: next.current_period_end,
+    cancel_at_period_end: next.cancel_at_period_end,
   }).eq('user_id', userId)
   if (error) throw error
   return { activated: willElevate && !wasElevated }

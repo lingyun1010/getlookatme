@@ -152,7 +152,109 @@ function createPagesView(){
 }
 const pagesView=createPagesView()
 
-function createPricingView(){const main=document.createElement('main');main.className='dashboard-content';const heading=document.createElement('header');heading.className='dashboard-heading';const headingCopy=document.createElement('div');const title=document.createElement('h1');title.textContent='Plans';const copy=document.createElement('p');copy.textContent='Publish on Free, then upgrade only when you need more Avatar and AI usage.';headingCopy.append(title,copy);heading.append(headingCopy);const grid=document.createElement('section');grid.className='overview-grid';for(const planId of PUBLIC_PLAN_IDS){const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className='card';card.id=planId;const label=document.createElement('p');label.className='label';label.textContent=planId===plan?'Current plan':'Plan';const name=document.createElement('h2');name.textContent=item.name;const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`;const description=document.createElement('p');description.textContent=item.description;const list=document.createElement('ul');for(const feature of item.highlights){const row=document.createElement('li');row.textContent=feature;list.append(row)}const action=document.createElement('a');action.className='primary-action';action.textContent=planId===plan?'Current plan':item.ctaLabel;action.href=planId==='pro'&&plan==='free'?'/dashboard/upgrade':'/dashboard';if(planId===plan){action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}else if(planId==='pro'){action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'))}card.append(label,name,price,description,list,action);grid.append(card)}main.append(heading,grid);return main}
+function formatPeriodEnd(value:string|null|undefined){
+  if(!value)return null
+  const date=new Date(value)
+  if(Number.isNaN(date.getTime()))return null
+  return new Intl.DateTimeFormat('en-AU',{dateStyle:'medium'}).format(date)
+}
+function createPricingView(){
+  let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
+  let periodEnd=subscription.current_period_end
+  const main=document.createElement('main');main.className='dashboard-content'
+  const heading=document.createElement('header');heading.className='dashboard-heading'
+  const headingCopy=document.createElement('div')
+  const title=document.createElement('h1');title.textContent='Plans'
+  const copy=document.createElement('p');copy.textContent='Publish on Free, then upgrade only when you need more Avatar and AI usage.'
+  headingCopy.append(title,copy);heading.append(headingCopy)
+  const statusNote=document.createElement('p');statusNote.className='settings-note';statusNote.hidden=true
+  const grid=document.createElement('section');grid.className='overview-grid'
+  const stripePro=plan==='pro'&&subscription.provider==='stripe'&&Boolean(subscription.provider_customer_id)
+  const founding=plan==='founding'
+
+  function renderCancelNote(){
+    if(!(stripePro&&cancelAtPeriodEnd)){statusNote.hidden=true;statusNote.textContent='';return}
+    const when=formatPeriodEnd(periodEnd)
+    statusNote.hidden=false
+    statusNote.textContent=when
+      ?`Your subscription is scheduled to cancel at the end of the current billing period (${when}).`
+      :'Your subscription is scheduled to cancel at the end of the current billing period.'
+  }
+
+  for(const planId of PUBLIC_PLAN_IDS){
+    const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className='card';card.id=planId
+    const label=document.createElement('p');label.className='label'
+    if(planId===plan)label.textContent='Current plan'
+    else if(planId==='free'&&(plan==='pro'||plan==='founding'))label.textContent='Included'
+    else label.textContent='Plan'
+    const name=document.createElement('h2');name.textContent=item.name
+    const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`
+    const description=document.createElement('p');description.textContent=item.description
+    const list=document.createElement('ul');for(const feature of item.highlights){const row=document.createElement('li');row.textContent=feature;list.append(row)}
+    card.append(label,name,price,description,list)
+
+    if(planId==='free'){
+      const action=document.createElement('a');action.className='primary-action'
+      if(plan==='free'){action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      else {action.textContent=plan==='founding'?'Included in Founding':'Included in Pro';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      card.append(action)
+    }else if(planId==='pro'){
+      if(plan==='pro'){
+        const action=document.createElement('a');action.className='primary-action';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        if(stripePro&&!founding){
+          const actions=document.createElement('div');actions.className='card-actions';actions.style.marginTop='14px';actions.style.flexWrap='wrap'
+          const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
+          manage.onclick=()=>void (async()=>{
+            manage.disabled=true
+            try{const result=await requestBilling('portal');if(!result.session?.url)throw new Error('Stripe Customer Portal is unavailable.');location.assign(result.session.url)}
+            catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
+          })()
+          actions.append(manage)
+          const cancelOrResume=document.createElement('button');cancelOrResume.type='button';cancelOrResume.className='text-action'
+          const syncCancelButton=()=>{cancelOrResume.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
+          syncCancelButton()
+          cancelOrResume.onclick=()=>void (async()=>{
+            if(!cancelAtPeriodEnd){
+              const when=formatPeriodEnd(periodEnd)
+              const confirmed=window.confirm(when
+                ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
+                :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
+              if(!confirmed)return
+              cancelOrResume.disabled=true
+              try{
+                const result=await requestBilling('cancel-subscription')
+                cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
+                periodEnd=result.current_period_end ?? periodEnd
+                subscription.cancel_at_period_end=cancelAtPeriodEnd
+                if(periodEnd)subscription.current_period_end=periodEnd
+                syncCancelButton();renderCancelNote();cancelOrResume.disabled=false
+              }catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not cancel the subscription.';cancelOrResume.disabled=false}
+              return
+            }
+            cancelOrResume.disabled=true
+            try{
+              const result=await requestBilling('reactivate-subscription')
+              cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
+              periodEnd=result.current_period_end ?? periodEnd
+              subscription.cancel_at_period_end=cancelAtPeriodEnd
+              if(periodEnd)subscription.current_period_end=periodEnd
+              syncCancelButton();renderCancelNote();cancelOrResume.disabled=false
+            }catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not resume the subscription.';cancelOrResume.disabled=false}
+          })()
+          actions.append(cancelOrResume)
+          card.append(actions)
+        }
+      }else if(plan==='founding'){
+        const action=document.createElement('a');action.className='primary-action';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+      }else{
+        const action=document.createElement('a');action.className='primary-action';action.textContent=item.ctaLabel;action.href='/dashboard/upgrade';action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'));card.append(action)
+      }
+    }
+    grid.append(card)
+  }
+  renderCancelNote()
+  main.append(heading,statusNote,grid);return main
+}
 const pricingView=createPricingView()
 ;(function applyCheckoutReturnState(){
   const params=new URLSearchParams(location.search)
@@ -208,9 +310,36 @@ function createUpgradeView(){
       }catch(error){feedback.textContent=error instanceof Error?error.message:'Could not open the customer portal.';button.disabled=false}
     })()
     if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
-      feedback.textContent='Manage billing, payment method, or cancellation in the Stripe Customer Portal.'
+      let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
+      const when=formatPeriodEnd(subscription.current_period_end)
+      feedback.textContent=cancelAtPeriodEnd
+        ?(when?`Pro is scheduled to cancel on ${when}.`:'Pro is scheduled to cancel at period end.')
+        :'Manage billing in Stripe, or cancel directly in Get Look At Me. Access continues until the period ends.'
       button.textContent='Manage subscription'
       button.onclick=openPortal
+      const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='text-action';cancelBtn.style.marginTop='12px'
+      const sync=()=>{cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
+      sync()
+      cancelBtn.onclick=()=>void (async()=>{
+        if(!cancelAtPeriodEnd){
+          const confirmed=window.confirm(when
+            ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
+            :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
+          if(!confirmed)return
+        }
+        cancelBtn.disabled=true;button.disabled=true
+        try{
+          const result=await requestBilling(cancelAtPeriodEnd?'reactivate-subscription':'cancel-subscription')
+          cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
+          subscription.cancel_at_period_end=cancelAtPeriodEnd
+          if(result.current_period_end)subscription.current_period_end=result.current_period_end
+          feedback.textContent=cancelAtPeriodEnd
+            ?`Your subscription is scheduled to cancel${result.current_period_end?` on ${formatPeriodEnd(result.current_period_end)}`:''}.`
+            :'Your Pro subscription will renew at the end of the billing period.'
+          sync();cancelBtn.disabled=false;button.disabled=false
+        }catch(error){feedback.textContent=error instanceof Error?error.message:'Could not update the subscription.';cancelBtn.disabled=false;button.disabled=false}
+      })()
+      card.append(cancelBtn)
     }else if(plan==='pro'){
       feedback.textContent='Your Pro plan is active.'
       button.textContent='Back to dashboard'
@@ -288,8 +417,20 @@ function createSettingsView(){
   const planLink=document.createElement('a');planLink.className='primary-action';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
   billing.append(planCopy,planLink)
   if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
+    let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
     const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
+    const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='text-action'
     const manageNote=document.createElement('p');manageNote.className='settings-note'
+    const syncCancel=()=>{
+      cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'
+      if(cancelAtPeriodEnd){
+        const when=formatPeriodEnd(subscription.current_period_end)
+        manageNote.textContent=when
+          ?`Your subscription is scheduled to cancel at the end of the current billing period (${when}).`
+          :'Your subscription is scheduled to cancel at the end of the current billing period.'
+      }
+    }
+    syncCancel()
     manage.onclick=()=>void (async()=>{
       manage.disabled=true;manageNote.textContent='Opening Stripe…'
       try{
@@ -298,7 +439,25 @@ function createSettingsView(){
         location.assign(result.session.url)
       }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
     })()
-    billing.append(manage,manageNote)
+    cancelBtn.onclick=()=>void (async()=>{
+      if(!cancelAtPeriodEnd){
+        const when=formatPeriodEnd(subscription.current_period_end)
+        const confirmed=window.confirm(when
+          ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
+          :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
+        if(!confirmed)return
+      }
+      cancelBtn.disabled=true;manage.disabled=true
+      try{
+        const result=await requestBilling(cancelAtPeriodEnd?'reactivate-subscription':'cancel-subscription')
+        cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
+        subscription.cancel_at_period_end=cancelAtPeriodEnd
+        if(result.current_period_end)subscription.current_period_end=result.current_period_end
+        if(!cancelAtPeriodEnd)manageNote.textContent='Your Pro subscription will renew at the end of the billing period.'
+        syncCancel();cancelBtn.disabled=false;manage.disabled=false
+      }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not update the subscription.';cancelBtn.disabled=false;manage.disabled=false}
+    })()
+    billing.append(manage,cancelBtn,manageNote)
   }
   grid.append(billing)
   const legal=card('Privacy / legal','Policies')

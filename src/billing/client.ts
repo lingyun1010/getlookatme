@@ -6,9 +6,20 @@ export interface BillingResult {
   status?: string
   plan?: string
   provider?: BillingProviderName
+  cancel_at_period_end?: boolean
+  current_period_end?: string | null
+  provider_subscription_id?: string
 }
 
-export type BillingAction = 'start' | 'complete' | 'cancel' | 'reactivate' | 'checkout' | 'portal'
+export type BillingAction =
+  | 'start'
+  | 'complete'
+  | 'cancel'
+  | 'reactivate'
+  | 'checkout'
+  | 'portal'
+  | 'cancel-subscription'
+  | 'reactivate-subscription'
 
 export async function requestBilling(action: BillingAction, sessionId?: string): Promise<BillingResult> {
   const { data: { session } } = await requireSupabase().auth.getSession()

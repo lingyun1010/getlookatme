@@ -21,7 +21,9 @@ export async function handleBillingRequest(
     action !== 'cancel' &&
     action !== 'reactivate' &&
     action !== 'checkout' &&
-    action !== 'portal'
+    action !== 'portal' &&
+    action !== 'cancel-subscription' &&
+    action !== 'reactivate-subscription'
   ) {
     return { status: 400, body: { code: 'invalid_billing_action', error: 'Unsupported billing action.' } }
   }
@@ -30,7 +32,11 @@ export async function handleBillingRequest(
   if (!client) return { status: 503, body: { code: 'billing_unavailable', error: 'Billing is unavailable.' } }
 
   const mockActions = action === 'start' || action === 'complete' || action === 'cancel' || action === 'reactivate'
-  const stripeActions = action === 'checkout' || action === 'portal'
+  const stripeActions =
+    action === 'checkout' ||
+    action === 'portal' ||
+    action === 'cancel-subscription' ||
+    action === 'reactivate-subscription'
 
   if (mockActions) {
     if (!mockBillingEnabled(environment)) {
@@ -77,8 +83,16 @@ export async function handleBillingRequest(
         await recordUserFunnelEventSafely(client, user.id, 'checkout_started')
         return { status: 200, body: { session } }
       }
-      const session = await provider.createPortalSession(user.id)
-      return { status: 200, body: { session } }
+      if (action === 'portal') {
+        const session = await provider.createPortalSession(user.id)
+        return { status: 200, body: { session } }
+      }
+      if (action === 'cancel-subscription') {
+        const result = await provider.scheduleCancellation(user.id)
+        return { status: 200, body: result }
+      }
+      const result = await provider.resumeSubscription(user.id)
+      return { status: 200, body: result }
     } catch (error) {
       if (error instanceof StripeConfigError || error instanceof StripeBillingError) {
         return { status: 400, body: { code: 'stripe_billing_error', error: error.message } }

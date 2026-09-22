@@ -13,6 +13,7 @@ export interface Subscription {
   provider_customer_id: string | null
   provider_subscription_id: string | null
   current_period_end: string | null
+  cancel_at_period_end: boolean
   created_at: string
   updated_at: string
 }

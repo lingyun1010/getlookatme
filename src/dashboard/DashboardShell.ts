@@ -115,13 +115,13 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   topRight.className='topbar-right'
 
   const preview=document.createElement('a')
-  preview.className='topbar-action'
+  preview.className='btn btn-secondary topbar-action'
   preview.href='/preview'
   preview.textContent='Preview'
 
   const publish=document.createElement('button')
   publish.type='button'
-  publish.className='topbar-action topbar-publish'
+  publish.className='btn btn-primary topbar-publish'
   const syncPublish=()=>{
     publish.textContent=published?'Unpublish':'Publish'
     publish.disabled=false

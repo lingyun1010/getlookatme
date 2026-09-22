@@ -109,8 +109,8 @@ function createPagesView(){
   feedback.className='slug-feedback'
   url.replaceChildren(document.createTextNode(`${location.host}/`),slugInput,feedback)
 
-  const button=(labelText:string,run:()=>Promise<void>)=>{const item=document.createElement('button');item.type='button';item.textContent=labelText;item.onclick=()=>void run();return item}
-  const link=(labelText:string,href:string)=>{const item=document.createElement('a');item.textContent=labelText;item.href=href;return item}
+  const button=(labelText:string,run:()=>Promise<void>,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('button');item.type='button';item.className=`btn btn-${kind}`;item.textContent=labelText;item.onclick=()=>void run();return item}
+  const link=(labelText:string,href:string,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('a');item.className=`btn btn-${kind}`;item.textContent=labelText;item.href=href;return item}
 
   async function run(action:'availability'|'save-slug'|'publish'|'unpublish'){
     feedback.textContent='Checking…'
@@ -147,9 +147,9 @@ function createPagesView(){
     status.classList.toggle('published',published)
     pageTitle.textContent=published?'Your profile is live':'Draft profile'
     pageCopy.textContent=published?'Recruiters can open and explore your public profile.':'Your profile is private while it is in draft.'
-    actions.replaceChildren(link('Preview','/preview'),button('Save URL',()=>run('save-slug')))
-    if(published)actions.append(link('View profile ↗',`/${currentSlug}`),button('Copy link',copyLink),button('Unpublish',()=>run('unpublish')))
-    else actions.append(button('Publish',()=>run('publish')))
+    actions.replaceChildren(link('Preview','/preview','secondary'),button('Save URL',()=>run('save-slug'),'secondary'))
+    if(published)actions.append(link('View profile ↗',`/${currentSlug}`,'tertiary'),button('Copy link',copyLink,'tertiary'),button('Unpublish',()=>run('unpublish'),'tertiary'))
+    else actions.append(button('Publish',()=>run('publish'),'primary'))
   }
   renderPublication()
   return main
@@ -198,23 +198,23 @@ function createPricingView(){
     card.append(label,name,price,description,list)
 
     if(planId==='free'){
-      const action=document.createElement('a');action.className='primary-action'
+      const action=document.createElement('a');action.className='btn btn-primary'
       if(plan==='free'){action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
       else {action.textContent=plan==='founding'?'Included in Founding':'Included in Pro';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
       card.append(action)
     }else if(planId==='pro'){
       if(plan==='pro'){
-        const action=document.createElement('a');action.className='primary-action';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        const action=document.createElement('a');action.className='btn btn-primary';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
         if(stripePro&&!founding){
           const actions=document.createElement('div');actions.className='card-actions';actions.style.marginTop='14px';actions.style.flexWrap='wrap'
-          const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
+          const manage=document.createElement('button');manage.type='button';manage.className='btn btn-tertiary';manage.textContent='Manage subscription'
           manage.onclick=()=>void (async()=>{
             manage.disabled=true
             try{const result=await requestBilling('portal');if(!result.session?.url)throw new Error('Stripe Customer Portal is unavailable.');location.assign(result.session.url)}
             catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
           })()
           actions.append(manage)
-          const cancelOrResume=document.createElement('button');cancelOrResume.type='button';cancelOrResume.className='text-action'
+          const cancelOrResume=document.createElement('button');cancelOrResume.type='button';cancelOrResume.className='btn btn-tertiary'
           const syncCancelButton=()=>{cancelOrResume.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
           syncCancelButton()
           cancelOrResume.onclick=()=>void (async()=>{
@@ -249,9 +249,9 @@ function createPricingView(){
           card.append(actions)
         }
       }else if(plan==='founding'){
-        const action=document.createElement('a');action.className='primary-action';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        const action=document.createElement('a');action.className='btn btn-primary';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
       }else{
-        const action=document.createElement('a');action.className='primary-action';action.textContent=item.ctaLabel;action.href='/dashboard/upgrade';action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'));card.append(action)
+        const action=document.createElement('a');action.className='btn btn-primary';action.textContent=item.ctaLabel;action.href='/dashboard/upgrade';action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'));card.append(action)
       }
     }
     grid.append(card)
@@ -283,7 +283,7 @@ function createUpgradeView(){
   headingCopy.append(title,copy);heading.append(headingCopy)
   const card=document.createElement('section');card.className='card'
   const feedback=document.createElement('p')
-  const button=document.createElement('button');button.type='button';button.className='primary-action'
+  const button=document.createElement('button');button.type='button';button.className='btn btn-primary'
   if(useMockBilling){
     const run=async(action:'start'|'complete'|'cancel'|'reactivate',sessionId?:string)=>{
       button.disabled=true;feedback.textContent='Updating…'
@@ -321,7 +321,7 @@ function createUpgradeView(){
         :'Manage billing in Stripe, or cancel directly in Get Look At Me. Access continues until the period ends.'
       button.textContent='Manage subscription'
       button.onclick=openPortal
-      const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='text-action';cancelBtn.style.marginTop='12px'
+      const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='btn btn-tertiary';cancelBtn.style.marginTop='12px'
       const sync=()=>{cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
       sync()
       cancelBtn.onclick=()=>void (async()=>{
@@ -418,12 +418,12 @@ function createSettingsView(){
   grid.append(identity)
   const billing=card('Plan / Billing',planConfig.name)
   const planCopy=document.createElement('p');planCopy.textContent=planConfig.description
-  const planLink=document.createElement('a');planLink.className='primary-action';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
+  const planLink=document.createElement('a');planLink.className='btn btn-primary';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
   billing.append(planCopy,planLink)
   if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
     let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
-    const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
-    const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='text-action'
+    const manage=document.createElement('button');manage.type='button';manage.className='btn btn-tertiary';manage.textContent='Manage subscription'
+    const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='btn btn-tertiary'
     const manageNote=document.createElement('p');manageNote.className='settings-note'
     const syncCancel=()=>{
       cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'

@@ -91,3 +91,12 @@ test('pages section owns public slug editing and publication controls', () => {
   assert.match(app, /Unpublish/)
   assert.doesNotMatch(page, /id="profileUrl"/)
 })
+
+test('dashboard actions use a consistent button hierarchy', () => {
+  assert.match(css, /\.btn-primary/)
+  assert.match(css, /\.btn-secondary/)
+  assert.match(css, /\.btn-tertiary/)
+  assert.match(page, /btn btn-primary/)
+  assert.match(page, /btn btn-secondary/)
+  assert.match(app, /btn btn-primary/)
+})

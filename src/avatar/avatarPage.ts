@@ -9,7 +9,7 @@ const element = <K extends keyof HTMLElementTagNameMap>(tag: K, className?: stri
   const node = document.createElement(tag); if (className) node.className = className; if (text) node.textContent = text; return node
 }
 
-export function createAvatarPage(profile: OwnedProfile, initialState: OnboardingState | null): { view: HTMLElement; start(): Promise<void>; stop(): void } {
+export function createAvatarPage(profile: OwnedProfile, initialState: OnboardingState | null, usage?: {used:number;limit:number|null}): { view: HTMLElement; start(): Promise<void>; stop(): void } {
   const view = element('main', 'dashboard-content avatar-page')
   view.innerHTML = `<header class="dashboard-heading"><div><h1>Avatar</h1><p>Manage your profile photo and interactive avatar.</p></div></header>
 <p class="avatar-page-message" role="status" aria-live="polite"></p>
@@ -46,7 +46,10 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
         </div>
         <select id="avatarPreset" hidden><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="smooth">Smooth</option></select>
       </div>
-      <button id="queueAvatar" class="btn btn-primary" type="button">Generate avatar</button>
+      <div class="avatar-generate-row">
+        <span id="avatarUsage" class="avatar-usage"></span>
+        <button id="queueAvatar" class="btn btn-primary" type="button">Generate avatar</button>
+      </div>
     </div>
   </div>
 </section>
@@ -73,6 +76,13 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
   const originalHost = view.querySelector<HTMLElement>('#originalPreview')!
   const currentHost = view.querySelector<HTMLElement>('#currentAvatar')!
   const generateButton = view.querySelector<HTMLButtonElement>('#queueAvatar')!
+  const usageText = view.querySelector<HTMLElement>('#avatarUsage')!
+  const renderUsage=()=>{
+    if(!usage){usageText.hidden=true;return}
+    usageText.hidden=false
+    usageText.textContent=usage.limit===null?`${usage.used} avatar generations used this month`:`${usage.used} / ${usage.limit} avatar generations used`
+  }
+  renderUsage()
   const setMessage = (value: string, error = false, upgrade = false) => {
     message.replaceChildren(document.createTextNode(value))
     message.classList.toggle('error', error)
@@ -203,7 +213,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
     if (hasActiveGeneration(jobs)) return
     generateButton.disabled = true; generateButton.textContent = 'Queueing…'
     const style = view.querySelector<HTMLSelectElement>('#avatarStyle')!.value; const preset = view.querySelector<HTMLSelectElement>('#avatarPreset')!.value as AvatarPreset
-    try { const job = await createAvatarJob(profile, state.original_photo_path, style, preset); jobs = [job, ...jobs]; setMessage('Generation queued. You can safely leave this page.'); renderJobsIfChanged(); syncPolling() } catch (error) { const cause = error as Error & { code?: string }; setMessage(cause instanceof Error ? cause.message : 'Could not queue generation.', true, cause.code === 'avatar_limit_reached'); syncGenerateButton() }
+    try { const job = await createAvatarJob(profile, state.original_photo_path, style, preset); jobs = [job, ...jobs];if(usage){usage.used+=1;renderUsage()} setMessage('Generation queued. You can safely leave this page.'); renderJobsIfChanged(); syncPolling() } catch (error) { const cause = error as Error & { code?: string }; setMessage(cause instanceof Error ? cause.message : 'Could not queue generation.', true, cause.code === 'avatar_limit_reached'); syncGenerateButton() }
   })
 
 

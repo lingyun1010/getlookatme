@@ -7,7 +7,7 @@ import { mountDashboardShell, type DashboardSection } from './DashboardShell.ts'
 import { createAvatarPage } from '../avatar/avatarPage.ts'
 import '../avatar/avatar.css'
 import { requestPublication } from '../profile/publicationClient.ts'
-import { effectivePlan } from '../monetisation/entitlements.ts'
+import { effectivePlan, getUsageLimit } from '../monetisation/entitlements.ts'
 import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
 import { getSubscription } from '../monetisation/subscription.ts'
 import { getCurrentUserMonthlyUsage } from '../monetisation/usage.ts'
@@ -205,6 +205,21 @@ function formatPeriodEnd(value:string|null|undefined){
   if(Number.isNaN(date.getTime()))return null
   return new Intl.DateTimeFormat('en-AU',{dateStyle:'medium'}).format(date)
 }
+function formatUsageResetDate(now=new Date()){
+  return new Intl.DateTimeFormat('en-AU',{dateStyle:'medium'}).format(new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()+1,1)))
+}
+function usageMeter(labelText:string,used:number,limit:number|null){
+  const item=document.createElement('div');item.className='usage-meter'
+  const copy=document.createElement('div')
+  const label=document.createElement('span');label.textContent=labelText
+  const value=document.createElement('strong');value.textContent=limit===null?String(used):`${used} / ${limit}`
+  copy.append(label,value);item.append(copy)
+  if(limit!==null){
+    const track=document.createElement('div');track.className='usage-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label',labelText);track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax',String(limit));track.setAttribute('aria-valuenow',String(Math.min(used,limit)))
+    const fill=document.createElement('i');fill.style.width=`${Math.min(100,used/limit*100)}%`;track.append(fill);item.append(track)
+  }
+  return item
+}
 function createPricingView(){
   let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
   let periodEnd=subscription.current_period_end
@@ -230,12 +245,7 @@ function createPricingView(){
 
   for(const planId of PUBLIC_PLAN_IDS){
     const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className=planId===plan?'card pricing-current':'card';card.id=planId
-    const label=document.createElement('p');label.className='label'
-    if(planId===plan)label.textContent='Current plan'
-    else if(planId==='free'&&plan==='pro')label.textContent='Included in Pro'
-    else if(planId==='free'&&plan==='founding')label.textContent='Included in Founding'
-    else if(planId==='pro'&&plan==='founding')label.textContent='Included in Founding'
-    else label.textContent='Plan'
+    const label=document.createElement('p');label.className='label';label.textContent=item.name.toUpperCase()
     const name=document.createElement('h2');name.className='panel-title';name.textContent=item.name
     const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`
     const description=document.createElement('p');description.textContent=item.description
@@ -245,52 +255,20 @@ function createPricingView(){
     if(planId==='free'){
       const action=document.createElement('a');action.className='btn btn-primary'
       if(plan==='free'){action.className='btn btn-secondary';action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
-      else {action.className='btn btn-secondary';action.textContent=plan==='founding'?'Included in Founding':'Included in Pro';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      else {action.className='btn btn-secondary';action.textContent='View plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
       card.append(action)
     }else if(planId==='pro'){
       if(plan==='pro'){
         const action=document.createElement('a');action.className='btn btn-secondary';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
         if(stripePro&&!founding){
           const actions=document.createElement('div');actions.className='card-actions';actions.style.marginTop='14px';actions.style.flexWrap='wrap'
-          const manage=document.createElement('button');manage.type='button';manage.className='btn btn-tertiary';manage.textContent='Manage subscription'
+          const manage=document.createElement('button');manage.type='button';manage.className='btn btn-primary';manage.textContent='Manage subscription'
           manage.onclick=()=>void (async()=>{
             manage.disabled=true
             try{const result=await requestBilling('portal');if(!result.session?.url)throw new Error('Stripe Customer Portal is unavailable.');location.assign(result.session.url)}
             catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
           })()
           actions.append(manage)
-          const cancelOrResume=document.createElement('button');cancelOrResume.type='button';cancelOrResume.className='btn btn-tertiary'
-          const syncCancelButton=()=>{cancelOrResume.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
-          syncCancelButton()
-          cancelOrResume.onclick=()=>void (async()=>{
-            if(!cancelAtPeriodEnd){
-              const when=formatPeriodEnd(periodEnd)
-              const confirmed=window.confirm(when
-                ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
-                :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
-              if(!confirmed)return
-              cancelOrResume.disabled=true
-              try{
-                const result=await requestBilling('cancel-subscription')
-                cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
-                periodEnd=result.current_period_end ?? periodEnd
-                subscription.cancel_at_period_end=cancelAtPeriodEnd
-                if(periodEnd)subscription.current_period_end=periodEnd
-                syncCancelButton();renderCancelNote();cancelOrResume.disabled=false
-              }catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not cancel the subscription.';cancelOrResume.disabled=false}
-              return
-            }
-            cancelOrResume.disabled=true
-            try{
-              const result=await requestBilling('reactivate-subscription')
-              cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
-              periodEnd=result.current_period_end ?? periodEnd
-              subscription.cancel_at_period_end=cancelAtPeriodEnd
-              if(periodEnd)subscription.current_period_end=periodEnd
-              syncCancelButton();renderCancelNote();cancelOrResume.disabled=false
-            }catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not resume the subscription.';cancelOrResume.disabled=false}
-          })()
-          actions.append(cancelOrResume)
           card.append(actions)
         }
       }else if(plan==='founding'){
@@ -459,24 +437,21 @@ function createSettingsView(){
   account.append(pagesNote,pagesLink)
   grid.append(account)
   const billing=card('Billing',planConfig.name)
-  const planCopy=document.createElement('p');planCopy.textContent=planConfig.description
+  const price=document.createElement('p');price.className='billing-price';price.textContent=planConfig.price?`${formatPlanPrice(planConfig)} / month`:'Founding access'
+  const statusValue=subscription.cancel_at_period_end
+    ?`Cancels ${formatPeriodEnd(subscription.current_period_end)??'at period end'}`
+    :plan==='free'?'No active subscription':subscription.status==='active'?'Active':subscription.status==='trialing'?'Trialing':subscription.status.replace('_',' ')
+  const details=document.createElement('div');details.className='billing-details';details.append(row('Subscription status',statusValue))
+  if(plan!=='free'&&!subscription.cancel_at_period_end&&subscription.current_period_end)details.append(row('Renewal',`Renews ${formatPeriodEnd(subscription.current_period_end)}`))
+  const usageTitle=document.createElement('h3');usageTitle.className='billing-usage-title';usageTitle.textContent='Usage this billing period'
+  const avatarLimit=getUsageLimit(plan,'avatar.generate')
+  const ragLimit=getUsageLimit(plan,'rag.query')
+  const reset=document.createElement('p');reset.className='settings-note';reset.textContent=`Usage resets ${formatUsageResetDate()}.`
   const planLink=document.createElement('a');planLink.className='btn btn-secondary';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
-  billing.append(planCopy,planLink)
+  billing.append(price,details,usageTitle,usageMeter('Avatar generations',monthlyUsage.avatar_generation,avatarLimit),usageMeter('AI profile questions',monthlyUsage.rag_query,ragLimit),reset)
   if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
-    let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
-    const manage=document.createElement('button');manage.type='button';manage.className='btn btn-tertiary';manage.textContent='Manage subscription'
-    const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='btn btn-tertiary'
+    const manage=document.createElement('button');manage.type='button';manage.className='btn btn-primary';manage.textContent='Manage subscription'
     const manageNote=document.createElement('p');manageNote.className='settings-note'
-    const syncCancel=()=>{
-      cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'
-      if(cancelAtPeriodEnd){
-        const when=formatPeriodEnd(subscription.current_period_end)
-        manageNote.textContent=when
-          ?`Your subscription is scheduled to cancel at the end of the current billing period (${when}).`
-          :'Your subscription is scheduled to cancel at the end of the current billing period.'
-      }
-    }
-    syncCancel()
     manage.onclick=()=>void (async()=>{
       manage.disabled=true;manageNote.textContent='Opening Stripe…'
       try{
@@ -485,26 +460,11 @@ function createSettingsView(){
         location.assign(result.session.url)
       }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
     })()
-    cancelBtn.onclick=()=>void (async()=>{
-      if(!cancelAtPeriodEnd){
-        const when=formatPeriodEnd(subscription.current_period_end)
-        const confirmed=window.confirm(when
-          ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
-          :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
-        if(!confirmed)return
-      }
-      cancelBtn.disabled=true;manage.disabled=true
-      try{
-        const result=await requestBilling(cancelAtPeriodEnd?'reactivate-subscription':'cancel-subscription')
-        cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
-        subscription.cancel_at_period_end=cancelAtPeriodEnd
-        if(result.current_period_end)subscription.current_period_end=result.current_period_end
-        if(!cancelAtPeriodEnd)manageNote.textContent='Your Pro subscription will renew at the end of the billing period.'
-        syncCancel();cancelBtn.disabled=false;manage.disabled=false
-      }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not update the subscription.';cancelBtn.disabled=false;manage.disabled=false}
-    })()
-    billing.append(manage,cancelBtn,manageNote)
+    billing.append(manage,manageNote)
+  }else if(plan==='free'){
+    const upgrade=document.createElement('a');upgrade.className='btn btn-primary';upgrade.href='/dashboard/upgrade';upgrade.dataset.dashboardRoute='';upgrade.textContent='Upgrade to Pro';billing.append(upgrade)
   }
+  billing.append(planLink)
   grid.append(billing)
   const legal=card('Privacy','Policies')
   const links=document.createElement('div');links.className='settings-links'
@@ -520,7 +480,7 @@ async function renderRoute(){
   activeAvatarPage?.stop();activeAvatarPage=null
   const path=location.pathname
   let section:DashboardSection='dashboard',view=overview
-  if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);activeAvatarPage=createAvatarPage(profile,state);view=activeAvatarPage.view}
+  if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);monthlyUsage=await getCurrentUserMonthlyUsage(user);activeAvatarPage=createAvatarPage(profile,state,{used:monthlyUsage.avatar_generation,limit:getUsageLimit(plan,'avatar.generate')});view=activeAvatarPage.view}
   else if(path==='/dashboard/create'||path==='/dashboard/profile'){section='profile';view=await getCreateWorkspace()}
   else if(path==='/dashboard/pages'){section='pages';view=pagesView}
   else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}

@@ -7,6 +7,8 @@
 .avatar-upload-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .avatar-tool-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;align-items:start;margin-top:8px}
 .avatar-tool-controls{display:grid;gap:18px}
+.avatar-generate-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:4px}
+.avatar-usage{color:var(--body);font-size:12px;font-weight:600}
 .choice-field{display:grid;gap:8px}
 .choice-label{color:#5e6780;font-size:12px;font-weight:700}
 .choice-pills{display:flex;flex-wrap:wrap;gap:8px}

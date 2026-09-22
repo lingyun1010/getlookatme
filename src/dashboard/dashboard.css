@@ -32,6 +32,14 @@
 .settings-note{margin:10px 0 0;color:var(--body);font-size:12px}
 .settings-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
 .settings-links a{color:#5b5dcc;font-size:13px;font-weight:700}
+.billing-price{margin:0!important;color:var(--ink)!important;font-size:18px!important;font-weight:700}
+.billing-details{display:grid}
+.billing-usage-title{margin:8px 0 0;font-size:13px}
+.usage-meter{display:grid;gap:7px}
+.usage-meter>div:first-child{display:flex;justify-content:space-between;gap:16px;color:var(--body);font-size:12px}
+.usage-meter strong{color:var(--ink)}
+.usage-track{overflow:hidden;height:7px;border-radius:999px;background:#eceef5}
+.usage-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),var(--violet),var(--pink))}
 @media(max-width:680px){.settings-grid{grid-template-columns:1fr}}
 
 .dashboard-main{display:flex;flex-direction:column;min-height:100vh}

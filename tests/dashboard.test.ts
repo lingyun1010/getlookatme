@@ -72,7 +72,7 @@ test('dashboard uses History API routing without remounting its shell', () => {
   assert.match(app, /addEventListener\('popstate'/)
   assert.match(app, /shell\.content\.replaceChildren\(view\)/)
   assert.equal((app.match(/mountDashboardShell\(/g) ?? []).length, 1)
-  assert.match(app, /createAvatarPage\(profile,state\)/)
+  assert.match(app, /createAvatarPage\(profile,state,/)
   assert.match(routes, /"source": "\/dashboard\/profile", "destination": "\/dashboard\.html"/)
   assert.match(routes, /"source": "\/dashboard\/avatar", "destination": "\/dashboard\.html"/)
   assert.match(routes, /"source": "\/dashboard\/pages", "destination": "\/dashboard\.html"/)

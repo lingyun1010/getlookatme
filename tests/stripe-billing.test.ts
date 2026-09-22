@@ -109,14 +109,13 @@ test('direct stripe cancellation schedules cancel_at_period_end for the authenti
   assert.match(migration, /cancel_at_period_end boolean not null default false/)
 })
 
-test('pricing cards distinguish current plan and expose stripe cancel controls', async () => {
+test('pricing cards distinguish current plan and delegate subscription management to Stripe', async () => {
   const dashboard = await readFile(new URL('../src/dashboard/dashboardApp.ts', import.meta.url), 'utf8')
-  assert.match(dashboard, /Included in Pro/)
-  assert.match(dashboard, /Cancel subscription/)
-  assert.match(dashboard, /Resume subscription/)
-  assert.match(dashboard, /cancel-subscription/)
-  assert.match(dashboard, /reactivate-subscription/)
+  assert.doesNotMatch(dashboard, /Included in Pro/)
   assert.match(dashboard, /Manage subscription/)
+  assert.match(dashboard, /requestBilling\('portal'\)/)
   assert.match(dashboard, /scheduled to cancel at the end of the current billing period/)
+  assert.match(dashboard, /AI profile questions/)
+  assert.match(dashboard, /Avatar generations/)
   assert.doesNotMatch(dashboard, /action\.textContent=planId===plan\?'Current plan':item\.ctaLabel/)
 })

@@ -1,10 +1,29 @@
 <!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="description" content="Manage your GetLookAtMe professional AI profile."/><title>Dashboard — GetLookAtMe</title><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet"/><link rel="stylesheet" href="/src/dashboard/dashboard.css"/><link rel="stylesheet" href="/src/onboarding/create.css"/><link rel="stylesheet" href="/src/feedback/feedback.css"/></head>
 <body class="dashboard-page"><div id="dashboardRoot"></div><template id="dashboardContentTemplate"><main class="dashboard-content">
-    <section class="welcome"><h2 id="welcomeTitle">Welcome back</h2><p>Let’s get your profile ready to share.</p></section>
-    <section class="overview-grid" aria-label="Profile overview">
-      <article class="card completion-card"><div class="card-head"><div><p class="label">Your profile setup</p><h2><span id="completionPercent">0</span>% complete</h2></div><div class="progress-ring" id="completionRing"><span id="ringPercent">0%</span></div></div><div class="progress"><i id="progressBar"></i></div><ul id="setupChecklist"></ul><a class="primary-action" id="continueSetup" href="/dashboard/create">Continue setup →</a></article>
-      <article class="card quick-actions"><p class="label">Quick actions</p><h2>Keep moving</h2><div><a href="/dashboard/create">Upload / update CV <span>→</span></a><a href="/dashboard/avatar">Manage Avatar <span>→</span></a><a href="/dashboard/pages">Manage public page <span>→</span></a><a href="/preview">Preview profile <span>→</span></a></div></article>
+    <header class="page-intro">
+      <div class="title-row"><h1 id="welcomeTitle">Welcome back</h1><span class="status-badge" id="overviewStatus">Draft</span></div>
+      <p id="welcomeSubtitle">Your profile is almost ready.</p>
+    </header>
+    <article class="card status-card" aria-label="Profile status">
+      <div class="card-head">
+        <div>
+          <p class="label">Profile status</p>
+          <h2 class="status-title"><span id="completionPercent">0</span>% complete</h2>
+        </div>
+        <div class="progress-ring" id="completionRing"><span id="ringPercent">0%</span></div>
+      </div>
+      <div class="progress"><i id="progressBar"></i></div>
+      <ul id="setupChecklist" class="setup-checklist"></ul>
+      <div class="action-row">
+        <a class="btn btn-primary" id="continueSetup" href="/dashboard/create">Continue setup</a>
+        <a class="btn btn-secondary" id="previewProfile" href="/preview">Preview profile</a>
+      </div>
+    </article>
+    <section class="activity-section" aria-labelledby="activityHeading">
+      <h2 id="activityHeading" class="section-heading">Recent activity</h2>
+      <div class="empty-state activity-empty">
+        <p><strong>No activity yet.</strong></p>
+        <p>Profile views and recruiter activity will appear here after publishing.</p>
+      </div>
     </section>
-    <section class="lower-grid"><article class="card" aria-labelledby="currentPlanTitle"><p class="label">Current plan</p><h2 id="currentPlanTitle">Loading plan…</h2><p id="planDescription"></p><p id="usageSummary"></p><a class="primary-action" id="upgradeAction" href="/dashboard/pricing">View plans</a></article><article class="card activity"><p class="label">Recent activity</p><div class="empty-icon">⌁</div><h2>No activity yet</h2><p>Profile views and recruiter interactions will appear here once tracking is enabled.</p></article></section>
-    <section class="card feedback-card" aria-labelledby="feedbackTitle"><p class="label">Beta feedback</p><h2 id="feedbackTitle">Tell us what you think</h2><p>Share a problem, idea, or quick note. Please do not include sensitive personal information.</p><p><button type="button" class="text-action" id="openFeedbackFromOverview">Send feedback →</button></p></section>
   </main></template><script type="module" src="/src/dashboard/dashboardApp.ts"></script></body></html>

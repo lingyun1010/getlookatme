@@ -29,26 +29,30 @@ bindBetaFeedbackForm(shell.feedbackRoot,user.id,profile.id)
 let activeAvatarPage:ReturnType<typeof createAvatarPage>|null=null
 const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
 const text=(root:ParentNode,id:string,value:string)=>{const element=root.querySelector<HTMLElement>(`#${id}`);if(element)element.textContent=value}
-function renderUsage(){const avatarLimit=planConfig.entitlements['avatar.generate'].limit,ragLimit=planConfig.entitlements['rag.query'].limit;text(overview,'usageSummary',`This month: ${monthlyUsage.avatar_generation}${avatarLimit===null?'':` / ${avatarLimit}`} Avatars · ${monthlyUsage.rag_query}${ragLimit===null?'':` / ${ragLimit}`} AI questions`)}
+function greetingForNow(){
+  const hour=new Date().getHours()
+  if(hour<12)return 'Good morning'
+  if(hour<18)return 'Good afternoon'
+  return 'Good evening'
+}
 async function initialiseOverview(){
   const hasAvatar=Boolean(profile.active_avatar_id||state?.original_photo_path),hasCv=Boolean(state?.cv_path)
-  text(overview,'welcomeTitle',`Welcome back, ${name}`)
-  text(overview,'currentPlanTitle',planConfig.name)
-  text(overview,'planDescription',planConfig.description)
-  renderUsage()
-  const upgradeAction=overview.querySelector<HTMLAnchorElement>('#upgradeAction')!
-  upgradeAction.textContent=plan==='free'?'Upgrade to Pro':'View plan details'
-  if(plan==='free')upgradeAction.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'))
-  overview.querySelector<HTMLButtonElement>('#openFeedbackFromOverview')!.onclick=()=>shell.feedbackRoot.showModal()
+  text(overview,'welcomeTitle',`${greetingForNow()}, ${name}`)
+  const status=overview.querySelector<HTMLElement>('#overviewStatus')!
+  status.textContent=published?'Published':'Draft'
+  status.classList.toggle('published',published)
   const checks=[
-    {label:'Upload your CV',done:hasCv,href:'/dashboard/create'},
-    {label:'Review your profile',done:hasProfile,href:'/dashboard/profile'},
-    {label:'Add an Avatar',done:hasAvatar,href:'/dashboard/avatar'},
-    {label:'Publish your profile',done:published,href:'/dashboard/pages'},
+    {label:'CV uploaded',done:hasCv,href:'/dashboard/create'},
+    {label:'Profile reviewed',done:hasProfile,href:'/dashboard/profile'},
+    {label:'Avatar added',done:hasAvatar,href:'/dashboard/avatar'},
+    {label:'Publish profile',done:published,href:'/dashboard/pages'},
   ]
   const completion=Math.round(checks.filter(x=>x.done).length/checks.length*100)
   text(overview,'completionPercent',String(completion))
   text(overview,'ringPercent',`${completion}%`)
+  text(overview,'welcomeSubtitle',completion>=100
+    ? (published?'Your profile is live.':'Your profile is ready to publish.')
+    : 'Your profile is almost ready.')
   overview.querySelector<HTMLElement>('#progressBar')!.style.width=`${completion}%`
   overview.querySelector<HTMLElement>('#completionRing')!.style.setProperty('--progress',`${completion*3.6}deg`)
   overview.querySelector<HTMLUListElement>('#setupChecklist')!.replaceChildren(...checks.map(item=>{
@@ -56,8 +60,8 @@ async function initialiseOverview(){
   }))
   const continueSetup=overview.querySelector<HTMLAnchorElement>('#continueSetup')!
   const next=checks.find(item=>!item.done)
-  if(next){continueSetup.href=next.href;continueSetup.textContent='Continue setup →'}
-  else{continueSetup.href='/dashboard/pages';continueSetup.textContent='Manage public page →'}
+  if(next){continueSetup.href=next.href;continueSetup.textContent='Continue setup'}
+  else{continueSetup.href='/dashboard/pages';continueSetup.textContent=published?'Manage page':'Continue setup'}
 }
 await initialiseOverview()
 
@@ -480,7 +484,7 @@ async function renderRoute(){
   else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}
   else if(path==='/dashboard/upgrade'){section='pricing';view=upgradeView}
   else if(path==='/dashboard/settings'){section='settings';view=settingsView}
-  else{monthlyUsage=await getCurrentUserMonthlyUsage(user);renderUsage()}
+  else{monthlyUsage=await getCurrentUserMonthlyUsage(user)}
   shell.content.replaceChildren(view);shell.setActive(section)
   if(activeAvatarPage)await activeAvatarPage.start()
   else if(view!==overview&&view!==pagesView&&view!==pricingView&&view!==upgradeView&&view!==settingsView)await startCreateWorkspace()

@@ -3,7 +3,7 @@ import type { ProfileDocument } from './types.ts'
 import type { PublicationProfile, PublicationRepository } from './publication.ts'
 
 function serverClient(): SupabaseClient {
-  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
+  const url = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error('Profile publication requires Supabase server configuration.')
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })

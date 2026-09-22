@@ -125,11 +125,7 @@ export async function loadPublicProfile(slug: string): Promise<ProfileDocument |
   const { data: activeData, error: activeError } = await client.rpc('get_public_active_avatar', { requested_slug: slug }).maybeSingle()
   if (activeError) throw activeError
   const active = activeData as { center_frame_path: string; frame_paths: string[]; frame_metadata: AvatarAsset['frame_metadata'] } | null
-  if (!active) {
-    const response = await fetch(`/api/profile-avatar?slug=${encodeURIComponent(slug)}`)
-    const resolved = response.ok ? await response.json() as { originalPhotoUrl?: string | null } : {}
-    return resolveProfileAvatar(document, { originalPhotoUrl: resolved.originalPhotoUrl })
-  }
+  if (!active) return resolveProfileAvatar(document, {})
   const asset = {
     center_frame_path: active.center_frame_path,
     frame_paths: active.frame_paths,

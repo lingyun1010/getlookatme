@@ -24,11 +24,11 @@ The database model has four application tables:
 - `onboarding_states`: one private row per profile containing the profile draft, private CV path, and original-photo path. Legacy generated-frame columns remain temporarily for backwards compatibility but are no longer written by the product flows.
 - `avatars`: immutable generated presentation assets. Each row stores owner/profile identity, source-photo path, style/preset, durable frame paths, metadata, and its unique generation job.
 - `avatar_generation_jobs`: durable queued/generating/ready/failed/cancelled lifecycle with attempts and timestamps.
-- `profiles.active_avatar_id`: the explicitly selected generated asset. `NULL` means use the original photo when present, otherwise initials.
+- `profiles.active_avatar_id`: the explicitly selected generated asset. For an owner preview, `NULL` may use a short-lived signed original photo and then initials. Public rendering never exposes the private original photo; it uses initials when no generated Avatar is active.
 
 An Auth trigger creates one profile and onboarding row for every new user. The composite `(profile_id, user_id)` foreign key prevents an onboarding row being attached to a profile owned by someone else. Explicit Data API grants are paired with RLS: anonymous callers can select only published profiles; authenticated callers can mutate only rows whose `user_id` equals `auth.uid()`. This same stable `user_id`/`profile_id` pair is the future RAG tenant key.
 
-Storage uses two buckets. `profile-private-assets` stores CV source files and original photos and is owner-readable; authenticated previews use short-lived signed URLs. `profile-public-assets` accepts only generated avatar frames needed for public portfolio delivery. Writes to either bucket must use `<user_id>/<profile_id>/...`, and Storage RLS verifies that the authenticated user owns the referenced profile. A future publishing flow for original-photo profiles must explicitly create a public derivative rather than exposing the source upload.
+Storage uses two buckets. `profile-private-assets` stores CV source files and original photos and is owner-readable; authenticated previews use short-lived signed URLs. `profile-public-assets` accepts only generated avatar frames needed for public portfolio delivery. Writes to either bucket must use `<user_id>/<profile_id>/...`, and Storage RLS verifies that the authenticated user owns the referenced profile. Public routes never sign or return a private original photo.
 
 Seed profiles remain in the static registry for backward compatibility. A non-seed public slug is loaded from Supabase only when `is_published` is true. `/preview` loads the current user's document through owner RLS even when it is unpublished.
 
@@ -46,7 +46,7 @@ Storage records contain paths, IDs, and frame metadata only. Private source phot
 
 Legacy `ProfileDocument.avatarFrameSet` data remains a final compatibility fallback so existing profiles render safely while new generation state lives only in `avatars`.
 
-Vercel redirects `/` to `/lingyun` and rewrites single-segment profile paths to the application shell. A static registry resolves `/lingyun` and the fixture `/aaron` to separate `ProfileDocument` instances. Unknown slugs render an explicit not-found state.
+Vercel serves the product landing page at `/` and rewrites single-segment profile paths to the public-profile application shell. A static registry resolves `/lingyun` and the fixture `/aaron` to separate `ProfileDocument` instances. Unknown slugs render an explicit not-found state.
 
 The active chat endpoint resolves a persisted profile from its requested slug, enforces owner/public access, verifies the server-authoritative AI lifecycle is `ready`, and performs mandatory-profile pgvector retrieval before grounded answer generation. Structured evidence is derived only from retrieved chunks. The legacy committed Lingyun index remains regression tooling and is unreachable from the active endpoint.
 

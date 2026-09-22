@@ -5,9 +5,8 @@ function bearerToken(authorization: string | undefined): string | null {
 }
 
 function publicServerConfig(): { url: string; key: string } | null {
-  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY
-    ?? process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY
+  const url = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY
   return url && key ? { url, key } : null
 }
 
@@ -31,7 +30,7 @@ export function createAuthenticatedServerClient(authorization: string | undefine
 }
 
 export function createServiceRoleServerClient(): SupabaseClient | null {
-  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
+  const url = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return null
   return createClient(url, key, {

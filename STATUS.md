@@ -58,7 +58,7 @@ Manual validation has confirmed queued/generating/ready, queued cancellation, fa
 - Deployed Vercel Cron authentication and the configured long-running function limit still require production-environment verification.
 - Cron throughput is intentionally MVP-scale and processes one claimed job per invocation.
 - Replaced CV/photo assets and failed Storage cleanup can leave orphaned files; a production garbage-collection lifecycle is not implemented.
-- `index.html` remains the active public renderer, and avatar pointer origin remains viewport-centred.
+- `profile.html` remains the active public renderer, and avatar pointer origin remains viewport-centred.
 - LLM mapping requires `OPENAI_API_KEY`; deterministic fallback remains conservative for complex or two-column resumes.
 - The intermittent CV workspace null-element lifecycle issue is unresolved and tracked separately from Avatar queue behavior.
 

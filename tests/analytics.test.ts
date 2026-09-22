@@ -10,7 +10,7 @@ test('the Beta funnel is emitted from the active runtime paths', async () => {
     read('../src/onboarding/createApp.ts'),
     read('../src/avatar/worker.ts'),
     read('../src/profile/publicationRequest.ts'),
-    read('../index.html'),
+    read('../profile.html'),
     read('../src/rag/serverChat.ts'),
     read('../src/dashboard/dashboardApp.ts'),
     read('../src/billing/request.ts'),

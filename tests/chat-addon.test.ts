@@ -26,7 +26,7 @@ Open Tools | Developer tooling`
 const read = (path: string) => readFile(new URL(path, import.meta.url), 'utf8')
 
 test('portfolio header exposes a profile-aware Chat entry', async () => {
-  const renderer = await read('../index.html')
+  const renderer = await read('../profile.html')
   assert.match(renderer, /<nav class="nav"[\s\S]*id="profileChatLink">Chat<\/a>/)
   assert.match(renderer, /profileChatLink"\)\.href = `\/\$\{encodeURIComponent\(profile\.slug\)\}\/chat`/)
 })
@@ -42,14 +42,14 @@ test('onboarding stores three to five deterministic profile-aware example questi
 })
 
 test('quick and dedicated chat consume the same ProfileDocument question set', async () => {
-  const [renderer, chatPage] = await Promise.all([read('../index.html'), read('../src/chat/chatPage.ts')])
+  const [renderer, chatPage] = await Promise.all([read('../profile.html'), read('../src/chat/chatPage.ts')])
   assert.match(renderer, /const suggestedQuestions = profile\.suggestedQuestions/)
   assert.match(chatPage, /const suggested = profile\.suggestedQuestions\.slice\(0, 5\)/)
   assert.doesNotMatch(chatPage, /What kind of work|Which projects best/)
 })
 
 test('question buttons invoke their existing chat submit paths', async () => {
-  const [renderer, chatPage] = await Promise.all([read('../index.html'), read('../src/chat/chatPage.ts')])
+  const [renderer, chatPage] = await Promise.all([read('../profile.html'), read('../src/chat/chatPage.ts')])
   assert.match(renderer, /askAvatar\(button\.dataset\.question\)/)
   assert.match(chatPage, /addEventListener\('click', \(\) => void submit\(question\)\)/)
 })

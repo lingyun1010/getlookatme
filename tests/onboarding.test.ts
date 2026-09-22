@@ -147,7 +147,7 @@ test('avatar generation helpers normalize product state and reject malformed fra
 
 test('onboarding and renderer never assign untrusted strings through innerHTML', async () => {
   const sources = await Promise.all([
-    readFile(new URL('../index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../profile.html', import.meta.url), 'utf8'),
     readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8'),
   ])
   assert.doesNotMatch(sources.join('\n'), /\.innerHTML\s*=/)

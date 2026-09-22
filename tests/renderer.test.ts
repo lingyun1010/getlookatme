@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-const renderer = await readFile(new URL('../index.html', import.meta.url), 'utf8')
-const landing = await readFile(new URL('../landing.html', import.meta.url), 'utf8')
+const renderer = await readFile(new URL('../profile.html', import.meta.url), 'utf8')
+const landing = await readFile(new URL('../index.html', import.meta.url), 'utf8')
 const kineticStyles = await readFile(new URL('../src/profile/templates/kinetic/kinetic.css', import.meta.url), 'utf8')
 
 test('product and portfolio template styles have separate entry boundaries', () => {

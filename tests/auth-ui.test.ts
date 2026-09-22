@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { safeAuthRedirect } from '../src/auth/authActions.ts'
 
-const landing = await readFile(new URL('../landing.html', import.meta.url), 'utf8')
+const landing = await readFile(new URL('../index.html', import.meta.url), 'utf8')
 const modal = await readFile(new URL('../src/auth/AuthModal.ts', import.meta.url), 'utf8')
 const form = await readFile(new URL('../src/auth/AuthForm.ts', import.meta.url), 'utf8')
 const authPage = await readFile(new URL('../auth.html', import.meta.url), 'utf8')

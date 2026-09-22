@@ -5,7 +5,6 @@
     { "source": "/edit", "destination": "/dashboard/create", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
     { "source": "/auth", "destination": "/auth.html" },
     { "source": "/login", "destination": "/auth.html" },
     { "source": "/signup", "destination": "/auth.html" },
@@ -20,7 +19,7 @@
     { "source": "/dashboard/upgrade", "destination": "/dashboard.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/:slug/chat", "destination": "/chat.html" },
-    { "source": "/:slug", "destination": "/index.html" }
+    { "source": "/:slug", "destination": "/profile.html" }
   ],
   "functions": {
     "api/chat.ts": { "includeFiles": "{src/rag/**,src/knowledge/**,src/profile/**,src/auth/**,src/monetisation/**,src/analytics/**}" },

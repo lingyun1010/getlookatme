@@ -30,20 +30,20 @@ test('chat derives the same first path segment used by profile slug resolution',
 })
 
 test('neither direct profile nor direct chat loading requires navigation state', async () => {
-  const [profilePage, chatPage] = await Promise.all([read('../index.html'), read('../src/chat/chatPage.ts')])
+  const [profilePage, chatPage] = await Promise.all([read('../profile.html'), read('../src/chat/chatPage.ts')])
   assert.match(profilePage, /loadPublicProfile\(requestedSlug\)/)
   assert.match(chatPage, /loadPublicProfile\(slug\)/)
   assert.ok(chatPage.indexOf('loadPublicProfile(slug)') < chatPage.indexOf('consumeTransferredConversation(slug)'))
 })
 
 test('published anonymous profile loading remains the first database lookup for both routes', async () => {
-  const [profilePage, chatPage] = await Promise.all([read('../index.html'), read('../src/chat/chatPage.ts')])
+  const [profilePage, chatPage] = await Promise.all([read('../profile.html'), read('../src/chat/chatPage.ts')])
   assert.match(profilePage, /resolveProfile\(window\.location\.pathname\).*loadPublicProfile\(requestedSlug\)/s)
   assert.ok(chatPage.indexOf('loadPublicProfile(slug)') < chatPage.indexOf('loadCurrentUserProfileDocument()'))
 })
 
 test('owner draft preview remains authenticated and loads the current owner profile', async () => {
-  const profilePage = await read('../index.html')
+  const profilePage = await read('../profile.html')
   assert.match(profilePage, /pathname === "\/preview".*requireAuthenticatedUser/s)
   assert.match(profilePage, /pathname === "\/preview"[\s\S]*loadCurrentUserProfileDocument\(\)/)
 })
@@ -63,7 +63,7 @@ test('browser entry modules do not import the server environment config', async 
 })
 
 test('quick-chat submission is intercepted before calling the shared POST client', async () => {
-  const [profilePage, client] = await Promise.all([read('../index.html'), read('../src/chat/client.ts')])
+  const [profilePage, client] = await Promise.all([read('../profile.html'), read('../src/chat/client.ts')])
   assert.match(profilePage, /chatForm\.addEventListener\("submit", \(event\) => \{\s*event\.preventDefault\(\);\s*askAvatar/s)
   assert.match(client, /method: 'POST'/)
   assert.match(client, /`\$\{apiBaseUrl\}\/api\/chat`/)

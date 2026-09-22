@@ -49,3 +49,18 @@ test('billing request exposes authenticated stripe checkout without trusting cli
   assert.match(client, /requestBilling/)
   assert.match(client, /'checkout'/)
 })
+
+test('stripe webhook verifies signatures and maps subscription lifecycle events', async () => {
+  const webhook = await readFile(new URL('../src/billing/stripeWebhook.ts', import.meta.url), 'utf8')
+  const route = await readFile(new URL('../api/stripe/webhook.ts', import.meta.url), 'utf8')
+  assert.match(webhook, /constructEvent/)
+  assert.match(webhook, /checkout\.session\.completed/)
+  assert.match(webhook, /customer\.subscription\.updated/)
+  assert.match(webhook, /customer\.subscription\.deleted/)
+  assert.match(webhook, /invoice\.payment_failed/)
+  assert.match(webhook, /subscription_activated/)
+  assert.match(webhook, /plan === 'founding'/)
+  assert.match(route, /bodyParser: false/)
+  assert.match(route, /stripe-signature/)
+  assert.doesNotMatch(webhook, /authenticateBearer/)
+})

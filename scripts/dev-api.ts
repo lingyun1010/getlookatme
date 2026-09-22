@@ -20,6 +20,8 @@ import { processNextAvatarJob } from '../src/avatar/worker.ts'
 import { handlePublicationRequest } from '../src/profile/publicationRequest.ts'
 import { handleAiLifecycleRequest } from '../src/profile/aiLifecycleRequest.ts'
 import { handleBillingRequest } from '../src/billing/request.ts'
+import { handleStripeWebhook } from '../src/billing/stripeWebhook.ts'
+import { createServiceRoleServerClient } from '../src/auth/server.ts'
 import { handleAnalyticsRequest } from '../src/analytics/request.ts'
 
 const allowedOrigins = new Set(
@@ -31,7 +33,7 @@ const LOOKATME_STORAGE_DIR = fileURLToPath(new URL('../tmp/lookatme-avatar-gener
 const LOOKATME_STORAGE_BASE = '/generated/lookatme'
 
 const baseCorsHeaders = {
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, Stripe-Signature',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Content-Type': 'application/json',
 }
@@ -204,6 +206,15 @@ createServer(async (request, response) => {
 
     if (request.url === '/api/billing') {
       const result = await handleBillingRequest(request.headers.authorization, JSON.parse(requestBody.toString()))
+      return send(result.status, result.body)
+    }
+
+    if (request.url === '/api/stripe/webhook') {
+      const client = createServiceRoleServerClient()
+      if (!client) return send(503, { error: 'Billing is unavailable.' })
+      const signatureHeader = request.headers['stripe-signature']
+      const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader
+      const result = await handleStripeWebhook(requestBody, signature, client)
       return send(result.status, result.body)
     }
 

@@ -45,25 +45,31 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
 
   const nav=document.createElement('nav')
   nav.ariaLabel='Creator navigation'
-  nav.append(
-    link('Dashboard','⌂','/dashboard','dashboard'),
-    link('Profile','◎','/dashboard/profile','profile'),
-    link('Avatar','◉','/dashboard/avatar','avatar'),
-    link('Pages','▤','/dashboard/pages','pages'),
-    link('Plan','◇','/dashboard/pricing','pricing'),
-  )
-  const next=document.createElement('p')
-  next.textContent='Coming next'
-  nav.append(next)
-  for(const label of ['✦ AI Profile','⌁ Tailor','⌗ Analytics','□ Inbox']){
+  const group=(title:string)=>{const p=document.createElement('p');p.className='nav-group';p.textContent=title;return p}
+  const soon=(label:string,icon:string)=>{
     const span=document.createElement('span')
-    span.className='disabled'
-    span.textContent=label
+    span.className='disabled nav-soon'
+    const mark=document.createElement('span')
+    mark.textContent=icon
+    span.append(mark,document.createTextNode(label))
     const small=document.createElement('small')
     small.textContent='Soon'
     span.append(small)
-    nav.append(span)
+    return span
   }
+  nav.append(
+    link('Dashboard','⌂','/dashboard','dashboard'),
+    group('Create'),
+    link('Profile','◎','/dashboard/profile','profile'),
+    link('Avatar','◉','/dashboard/avatar','avatar'),
+    link('Pages','▤','/dashboard/pages','pages'),
+    group('AI tools'),
+    soon('AI Profile','✦'),
+    soon('Tailor','⌁'),
+    group('Insights'),
+    soon('Analytics','⌗'),
+    soon('Inbox','□'),
+  )
 
   const bottom=document.createElement('div')
   bottom.className='sidebar-bottom'
@@ -169,7 +175,7 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   const planItem=document.createElement('a')
   planItem.href='/dashboard/pricing'
   planItem.dataset.dashboardRoute=''
-  planItem.textContent='Plan / Billing'
+  planItem.textContent='Billing / Plans'
   const signOutItem=document.createElement('button')
   signOutItem.type='button'
   signOutItem.textContent='Sign out'
@@ -238,6 +244,11 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
       nav.querySelectorAll('a').forEach(a=>a.classList.toggle('active',a.dataset.section===section))
       settings.classList.toggle('active',section==='settings')
       sectionTitle.textContent=SECTION_TITLE[section]
+      const showPreview=section==='dashboard'||section==='profile'||section==='avatar'||section==='pages'
+      const showPublish=section==='pages'
+      preview.hidden=!showPreview
+      publish.hidden=!showPublish
+      preview.textContent=section==='pages'?'Preview page':'Preview profile'
       side.classList.remove('open')
       menu.setAttribute('aria-expanded','false')
       closeMenu()

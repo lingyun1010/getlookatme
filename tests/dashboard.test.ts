@@ -50,7 +50,8 @@ test('unfinished dashboard capabilities are visibly disabled', () => {
   assert.match(app, /requestPublication/)
   assert.match(app, /button\('Publish'/)
   assert.match(css, /\.dashboard-sidebar \.disabled/)
-  assert.match(shell, /Coming next/)
+  assert.match(shell, /nav-group/)
+  assert.match(shell, /Create/)
 })
 
 test('create workspace is mounted inside the shared authenticated dashboard shell', () => {
@@ -99,4 +100,11 @@ test('dashboard actions use a consistent button hierarchy', () => {
   assert.match(page, /btn btn-primary/)
   assert.match(page, /btn btn-secondary/)
   assert.match(app, /btn btn-primary/)
+})
+
+test('global publish is limited to the pages workspace', () => {
+  assert.match(shell, /showPublish=section==='pages'/)
+  assert.match(shell, /showPreview=section==='dashboard'\|\|section==='profile'\|\|section==='avatar'\|\|section==='pages'/)
+  assert.match(shell, /Billing \/ Plans/)
+  assert.doesNotMatch(shell, /link\('Plan'/)
 })

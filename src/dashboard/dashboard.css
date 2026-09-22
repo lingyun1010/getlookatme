@@ -115,3 +115,8 @@
 .card-actions a.btn-primary,.card-actions button.btn-primary,.card-actions button.primary-action{
   color:#fff;border-color:transparent;background:linear-gradient(115deg,var(--blue),var(--violet) 65%,var(--pink));
 }
+
+.dashboard-sidebar nav .nav-group{margin:22px 12px 6px;color:#9aa1b3;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.dashboard-sidebar nav .nav-soon{opacity:.72;font-size:13px;font-weight:500}
+.dashboard-sidebar nav .nav-soon small{opacity:.85}
+.dashboard-topbar .btn[hidden],.dashboard-topbar button[hidden],.dashboard-topbar a[hidden]{display:none!important}

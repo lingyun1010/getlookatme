@@ -24,7 +24,8 @@ let state=await loadOnboardingState(profile)
 const profileDocument=profile.document as ProfileDocument
 const hasProfile=profileDocument?.profileId===profile.id,name=hasProfile?profileDocument.identity.preferredName:(user.email?.split('@')[0]??'Your account')
 let published=profile.is_published,currentSlug=profile.slug
-const shell=mountDashboardShell({user,name,published,slug:currentSlug})
+let refreshPagesPublication=()=>{}
+const shell=mountDashboardShell({user,name,published,slug:currentSlug,onPublicationChange:next=>{published=next.published;currentSlug=next.slug;void initialiseOverview();refreshPagesPublication()}})
 bindBetaFeedbackForm(shell.feedbackRoot,user.id,profile.id)
 let activeAvatarPage:ReturnType<typeof createAvatarPage>|null=null
 const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
@@ -147,7 +148,6 @@ function createPagesView(){
   }
 
   const button=(labelText:string,run:()=>Promise<void>,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('button');item.type='button';item.className=`btn btn-${kind}`;item.textContent=labelText;item.onclick=()=>void run();return item}
-  const link=(labelText:string,href:string,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('a');item.className=`btn btn-${kind}`;item.textContent=labelText;item.href=href;return item}
 
   async function run(action:'availability'|'save-slug'|'publish'|'unpublish'){
     feedback.textContent='Checking…'
@@ -202,9 +202,9 @@ function createPagesView(){
       ?'Your profile is live. Recruiters can open and explore it.'
       :'Your profile is currently private while it is in draft.'
     actions.replaceChildren()
-    if(published)actions.append(link('View live page ↗',`/${currentSlug}`,'secondary'),button('Copy link',copyLink,'tertiary'),button('Unpublish',()=>run('unpublish'),'tertiary'))
-    else actions.append(link('Preview page','/preview','secondary'),button('Publish profile',()=>run('publish'),'primary'))
+    if(published)actions.append(button('Copy link',copyLink,'tertiary'))
   }
+  refreshPagesPublication=renderPublication
   renderPublication()
   return main
 }

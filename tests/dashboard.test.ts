@@ -19,7 +19,8 @@ test('dashboard is an authenticated product route', () => {
 
 test('profile actions distinguish published profile, working preview, and save publication', () => {
   assert.match(shell, /Preview/)
-  assert.doesNotMatch(shell, /statusBadge/)
+  assert.match(shell, /requestPublication\(published\?'unpublish':'publish'/)
+  assert.match(shell, /View live page/)
   assert.match(createPage, /Preview profile/)
   assert.match(createPage, /id="saveProfileButton"/)
   assert.match(createWorkspace, /createApp/)
@@ -82,13 +83,13 @@ test('dashboard creator actions stay in the dashboard workspace', () => {
   assert.match(page, /href="\/dashboard\/create/)
 })
 
-test('pages section owns public slug editing and publication controls', () => {
+test('pages section owns slug editing while the shell owns publication controls', () => {
   assert.match(app, /createPagesView/)
   assert.match(app, /save-slug/)
   assert.match(app, /availability/)
   assert.match(app, /slugInput/)
-  assert.match(app, /View live page|View profile/)
-  assert.match(app, /Unpublish/)
+  assert.match(shell, /View live page/)
+  assert.match(shell, /Unpublish/)
   assert.doesNotMatch(page, /id="profileUrl"/)
 })
 
@@ -101,9 +102,10 @@ test('dashboard actions use a consistent button hierarchy', () => {
   assert.match(app, /btn btn-primary/)
 })
 
-test('global publish is limited to the pages workspace', () => {
-  assert.doesNotMatch(shell, /topbar-publish/)
-  assert.match(shell, /showPreview=section==='dashboard'/)
+test('profile actions persist across dashboard sections', () => {
+  assert.match(shell, /topbar-publish/)
+  assert.doesNotMatch(shell, /showPreview/)
+  assert.match(shell, /onPublicationChange/)
   assert.match(shell, /Billing \/ Plans/)
   assert.doesNotMatch(shell, /link\('Plan'/)
 })

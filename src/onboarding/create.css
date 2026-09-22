@@ -10,3 +10,9 @@
 .issue-group summary{cursor:pointer;color:#5b5dcc;font-size:12px;font-weight:700}
 .issue-blocking{background:#fff0f4}
 .create-workspace .btn{margin-top:0}
+
+/* polish */
+.create-workspace-heading{margin-bottom:28px}
+.create-workspace-heading h1{letter-spacing:-.03em;line-height:1.08}
+.create-workspace .panel-title{letter-spacing:-.02em}
+.create-panel{border-radius:23px}

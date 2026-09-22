@@ -229,7 +229,7 @@ function createPricingView(){
   }
 
   for(const planId of PUBLIC_PLAN_IDS){
-    const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className='card';card.id=planId
+    const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className=planId===plan?'card pricing-current':'card';card.id=planId
     const label=document.createElement('p');label.className='label'
     if(planId===plan)label.textContent='Current plan'
     else if(planId==='free'&&plan==='pro')label.textContent='Included in Pro'

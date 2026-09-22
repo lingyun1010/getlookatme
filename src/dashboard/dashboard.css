@@ -47,9 +47,9 @@
 
 .slug-input{min-width:8rem;margin:0 2px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;color:#5f62c9}
 .slug-feedback{display:block;margin-top:8px;color:var(--body);font-size:12px}
-.pages-manage-card{align-items:flex-start}
-.pages-manage-card .status-badge{display:inline-flex;margin:8px 0 12px}
-.pages-manage-card #profileUrl{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:14px}
+.pages-manage-card .title-row{align-items:center;gap:12px;flex-wrap:wrap}
+.pages-manage-card .status-badge{display:inline-flex;margin:0}
+.pages-manage-card #profileUrl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0}
 
 .page-intro{margin-bottom:28px}
 .page-intro h1{margin:0;font-family:"DM Serif Display",Georgia,serif;font-size:40px;font-weight:400}
@@ -129,3 +129,34 @@
 .pages-url-host{color:var(--body)}
 .pages-future{margin-top:22px;padding:18px 20px;border:1px dashed var(--line);border-radius:16px;background:rgba(255,255,255,.55)}
 .choice-label{margin:0;color:#5e6780;font-size:12px;font-weight:700}
+
+
+/* Visual consistency polish */
+.dashboard-heading{margin-bottom:28px;gap:16px;align-items:flex-start}
+.dashboard-heading h1{font-size:clamp(34px,4.2vw,44px);letter-spacing:-.03em;line-height:1.08}
+.dashboard-heading p{max-width:46rem;font-size:15px;line-height:1.5}
+.page-intro{margin-bottom:28px}
+.page-intro h1{font-size:clamp(34px,4.2vw,44px);letter-spacing:-.03em}
+.welcome h2,.card>h2:not(.panel-title){font-family:"DM Sans",system-ui,sans-serif;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.status-badge{letter-spacing:.05em}
+.overview-grid{gap:20px}
+.card{padding:26px 27px}
+.empty-state{margin-top:4px}
+.pricing-current{border-color:#c9c4f3;box-shadow:0 0 0 3px rgba(117,104,233,.1),var(--shadow)}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.settings-content .card{display:grid;gap:12px;align-content:start}
+.settings-row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #eef0f6;font-size:13px}
+.settings-row:last-of-type{border-bottom:0}
+.settings-row span{color:var(--body)}
+.settings-row strong{text-align:right;font-weight:700}
+.pages-url-row .slug-input{min-width:10rem}
+.pages-future .label{margin-bottom:6px}
+@media(max-width:900px){
+  .overview-grid{grid-template-columns:1fr}
+}
+@media(max-width:680px){
+  .dashboard-heading{margin-bottom:22px}
+  .dashboard-heading h1,.page-intro h1{font-size:34px}
+  .settings-grid{grid-template-columns:1fr}
+  .pages-url-row{font-size:13px}
+}

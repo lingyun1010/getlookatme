@@ -2,6 +2,7 @@ import { recordUserFunnelEventSafely } from '../analytics/events.ts'
 import { authenticateBearer, createServiceRoleServerClient } from '../auth/server.ts'
 import { MockBillingProvider, MockBillingSessionError, mockBillingEnabled } from './mock.ts'
 import { StripeBillingError, StripeBillingProvider } from './stripe.ts'
+import { resolveBillingMode } from './mode.ts'
 import { StripeConfigError, requireStripeBillingConfig, stripeBillingConfigured } from './stripeConfig.ts'
 
 export async function handleBillingRequest(
@@ -67,7 +68,7 @@ export async function handleBillingRequest(
 
   if (stripeActions) {
     if (!stripeBillingConfigured(environment)) {
-      return { status: 503, body: { code: 'stripe_billing_unavailable', error: 'Stripe billing is not configured.' } }
+      return { status: 503, body: { code: 'stripe_billing_unavailable', error: 'Stripe billing is not configured.', mode: resolveBillingMode(environment) } }
     }
     try {
       const provider = new StripeBillingProvider(client, requireStripeBillingConfig(environment))

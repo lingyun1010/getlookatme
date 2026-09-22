@@ -154,6 +154,19 @@ const pagesView=createPagesView()
 
 function createPricingView(){const main=document.createElement('main');main.className='dashboard-content';const heading=document.createElement('header');heading.className='dashboard-heading';const headingCopy=document.createElement('div');const title=document.createElement('h1');title.textContent='Plans';const copy=document.createElement('p');copy.textContent='Publish on Free, then upgrade only when you need more Avatar and AI usage.';headingCopy.append(title,copy);heading.append(headingCopy);const grid=document.createElement('section');grid.className='overview-grid';for(const planId of PUBLIC_PLAN_IDS){const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className='card';card.id=planId;const label=document.createElement('p');label.className='label';label.textContent=planId===plan?'Current plan':'Plan';const name=document.createElement('h2');name.textContent=item.name;const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`;const description=document.createElement('p');description.textContent=item.description;const list=document.createElement('ul');for(const feature of item.highlights){const row=document.createElement('li');row.textContent=feature;list.append(row)}const action=document.createElement('a');action.className='primary-action';action.textContent=planId===plan?'Current plan':item.ctaLabel;action.href=planId==='pro'&&plan==='free'?'/dashboard/upgrade':'/dashboard';if(planId===plan){action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}else if(planId==='pro'){action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'))}card.append(label,name,price,description,list,action);grid.append(card)}main.append(heading,grid);return main}
 const pricingView=createPricingView()
+;(function applyCheckoutReturnState(){
+  const params=new URLSearchParams(location.search)
+  const checkout=params.get('checkout')
+  const portal=params.get('portal')
+  if(!checkout&&!portal)return
+  const note=document.createElement('p')
+  note.className='settings-note'
+  if(checkout==='success')note.textContent='Payment received. Your Pro entitlements appear after Stripe confirms the subscription—refresh this page in a moment if the plan has not updated yet.'
+  else if(checkout==='cancelled')note.textContent='Checkout was cancelled. No charge was made.'
+  else if(portal==='return')note.textContent='Returned from Stripe Customer Portal. Refresh if your plan status has changed.'
+  else return
+  pricingView.insertBefore(note, pricingView.children[1] ?? null)
+})()
 function createUpgradeView(){
   const useMockBilling=Boolean((import.meta as ImportMeta & {env?:Record<string,string>}).env?.DEV) && ((import.meta as ImportMeta & {env?:Record<string,string>}).env?.VITE_MOCK_BILLING_ENABLED==='true')
   const main=document.createElement('main');main.className='dashboard-content'

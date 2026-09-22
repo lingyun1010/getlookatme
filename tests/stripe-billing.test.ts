@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 import { readStripeBillingConfig, requireStripeBillingConfig, StripeConfigError, stripeBillingConfigured } from '../src/billing/stripeConfig.ts'
+import { resolveBillingMode } from '../src/billing/mode.ts'
+import { mockBillingEnabled } from '../src/billing/mock.ts'
 
 test('stripe config requires secrets and success/cancel URLs', () => {
   assert.equal(stripeBillingConfigured({}), false)
@@ -74,4 +76,17 @@ test('customer portal is an authenticated billing action for stripe customers', 
   assert.match(provider, /billingPortal\.sessions\.create/)
   assert.match(dashboard, /Manage subscription/)
   assert.doesNotMatch(request, /body\.customerId|body\.provider_customer_id/)
+})
+
+test('billing mode keeps mock development-only and prefers stripe otherwise', () => {
+  assert.equal(mockBillingEnabled({ APP_ENV: 'production', MOCK_BILLING_ENABLED: 'true' }), false)
+  assert.equal(resolveBillingMode({ APP_ENV: 'development', MOCK_BILLING_ENABLED: 'true' }), 'mock')
+  assert.equal(resolveBillingMode({
+    APP_ENV: 'production',
+    STRIPE_SECRET_KEY: 'sk_test_x',
+    STRIPE_WEBHOOK_SECRET: 'whsec_x',
+    STRIPE_PRO_PRICE_ID: 'price_x',
+    APP_BASE_URL: 'https://example.com',
+  }), 'stripe')
+  assert.equal(resolveBillingMode({ APP_ENV: 'production' }), 'unavailable')
 })

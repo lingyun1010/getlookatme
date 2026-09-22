@@ -37,3 +37,15 @@ test('stripe provider module stays behind the billing boundary', async () => {
   assert.doesNotMatch(stripeModule, /VITE_/)
   assert.match(packageJson, /"stripe"/)
 })
+
+test('billing request exposes authenticated stripe checkout without trusting client identity', async () => {
+  const request = await readFile(new URL('../src/billing/request.ts', import.meta.url), 'utf8')
+  const client = await readFile(new URL('../src/billing/client.ts', import.meta.url), 'utf8')
+  assert.match(request, /action === 'checkout'/)
+  assert.match(request, /authenticateBearer\(authorization\)/)
+  assert.match(request, /createCheckoutSession\(user\.id\)/)
+  assert.match(request, /checkout_started/)
+  assert.doesNotMatch(request, /body\.userId|body\.user_id|body\.customerId/)
+  assert.match(client, /requestBilling/)
+  assert.match(client, /'checkout'/)
+})

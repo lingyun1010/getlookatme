@@ -83,7 +83,12 @@ export async function handleBillingRequest(
       if (error instanceof StripeConfigError || error instanceof StripeBillingError) {
         return { status: 400, body: { code: 'stripe_billing_error', error: error.message } }
       }
-      console.error('Stripe billing request failed', error instanceof Error ? error.name : 'UnknownError')
+      console.error('Stripe billing request failed', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        action,
+      })
       return { status: 500, body: { code: 'stripe_billing_failed', error: 'Stripe billing could not be started.' } }
     }
   }

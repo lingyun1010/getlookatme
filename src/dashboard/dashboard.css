@@ -44,3 +44,9 @@
 .feedback-dialog .feedback-card{margin:0}
 .feedback-dialog-close{display:flex;justify-content:flex-end;margin:0 0 8px;background:transparent}
 .feedback-dialog-close button{width:36px;height:36px;border:0;border-radius:10px;background:#fff;color:var(--ink);font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+
+.slug-input{min-width:8rem;margin:0 2px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;color:#5f62c9}
+.slug-feedback{display:block;margin-top:8px;color:var(--body);font-size:12px}
+.pages-manage-card{align-items:flex-start}
+.pages-manage-card .status-badge{display:inline-flex;margin:8px 0 12px}
+.pages-manage-card #profileUrl{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:14px}

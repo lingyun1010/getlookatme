@@ -18,30 +18,35 @@ test('dashboard is an authenticated product route', () => {
 })
 
 test('profile actions distinguish published profile, working preview, and save publication', () => {
-  assert.match(shell, /View Published Profile/)
-  assert.match(shell, /'Unpublished'/)
-  assert.match(shell, /href=`\/\$\{options\.slug\}`/)
+  assert.match(shell, /Preview/)
+  assert.match(shell, /Publish/)
+  assert.match(shell, /statusBadge\.textContent=published\?'Published':'Draft'/)
   assert.match(createPage, /Working Preview ↗/)
   assert.match(createPage, /id="saveProfileButton"/)
   assert.match(createWorkspace, /createApp/)
-  assert.match(app, /published:profile\.is_published,slug:profile\.slug/)
+  assert.match(app, /published,slug:currentSlug/)
+  assert.match(app, /requestPublication/)
+  assert.match(app, /button\('Save URL'/)
+  assert.match(app, /button\('Publish'/)
+  assert.match(app, /id='profileUrl'/)
+  assert.match(app, /\/dashboard\/pages/)
 })
 
 test('dashboard derives overview state from owned profile data', () => {
   assert.match(app, /getOwnedProfile\(user\)/)
   assert.match(app, /loadOnboardingState\(profile\)/)
-  assert.match(app, /profile\.is_published/)
+  assert.match(app, /published/)
   assert.match(app, /state\?\.cv_path/)
-  assert.match(app, /listAvatarAssets\(profile\)/)
-  assert.match(app, /listAvatarJobs\(profile\)/)
+  assert.match(app, /getCurrentUserMonthlyUsage/)
+  assert.match(app, /planConfig\.name/)
 })
 
 test('unfinished dashboard capabilities are visibly disabled', () => {
-  assert.match(page, /Persistent knowledge base · Coming soon/)
+  assert.match(page, /No activity yet/)
   assert.match(app, /requestPublication/)
   assert.match(app, /button\('Publish'/)
-  assert.match(page, /No activity yet/)
   assert.match(css, /\.dashboard-sidebar \.disabled/)
+  assert.match(shell, /Coming next/)
 })
 
 test('create workspace is mounted inside the shared authenticated dashboard shell', () => {
@@ -71,4 +76,14 @@ test('dashboard uses History API routing without remounting its shell', () => {
 test('dashboard creator actions stay in the dashboard workspace', () => {
   assert.doesNotMatch(page, /href="\/create/)
   assert.match(page, /href="\/dashboard\/create/)
+})
+
+test('pages section owns public slug editing and publication controls', () => {
+  assert.match(app, /createPagesView/)
+  assert.match(app, /save-slug/)
+  assert.match(app, /availability/)
+  assert.match(app, /slugInput/)
+  assert.match(app, /View profile/)
+  assert.match(app, /Unpublish/)
+  assert.doesNotMatch(page, /id="profileUrl"/)
 })

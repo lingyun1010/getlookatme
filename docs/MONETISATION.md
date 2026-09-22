@@ -18,7 +18,7 @@ Future Stripe work should implement the `BillingProvider` interface, keep Stripe
 
 ## Beta funnel
 
-`analytics_events` stores only the event name, owner/profile identifiers, timestamps, and optional small metadata. The shared analytics boundary records signup, CV upload/parse, Avatar completion, publication, public views, RAG questions, upgrade clicks, checkout starts, and subscription activation. Public views are resolved from a published slug on the server; CV content and chat text are never analytics metadata. Analytics failures are logged but do not fail the product action.
+`analytics_events` stores only the event name, optional owner/profile identifiers, timestamps, and optional small metadata. The shared analytics boundary records landing create-profile intent, signup, CV upload/parse, Avatar completion, publication, public views, RAG questions, upgrade clicks, checkout starts, and subscription activation. Public views are resolved from a published slug on the server; anonymous landing intent has no identifier; CV content and chat text are never analytics metadata. Analytics failures are logged but do not fail the product action. The canonical event map is in `docs/BETA_FUNNEL.md`.
 
 ## Manual plan testing
 

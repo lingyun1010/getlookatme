@@ -4,6 +4,7 @@ import { currentUser } from '../auth/session.ts'
 import { isSupabaseConfigured } from '../auth/supabase.ts'
 import { AuthModal } from '../auth/AuthModal.ts'
 import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
+import { trackFunnelEvent } from '../analytics/client.ts'
 import '../auth/auth.css'
 
 const pricingPlans = document.querySelector<HTMLElement>('#pricingPlans')
@@ -38,6 +39,9 @@ if (avatarHost) {
 }
 
 const authModal = new AuthModal(() => window.location.assign('/dashboard/create'))
+document.querySelectorAll<HTMLAnchorElement>('[data-auth-mode="sign-up"]').forEach((link) => {
+  link.addEventListener('click', () => { void trackFunnelEvent('create_profile_clicked') })
+})
 async function bindAuth(): Promise<void> {
   const user = isSupabaseConfigured ? await currentUser() : null
   document.querySelectorAll<HTMLAnchorElement>('[data-auth-mode]').forEach(link => link.addEventListener('click', event => {

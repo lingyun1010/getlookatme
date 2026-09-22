@@ -8,7 +8,7 @@ import { createAvatarPage } from '../avatar/avatarPage.ts'
 import '../avatar/avatar.css'
 import { requestPublication } from '../profile/publicationClient.ts'
 import { effectivePlan, getUsageLimit } from '../monetisation/entitlements.ts'
-import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
+import { PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
 import { getSubscription } from '../monetisation/subscription.ts'
 import { getCurrentUserMonthlyUsage } from '../monetisation/usage.ts'
 import { requestBilling, requestMockBilling } from '../billing/client.ts'
@@ -258,7 +258,7 @@ function createPricingView(){
     const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className=planId===plan?'card pricing-current':'card';card.id=planId
     const label=document.createElement('p');label.className='label';label.textContent=item.name.toUpperCase()
     const name=document.createElement('h2');name.className='panel-title';name.textContent=item.name
-    const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`
+    const price=document.createElement('p');price.textContent=item.price?`$${item.price.amount} / month`:'Founding access'
     const description=document.createElement('p');description.textContent=item.description
     const list=document.createElement('ul');for(const feature of item.highlights){const row=document.createElement('li');row.textContent=feature;list.append(row)}
     card.append(label,name,price,description,list)
@@ -448,7 +448,7 @@ function createSettingsView(){
   account.append(pagesNote,pagesLink)
   grid.append(account)
   const billing=card('Billing',planConfig.name)
-  const price=document.createElement('p');price.className='billing-price';price.textContent=planConfig.price?`${formatPlanPrice(planConfig)} / month`:'Founding access'
+  const price=document.createElement('p');price.className='billing-price';price.textContent=planConfig.price?`$${planConfig.price.amount} / month`:'Founding access'
   const statusValue=subscription.cancel_at_period_end
     ?`Cancels ${formatPeriodEnd(subscription.current_period_end)??'at period end'}`
     :plan==='free'?'No active subscription':subscription.status==='active'?'Active':subscription.status==='trialing'?'Trialing':subscription.status.replace('_',' ')

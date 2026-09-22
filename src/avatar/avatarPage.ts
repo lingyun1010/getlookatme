@@ -17,7 +17,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
   <div class="avatar-current-head"><p class="label">Current avatar</p></div>
   <div id="currentAvatar" class="avatar-current-body"></div>
   <div class="avatar-current-actions">
-    <label class="btn btn-secondary avatar-upload-btn">Change photo<input id="avatarPhoto" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>
+    <label class="btn btn-secondary avatar-upload-btn">Change source photo<input id="avatarPhoto" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>
     <button id="useOriginal" class="btn btn-tertiary" type="button">Use original photo</button>
   </div>
 </section>
@@ -48,7 +48,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
       </div>
       <div class="avatar-generate-row">
         <span id="avatarUsage" class="avatar-usage"></span>
-        <button id="queueAvatar" class="btn btn-primary" type="button">Generate avatar</button>
+      <button id="queueAvatar" class="btn btn-primary" type="button" disabled>Generate avatar</button>
       </div>
     </div>
   </div>
@@ -115,7 +115,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
     if (active) {
       const host = element('div', 'avatar-live-preview'); currentHost.append(host)
       activePreview = createLookAtMeAvatar({ container: host, frames: avatarAssetFrameSet(active), width: '220px', height: '220px', objectFit: 'contain', alt: 'Active generated avatar' })
-      currentHost.append(element('strong', '', 'Generated avatar · Active')); return
+      const meta=element('div','avatar-current-meta');meta.append(element('strong','','Generated avatar'),element('span','active-avatar-badge','Active'),element('small','',`${active.style} · ${active.preset}`));currentHost.append(meta); return
     }
     const url = await cachedOriginalUrl()
     if (url) { const image = element('img', 'avatar-current-image'); image.src = url; image.alt = 'Current original profile photo'; currentHost.append(image, element('strong', '', 'Original photo · Active')); return }
@@ -125,8 +125,9 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
 
   function syncGenerateButton(): void {
     const active = jobs.find(({ status }) => status === 'queued' || status === 'generating')
-    generateButton.disabled = Boolean(active)
-    generateButton.textContent = active?.status === 'queued' ? 'Generation queued' : active?.status === 'generating' ? 'Generation in progress' : 'Generate avatar'
+    const exhausted=Boolean(usage&&usage.limit!==null&&usage.used>=usage.limit)
+    generateButton.disabled = Boolean(active)||!state?.original_photo_path||exhausted
+    generateButton.textContent = active?.status === 'queued' ? 'Generation queued' : active?.status === 'generating' ? 'Generation in progress' : exhausted ? 'Generation limit reached' : 'Generate avatar'
   }
 
   function renderJobsIfChanged(force = false): void {
@@ -205,6 +206,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
       state = { ...(state ?? { profile_id: profile.id, user_id: profile.user_id, draft: null, cv_path: null, avatar_frame_paths: [], avatar_metadata: {}, selected_avatar_mode: 'original' }), original_photo_path: path }
       await saveOnboardingState(profile, { original_photo_path: path }); originalPathRendered = undefined; currentAvatarKey = null
       setMessage('Original photo updated.'); await renderOriginalIfChanged(); await renderCurrentIfChanged()
+      syncGenerateButton()
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Photo upload failed.', true) }
   })
   view.querySelector<HTMLButtonElement>('#useOriginal')!.addEventListener('click', async () => { if (!state?.original_photo_path) return setMessage('Upload an original photo first.', true); await activateAvatar(profile, null); profile.active_avatar_id = null; currentAvatarKey = null; setMessage('Original photo is now active.'); await renderCurrentIfChanged(); renderGalleryIfChanged(true) })
@@ -222,8 +224,9 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
     group.querySelectorAll<HTMLButtonElement>('.choice-pill').forEach((pill) => {
       pill.addEventListener('click', () => {
         select.value = pill.dataset.value ?? select.value
-        group.querySelectorAll('.choice-pill').forEach((item) => item.classList.toggle('is-selected', item === pill))
+        group.querySelectorAll<HTMLButtonElement>('.choice-pill').forEach((item) => {const selected=item===pill;item.classList.toggle('is-selected',selected);item.setAttribute('aria-pressed',String(selected))})
       })
+      pill.setAttribute('aria-pressed',String(pill.classList.contains('is-selected')))
     })
   })
 

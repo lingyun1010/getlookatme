@@ -2,12 +2,16 @@
 
 .avatar-page .panel-title{margin:0 0 16px;font-family:"DM Sans",system-ui,sans-serif;font-size:20px;font-weight:700}
 .avatar-current-body{display:flex;align-items:center;gap:20px;margin-top:14px;flex-wrap:wrap}
+.avatar-current{width:min(100%,640px)}
+.avatar-current-meta{display:grid;justify-items:start;gap:8px}
+.avatar-current-meta small{color:var(--body);text-transform:capitalize}
 .avatar-current-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
 .avatar-upload-btn{position:relative;overflow:hidden}
 .avatar-upload-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .avatar-tool-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;align-items:start;margin-top:8px}
 .avatar-tool-controls{display:grid;gap:18px}
 .avatar-generate-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:4px}
+.avatar-generate-row .btn{flex:0 0 auto;min-width:150px}
 .avatar-usage{color:var(--body);font-size:12px;font-weight:600}
 .choice-field{display:grid;gap:8px}
 .choice-label{color:#5e6780;font-size:12px;font-weight:700}
@@ -16,7 +20,7 @@
 .choice-pill.is-selected{border-color:#7568e9;color:#4e5edf;background:#f0f1ff;box-shadow:0 0 0 3px rgba(117,104,233,.12)}
 .avatar-gallery-section{margin-top:8px}
 .avatar-gallery .empty-state{margin-top:8px}
-@media(max-width:720px){.avatar-tool-layout{grid-template-columns:1fr}}
+@media(max-width:720px){.avatar-tool-layout{grid-template-columns:1fr}.avatar-current{width:100%}.avatar-generate-row{align-items:stretch;flex-direction:column}.avatar-generate-row .btn{width:100%}}
 
 /* polish */
 .avatar-page{gap:22px}

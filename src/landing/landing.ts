@@ -5,6 +5,7 @@ import { trackFunnelEvent } from '../analytics/client.ts'
 import { mountPeopleShowcase } from './peopleShowcase.ts'
 import { mountInteractiveDemo } from './interactiveDemo.ts'
 import { mountStyleShowcase } from './styleShowcase.ts'
+import { mountSupportingContent } from './supportingContent.ts'
 import '../auth/auth.css'
 
 const authModal = new AuthModal(() => window.location.assign('/dashboard/create'))
@@ -45,3 +46,5 @@ if (interactiveDemo) mountInteractiveDemo(interactiveDemo)
 
 const styleShowcase = document.querySelector<HTMLElement>('#styleShowcase')
 if (styleShowcase) mountStyleShowcase(styleShowcase)
+
+mountSupportingContent()

@@ -1,0 +1,8 @@
+/* Landing narrative scaffolding. Showcase-specific presentation is added with each focused step. */
+.hero-mark{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:410px;padding:56px;border:1px solid rgba(255,255,255,.9);border-radius:38px;background:linear-gradient(145deg,#edf2ff,#f4ecff 58%,#ffeef5);box-shadow:var(--shadow);font-family:"DM Serif Display",Georgia,serif;font-size:clamp(72px,9vw,130px);letter-spacing:-.07em;line-height:.72}
+.hero-mark span:last-child{margin-left:12%;color:#755de5;font-style:italic}
+.showcase-shell,.supporting-shell{min-height:180px}
+.use-cases-section{background:#f7f5ff}
+.final-cta .hero-actions{justify-content:center;margin-top:28px}
+@media (max-width:980px){.hero-mark{width:min(620px,100%);margin-inline:auto}}
+@media (max-width:650px){.hero-mark{min-height:280px;padding:32px;font-size:76px}}

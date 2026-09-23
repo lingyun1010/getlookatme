@@ -9,6 +9,8 @@ const capabilities = [
   ['Interactive Avatar', 'A professional profile that reacts to visitors.'],
   ['AI Professional Q&A', 'Visitors can explore your experience by asking questions.'],
   ['Structured Career Profile', 'Experience, education, skills and projects remain fully editable.'],
+  ['Customizable Visual Styles', 'Choose a visual style that matches your personal brand.'],
+  ['Shareable Profile Link', 'One link to share your professional story anywhere.']
 ]
 
 const useCases = ['LinkedIn', 'Job applications', 'Recruiter outreach', 'Networking', 'Personal website', 'QR code on a CV']
@@ -29,7 +31,7 @@ function mountCapabilities(host: HTMLElement): void {
   grid.className = 'capability-trio'
   capabilities.forEach(([title, description], index) => {
     const item = document.createElement('article')
-    item.innerHTML = `<span aria-hidden="true">${['↗', '?', '≡'][index]}</span><h3>${title}</h3><p>${description}</p>`
+    item.innerHTML = `<span aria-hidden="true">${['↗', '?', '≡',  '🎨', '🔗'][index]}</span><h3>${title}</h3><p>${description}</p>`
     grid.append(item)
   })
   host.replaceChildren(grid)

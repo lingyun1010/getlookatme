@@ -1,0 +1,9 @@
+.auth-social{display:grid;gap:10px;margin-bottom:20px}
+.auth-social-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;padding:0 16px;border:1px solid #dce0ec;border-radius:13px;color:var(--ink);background:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.auth-social-button:hover{border-color:#bfc4da;background:#fafaff;transform:translateY(-1px)}
+.auth-social-button:focus-visible{outline:3px solid rgba(77,107,255,.28);outline-offset:3px}
+.auth-social-button:disabled{cursor:wait;opacity:.65;transform:none}
+.auth-social-mark{display:grid;place-items:center;width:24px;height:24px;border:1px solid #e0e3ee;border-radius:7px;color:#585fc5;background:#f7f7ff;font-size:10px;font-weight:700}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:0 0 20px;color:#8a91a6;font-size:11px;text-align:center}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:#e5e7f0}
+@media(prefers-reduced-motion:reduce){.auth-social-button{transition:none}}

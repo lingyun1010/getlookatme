@@ -23,7 +23,7 @@ export function mountPeopleShowcase(host: HTMLElement): void {
     card.tabIndex = 0
     card.innerHTML = `
       <div class="identity-portrait">
-        <img src="${identity.image}" alt="Generated avatar representing a ${identity.role}" style="object-position:${identity.position}" />
+        <img src="${identity.image}" alt="Generated avatar representing a ${identity.role}" width="768" height="768" loading="lazy" decoding="async" style="object-position:${identity.position}" />
       </div>
       <p>${identity.role}</p>
     `

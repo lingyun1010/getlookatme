@@ -17,7 +17,7 @@ export function mountStyleShowcase(host: HTMLElement): void {
         <div class="style-tabs" role="tablist" aria-label="Choose an avatar style"></div>
         <p class="style-note" aria-live="polite"></p>
       </div>
-      <div class="style-visual"><span aria-hidden="true">Same person</span><img alt="Generated Felt avatar for Mira Chen" /></div>
+      <div class="style-visual"><span aria-hidden="true">Same person</span><img alt="Generated Felt avatar for Mira Chen" width="768" height="768" loading="lazy" decoding="async" /></div>
     </article>`
 
   const tabs = host.querySelector<HTMLElement>('.style-tabs')
@@ -52,6 +52,13 @@ export function mountStyleShowcase(host: HTMLElement): void {
     button.tabIndex = index === 0 ? 0 : -1
     if (index === 0) button.classList.add('is-active')
     button.addEventListener('click', () => select(style, button))
+    button.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+      const nextIndex = (index + (event.key === 'ArrowRight' ? 1 : styles.length - 1)) % styles.length
+      const nextButton = tabs.children.item(nextIndex) as HTMLButtonElement | null
+      if (nextButton) { nextButton.focus(); select(styles[nextIndex], nextButton) }
+    })
     tabs.append(button)
   })
 

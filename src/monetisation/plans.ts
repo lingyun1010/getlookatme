@@ -56,7 +56,7 @@ export const PUBLIC_PLAN_IDS = (Object.keys(PLAN_CONFIG) as PlanId[])
 
 export function formatPlanPrice(plan: PlanConfig): string {
   if (!plan.price) return 'Not publicly available'
-  if (plan.price.amount === 0) return 'Free'
+  if (plan.price.amount === 0) return '$0'
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',
     currency: plan.price.currency,

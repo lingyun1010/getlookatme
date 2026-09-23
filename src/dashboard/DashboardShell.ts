@@ -24,7 +24,7 @@ const link=(label:string,icon:string,href:string,section:DashboardSection)=>{
   return a
 }
 
-export function mountDashboardShell(options:{user:User;name:string;published:boolean;slug:string}){
+export function mountDashboardShell(options:{user:User;name:string;published:boolean;slug:string;onPublicationChange?:(next:{published:boolean;slug:string})=>void}){
   let published=options.published
   let slug=options.slug
   const root=document.querySelector<HTMLElement>('#dashboardRoot')!
@@ -45,25 +45,31 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
 
   const nav=document.createElement('nav')
   nav.ariaLabel='Creator navigation'
-  nav.append(
-    link('Dashboard','⌂','/dashboard','dashboard'),
-    link('Profile','◎','/dashboard/profile','profile'),
-    link('Avatar','◉','/dashboard/avatar','avatar'),
-    link('Pages','▤','/dashboard/pages','pages'),
-    link('Plan','◇','/dashboard/pricing','pricing'),
-  )
-  const next=document.createElement('p')
-  next.textContent='Coming next'
-  nav.append(next)
-  for(const label of ['✦ AI Profile','⌁ Tailor','⌗ Analytics','□ Inbox']){
+  const group=(title:string)=>{const p=document.createElement('p');p.className='nav-group';p.textContent=title;return p}
+  const soon=(label:string,icon:string)=>{
     const span=document.createElement('span')
-    span.className='disabled'
-    span.textContent=label
+    span.className='disabled nav-soon'
+    const mark=document.createElement('span')
+    mark.textContent=icon
+    span.append(mark,document.createTextNode(label))
     const small=document.createElement('small')
     small.textContent='Soon'
     span.append(small)
-    nav.append(span)
+    return span
   }
+  nav.append(
+    link('Dashboard','⌂','/dashboard','dashboard'),
+    group('Create'),
+    link('Profile','◎','/dashboard/profile','profile'),
+    link('Avatar','◉','/dashboard/avatar','avatar'),
+    link('Pages','▤','/dashboard/pages','pages'),
+    group('AI tools'),
+    soon('AI Profile','✦'),
+    soon('Tailor','⌁'),
+    group('Insights'),
+    soon('Analytics','⌗'),
+    soon('Inbox','□'),
+  )
 
   const bottom=document.createElement('div')
   bottom.className='sidebar-bottom'
@@ -102,31 +108,26 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   const sectionTitle=document.createElement('h1')
   sectionTitle.className='topbar-title'
   sectionTitle.textContent='Dashboard'
-  const statusBadge=document.createElement('span')
-  statusBadge.className='status-badge'
-  const syncBadge=()=>{
-    statusBadge.textContent=published?'Published':'Draft'
-    statusBadge.classList.toggle('published',published)
-  }
-  syncBadge()
-  topLeft.append(sectionTitle,statusBadge)
+  topLeft.append(sectionTitle)
 
   const topRight=document.createElement('div')
   topRight.className='topbar-right'
 
   const preview=document.createElement('a')
-  preview.className='topbar-action'
+  preview.className='btn btn-secondary topbar-action'
   preview.href='/preview'
   preview.textContent='Preview'
 
   const publish=document.createElement('button')
   publish.type='button'
-  publish.className='topbar-action topbar-publish'
-  const syncPublish=()=>{
+  publish.className='btn btn-primary topbar-publish'
+  const syncProfileActions=()=>{
+    preview.href=published?`/${slug}`:'/preview'
+    preview.textContent=published?'View live page ↗':'Preview'
     publish.textContent=published?'Unpublish':'Publish'
     publish.disabled=false
   }
-  syncPublish()
+  syncProfileActions()
   publish.onclick=()=>void (async()=>{
     publish.disabled=true
     try{
@@ -134,10 +135,11 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
       const next=result.profile as {slug:string;isPublished:boolean}|undefined
       if(next){slug=next.slug;published=next.isPublished}
       else published=!published
-      syncBadge();syncPublish()
+      syncProfileActions()
+      options.onPublicationChange?.({published,slug})
     }catch(error){
       publish.textContent=error instanceof Error?error.message:'Could not update'
-      window.setTimeout(syncPublish,2200)
+      window.setTimeout(syncProfileActions,2200)
     }finally{publish.disabled=false}
   })()
 
@@ -169,7 +171,7 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
   const planItem=document.createElement('a')
   planItem.href='/dashboard/pricing'
   planItem.dataset.dashboardRoute=''
-  planItem.textContent='Plan / Billing'
+  planItem.textContent='Billing / Plans'
   const signOutItem=document.createElement('button')
   signOutItem.type='button'
   signOutItem.textContent='Sign out'
@@ -245,8 +247,7 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
     setPublication(next:{published:boolean;slug:string}){
       published=next.published
       slug=next.slug
-      syncBadge()
-      syncPublish()
+      syncProfileActions()
     },
   }
 }

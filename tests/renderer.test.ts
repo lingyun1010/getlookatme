@@ -38,6 +38,20 @@ test('shared renderer uses explicit featured selectors instead of array position
   assert.doesNotMatch(renderer, /profile\.experience\[0\]/)
 })
 
+test('project media is optional and removes broken images without reserving space', () => {
+  assert.match(renderer, /safeExternalUrl\(project\.image\)/)
+  assert.match(renderer, /article\.classList\.add\("has-media"\)/)
+  assert.match(renderer, /media\.remove\(\)/)
+})
+
+test('optional public profile sections are hidden instead of rendering filler states', () => {
+  assert.match(renderer, /toggleSection\("#services", profile\.services\.length > 0\)/)
+  assert.match(renderer, /toggleSection\("#projects", profile\.projects\.length > 0\)/)
+  assert.match(renderer, /toggleSection\("#experience", profile\.experience\.length > 0\)/)
+  assert.match(renderer, /educationColumn\.hidden = profile\.education\.length === 0/)
+  assert.doesNotMatch(renderer, /Experience not provided|Education not provided|Add experience from the profile creation screen/)
+})
+
 test('shared renderer keeps Aaron AI disabled before any chat request', () => {
   const guard = renderer.indexOf('if (!profile.ai.enabled) return;')
   const request = renderer.indexOf('await askProfile(profile.slug')

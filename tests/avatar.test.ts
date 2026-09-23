@@ -47,6 +47,8 @@ test('active generation covers queued and generating for immediate button protec
   assert.equal(hasActiveGeneration([job('ready')]), false)
   assert.match(avatarPage, /generateButton\.disabled = true/)
   assert.match(avatarPage, /jobs = \[job, \.\.\.jobs\]/)
+  assert.match(avatarPage, /Change source photo/)
+  assert.match(avatarPage, /aria-pressed/)
 })
 
 test('job polling leaves stable avatar UI alone and refreshes gallery only on ready transition', () => {

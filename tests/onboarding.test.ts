@@ -91,6 +91,23 @@ test('validation classifies blocking, missing, and warning issues', () => {
   assert.ok(result.warnings.some(({ message }) => /Low confidence/.test(message)))
 })
 
+test('hero summary rejects content over 280 characters without truncating it', () => {
+  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
+  draft.identity.summary = 'x'.repeat(281)
+  const result = validateProfileDraft(draft)
+  assert.equal(result.valid, false)
+  assert.match(result.blockingErrors.map(({ message }) => message).join(' '), /280 characters/)
+  assert.equal(draft.identity.summary.length, 281)
+})
+
+test('project image URLs use the existing optional project media field', () => {
+  const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
+  draft.projects[0].image = 'https://example.com/project.png'
+  assert.equal(validateProfileDraft(draft).blockingErrors.some(({ field }) => field.endsWith('.image')), false)
+  draft.projects[0].image = 'javascript:alert(1)'
+  assert.equal(validateProfileDraft(draft).blockingErrors.some(({ field }) => field.endsWith('.image')), true)
+})
+
 test('temporary profile uses the canonical renderer contract and cannot use Lingyun RAG', () => {
   const draft = parsedResumeToDraft(parseResumeDeterministically(extractedPastedText(fixtureText)))
   draft.identity.headline = 'Senior Engineer'
@@ -153,9 +170,11 @@ test('onboarding and renderer never assign untrusted strings through innerHTML',
   assert.doesNotMatch(sources.join('\n'), /\.innerHTML\s*=/)
 })
 
-test('profile form submit saves and uses the existing publication flow instead of preview navigation', async () => {
+test('structured profile section saves persist through the existing document flow', async () => {
   const source = await readFile(new URL('../src/onboarding/createApp.ts', import.meta.url), 'utf8')
-  assert.match(source, /ownedProfile\.is_published \? 'Save Changes' : 'Publish Profile'/)
-  assert.match(source, /requestPublication\('publish', ownedProfile\.slug\)/)
+  assert.match(source, /mountStructuredProfileEditor/)
+  assert.match(source, /saveProfileDocument\(ownedProfile,draftToProfileDocument/)
+  assert.match(source, /saveOnboardingState\(ownedProfile/)
+  assert.match(source, /manualProfileButton/)
   assert.doesNotMatch(source, /window\.location\.assign\('\/preview'\)/)
 })

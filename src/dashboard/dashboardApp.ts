@@ -7,8 +7,8 @@ import { mountDashboardShell, type DashboardSection } from './DashboardShell.ts'
 import { createAvatarPage } from '../avatar/avatarPage.ts'
 import '../avatar/avatar.css'
 import { requestPublication } from '../profile/publicationClient.ts'
-import { effectivePlan } from '../monetisation/entitlements.ts'
-import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
+import { effectivePlan, getUsageLimit } from '../monetisation/entitlements.ts'
+import { PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
 import { getSubscription } from '../monetisation/subscription.ts'
 import { getCurrentUserMonthlyUsage } from '../monetisation/usage.ts'
 import { requestBilling, requestMockBilling } from '../billing/client.ts'
@@ -24,31 +24,36 @@ let state=await loadOnboardingState(profile)
 const profileDocument=profile.document as ProfileDocument
 const hasProfile=profileDocument?.profileId===profile.id,name=hasProfile?profileDocument.identity.preferredName:(user.email?.split('@')[0]??'Your account')
 let published=profile.is_published,currentSlug=profile.slug
-const shell=mountDashboardShell({user,name,published,slug:currentSlug})
+let refreshPagesPublication=()=>{}
+const shell=mountDashboardShell({user,name,published,slug:currentSlug,onPublicationChange:next=>{published=next.published;currentSlug=next.slug;void initialiseOverview();refreshPagesPublication()}})
 bindBetaFeedbackForm(shell.feedbackRoot,user.id,profile.id)
 let activeAvatarPage:ReturnType<typeof createAvatarPage>|null=null
 const overview=document.querySelector<HTMLTemplateElement>('#dashboardContentTemplate')!.content.firstElementChild!.cloneNode(true) as HTMLElement
 const text=(root:ParentNode,id:string,value:string)=>{const element=root.querySelector<HTMLElement>(`#${id}`);if(element)element.textContent=value}
-function renderUsage(){const avatarLimit=planConfig.entitlements['avatar.generate'].limit,ragLimit=planConfig.entitlements['rag.query'].limit;text(overview,'usageSummary',`This month: ${monthlyUsage.avatar_generation}${avatarLimit===null?'':` / ${avatarLimit}`} Avatars · ${monthlyUsage.rag_query}${ragLimit===null?'':` / ${ragLimit}`} AI questions`)}
+function greetingForNow(){
+  const hour=new Date().getHours()
+  if(hour<12)return 'Good morning'
+  if(hour<18)return 'Good afternoon'
+  return 'Good evening'
+}
 async function initialiseOverview(){
   const hasAvatar=Boolean(profile.active_avatar_id||state?.original_photo_path),hasCv=Boolean(state?.cv_path)
-  text(overview,'welcomeTitle',`Welcome back, ${name}`)
-  text(overview,'currentPlanTitle',planConfig.name)
-  text(overview,'planDescription',planConfig.description)
-  renderUsage()
-  const upgradeAction=overview.querySelector<HTMLAnchorElement>('#upgradeAction')!
-  upgradeAction.textContent=plan==='free'?'Upgrade to Pro':'View plan details'
-  if(plan==='free')upgradeAction.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'))
-  overview.querySelector<HTMLButtonElement>('#openFeedbackFromOverview')!.onclick=()=>shell.feedbackRoot.showModal()
+  text(overview,'welcomeTitle',`${greetingForNow()}, ${name}`)
+  const status=overview.querySelector<HTMLElement>('#overviewStatus')!
+  status.textContent=published?'Published':'Draft'
+  status.classList.toggle('published',published)
   const checks=[
-    {label:'Upload your CV',done:hasCv,href:'/dashboard/create'},
-    {label:'Review your profile',done:hasProfile,href:'/dashboard/profile'},
-    {label:'Add an Avatar',done:hasAvatar,href:'/dashboard/avatar'},
-    {label:'Publish your profile',done:published,href:'/dashboard/pages'},
+    {label:'CV uploaded',done:hasCv,href:'/dashboard/create'},
+    {label:'Profile reviewed',done:hasProfile,href:'/dashboard/profile'},
+    {label:'Avatar added',done:hasAvatar,href:'/dashboard/avatar'},
+    {label:'Publish profile',done:published,href:'/dashboard/pages'},
   ]
   const completion=Math.round(checks.filter(x=>x.done).length/checks.length*100)
   text(overview,'completionPercent',String(completion))
   text(overview,'ringPercent',`${completion}%`)
+  text(overview,'welcomeSubtitle',completion>=100
+    ? (published?'Your profile is live.':'Your profile is ready to publish.')
+    : 'Your profile is almost ready.')
   overview.querySelector<HTMLElement>('#progressBar')!.style.width=`${completion}%`
   overview.querySelector<HTMLElement>('#completionRing')!.style.setProperty('--progress',`${completion*3.6}deg`)
   overview.querySelector<HTMLUListElement>('#setupChecklist')!.replaceChildren(...checks.map(item=>{
@@ -56,70 +61,111 @@ async function initialiseOverview(){
   }))
   const continueSetup=overview.querySelector<HTMLAnchorElement>('#continueSetup')!
   const next=checks.find(item=>!item.done)
-  if(next){continueSetup.href=next.href;continueSetup.textContent='Continue setup →'}
-  else{continueSetup.href='/dashboard/pages';continueSetup.textContent='Manage public page →'}
+  if(next){continueSetup.href=next.href;continueSetup.textContent='Continue setup'}
+  else{continueSetup.href='/dashboard/pages';continueSetup.textContent=published?'Manage page':'Continue setup'}
 }
 await initialiseOverview()
 
 function createPagesView(){
   const main=document.createElement('main')
-  main.className='dashboard-content'
+  main.className='dashboard-content pages-workspace'
   const heading=document.createElement('header')
   heading.className='dashboard-heading'
   const headingCopy=document.createElement('div')
   const title=document.createElement('h1')
   title.textContent='Pages'
   const copy=document.createElement('p')
-  copy.textContent='Manage your public profile page, URL, and publication status.'
+  copy.textContent='Manage where and how your profile appears online.'
   headingCopy.append(title,copy)
   heading.append(headingCopy)
 
   const card=document.createElement('article')
-  card.className='card profile-card pages-manage-card'
-  const body=document.createElement('div')
+  card.className='card pages-manage-card'
   const label=document.createElement('p')
   label.className='label'
   label.textContent='Public profile'
+  const titleRow=document.createElement('div')
+  titleRow.className='title-row'
   const pageTitle=document.createElement('h2')
   pageTitle.id='pageTitle'
-  const pageCopy=document.createElement('p')
-  pageCopy.id='pageCopy'
+  pageTitle.className='panel-title'
+  pageTitle.textContent=name
   const status=document.createElement('span')
   status.className='status-badge'
   status.id='profileStatus'
-  const url=document.createElement('code')
+  titleRow.append(pageTitle,status)
+  const pageCopy=document.createElement('p')
+  pageCopy.id='pageCopy'
+
+  const urlBlock=document.createElement('div')
+  urlBlock.className='pages-url-block'
+  const urlLabel=document.createElement('p')
+  urlLabel.className='choice-label'
+  urlLabel.textContent='Public URL'
+  const url=document.createElement('div')
   url.id='profileUrl'
-  body.append(label,status,pageTitle,pageCopy,url)
+  url.className='pages-url-row'
+  const editUrl=document.createElement('button')
+  editUrl.type='button'
+  editUrl.className='btn btn-tertiary'
+  editUrl.textContent='Edit URL'
+  const editActions=document.createElement('div')
+  editActions.className='pages-url-actions'
+  const saveUrl=document.createElement('button');saveUrl.type='button';saveUrl.className='btn btn-primary';saveUrl.textContent='Save'
+  const cancelEdit=document.createElement('button');cancelEdit.type='button';cancelEdit.className='btn btn-tertiary';cancelEdit.textContent='Cancel'
+  editActions.append(saveUrl,cancelEdit);editActions.hidden=true
+  urlBlock.append(urlLabel,url,editUrl,editActions)
 
   const actions=document.createElement('div')
-  actions.className='card-actions'
+  actions.className='action-row'
   actions.id='pageActions'
-  card.append(body,actions)
+  card.append(label,titleRow,pageCopy,urlBlock,actions)
+
   main.append(heading,card)
 
   const slugInput=document.createElement('input')
   slugInput.value=currentSlug
   slugInput.className='slug-input'
   slugInput.ariaLabel='Public profile URL slug'
+  slugInput.hidden=true
   const feedback=document.createElement('small')
   feedback.className='slug-feedback'
-  url.replaceChildren(document.createTextNode(`${location.host}/`),slugInput,feedback)
+  const hostSpan=document.createElement('span')
+  hostSpan.className='pages-url-host'
+  hostSpan.textContent=`${location.host}/`
+  const slugText=document.createElement('strong')
+  slugText.textContent=currentSlug
+  url.append(hostSpan,slugText,slugInput,feedback)
 
-  const button=(labelText:string,run:()=>Promise<void>)=>{const item=document.createElement('button');item.type='button';item.textContent=labelText;item.onclick=()=>void run();return item}
-  const link=(labelText:string,href:string)=>{const item=document.createElement('a');item.textContent=labelText;item.href=href;return item}
+  editUrl.onclick=()=>{
+    slugInput.hidden=false
+    slugText.hidden=true
+    editUrl.hidden=true
+    editActions.hidden=false
+    feedback.textContent=''
+    slugInput.focus()
+    slugInput.select()
+  }
+
+  const button=(labelText:string,run:()=>Promise<void>,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('button');item.type='button';item.className=`btn btn-${kind}`;item.textContent=labelText;item.onclick=()=>void run();return item}
 
   async function run(action:'availability'|'save-slug'|'publish'|'unpublish'){
     feedback.textContent='Checking…'
     try{
       const result=await requestPublication(action,slugInput.value)
-      if(result.slug){slugInput.value=result.slug;feedback.textContent=`✓ /${result.slug} is available`;return}
+      if(result.slug){slugInput.value=result.slug;slugText.textContent=result.slug;feedback.textContent=`✓ /${result.slug} is available`;return}
       const next=result.profile as {slug:string;isPublished:boolean}|undefined
       if(next){
         currentSlug=next.slug
         published=next.isPublished
         slugInput.value=currentSlug
-        feedback.textContent=action==='unpublish'?'Profile unpublished.':'Saved.'
+        slugText.textContent=currentSlug
+        feedback.textContent=action==='unpublish'?'Profile unpublished.':action==='save-slug'?'URL saved.':'Saved.'
         shell.setPublication({published,slug:currentSlug})
+        slugInput.hidden=true
+        slugText.hidden=false
+        editUrl.hidden=false
+        editActions.hidden=true
         renderPublication()
       }
     }catch(error){
@@ -132,6 +178,16 @@ function createPagesView(){
     window.clearTimeout(availabilityTimer)
     availabilityTimer=window.setTimeout(()=>void run('availability'),350)
   })
+  saveUrl.onclick=()=>void run('save-slug')
+  cancelEdit.onclick=()=>{
+    window.clearTimeout(availabilityTimer)
+    slugInput.value=currentSlug
+    slugInput.hidden=true
+    slugText.hidden=false
+    editUrl.hidden=false
+    editActions.hidden=true
+    feedback.textContent=''
+  }
 
   async function copyLink(){
     await navigator.clipboard.writeText(`${location.origin}/${currentSlug}`)
@@ -141,12 +197,14 @@ function createPagesView(){
   function renderPublication(){
     status.textContent=published?'Published':'Draft'
     status.classList.toggle('published',published)
-    pageTitle.textContent=published?'Your profile is live':'Draft profile'
-    pageCopy.textContent=published?'Recruiters can open and explore your public profile.':'Your profile is private while it is in draft.'
-    actions.replaceChildren(link('Preview','/preview'),button('Save URL',()=>run('save-slug')))
-    if(published)actions.append(link('View profile ↗',`/${currentSlug}`),button('Copy link',copyLink),button('Unpublish',()=>run('unpublish')))
-    else actions.append(button('Publish',()=>run('publish')))
+    pageTitle.textContent=name
+    pageCopy.textContent=published
+      ?'Your profile is live. Recruiters can open and explore it.'
+      :'Your profile is currently private while it is in draft.'
+    actions.replaceChildren()
+    if(published)actions.append(button('Copy link',copyLink,'tertiary'))
   }
+  refreshPagesPublication=renderPublication
   renderPublication()
   return main
 }
@@ -158,6 +216,21 @@ function formatPeriodEnd(value:string|null|undefined){
   if(Number.isNaN(date.getTime()))return null
   return new Intl.DateTimeFormat('en-AU',{dateStyle:'medium'}).format(date)
 }
+function formatUsageResetDate(now=new Date()){
+  return new Intl.DateTimeFormat('en-AU',{dateStyle:'medium'}).format(new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()+1,1)))
+}
+function usageMeter(labelText:string,used:number,limit:number|null){
+  const item=document.createElement('div');item.className='usage-meter'
+  const copy=document.createElement('div')
+  const label=document.createElement('span');label.textContent=labelText
+  const value=document.createElement('strong');value.textContent=limit===null?String(used):`${used} / ${limit}`
+  copy.append(label,value);item.append(copy)
+  if(limit!==null){
+    const track=document.createElement('div');track.className='usage-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label',labelText);track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax',String(limit));track.setAttribute('aria-valuenow',String(Math.min(used,limit)))
+    const fill=document.createElement('i');fill.style.width=`${Math.min(100,used/limit*100)}%`;track.append(fill);item.append(track)
+  }
+  return item
+}
 function createPricingView(){
   let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
   let periodEnd=subscription.current_period_end
@@ -165,7 +238,7 @@ function createPricingView(){
   const heading=document.createElement('header');heading.className='dashboard-heading'
   const headingCopy=document.createElement('div')
   const title=document.createElement('h1');title.textContent='Plans'
-  const copy=document.createElement('p');copy.textContent='Publish on Free, then upgrade only when you need more Avatar and AI usage.'
+  const copy=document.createElement('p');copy.textContent='Compare Free and Pro. Upgrade only when you need more Avatar and AI usage.'
   headingCopy.append(title,copy);heading.append(headingCopy)
   const statusNote=document.createElement('p');statusNote.className='settings-note';statusNote.hidden=true
   const grid=document.createElement('section');grid.className='overview-grid'
@@ -182,72 +255,37 @@ function createPricingView(){
   }
 
   for(const planId of PUBLIC_PLAN_IDS){
-    const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className='card';card.id=planId
-    const label=document.createElement('p');label.className='label'
-    if(planId===plan)label.textContent='Current plan'
-    else if(planId==='free'&&(plan==='pro'||plan==='founding'))label.textContent='Included'
-    else label.textContent='Plan'
-    const name=document.createElement('h2');name.textContent=item.name
-    const price=document.createElement('p');price.textContent=`${formatPlanPrice(item)}${item.price&&item.price.amount>0?' / month':''}`
+    const item=PLAN_CONFIG[planId],card=document.createElement('article');card.className=planId===plan?'card pricing-current':'card';card.id=planId
+    const label=document.createElement('p');label.className='label';label.textContent=item.name.toUpperCase()
+    const name=document.createElement('h2');name.className='panel-title';name.textContent=item.name
+    const price=document.createElement('p');price.textContent=item.price?`$${item.price.amount} / month`:'Founding access'
     const description=document.createElement('p');description.textContent=item.description
     const list=document.createElement('ul');for(const feature of item.highlights){const row=document.createElement('li');row.textContent=feature;list.append(row)}
     card.append(label,name,price,description,list)
 
     if(planId==='free'){
-      const action=document.createElement('a');action.className='primary-action'
-      if(plan==='free'){action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
-      else {action.textContent=plan==='founding'?'Included in Founding':'Included in Pro';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      const action=document.createElement('a');action.className='btn btn-primary'
+      if(plan==='free'){action.className='btn btn-secondary';action.textContent='Current plan';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
+      else {action.className='btn btn-secondary';action.textContent='View plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault())}
       card.append(action)
     }else if(planId==='pro'){
       if(plan==='pro'){
-        const action=document.createElement('a');action.className='primary-action';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        const action=document.createElement('a');action.className='btn btn-secondary';action.textContent='Current plan';action.href='/dashboard/pricing';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
         if(stripePro&&!founding){
           const actions=document.createElement('div');actions.className='card-actions';actions.style.marginTop='14px';actions.style.flexWrap='wrap'
-          const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
+          const manage=document.createElement('button');manage.type='button';manage.className='btn btn-primary';manage.textContent='Manage subscription'
           manage.onclick=()=>void (async()=>{
             manage.disabled=true
             try{const result=await requestBilling('portal');if(!result.session?.url)throw new Error('Stripe Customer Portal is unavailable.');location.assign(result.session.url)}
             catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
           })()
           actions.append(manage)
-          const cancelOrResume=document.createElement('button');cancelOrResume.type='button';cancelOrResume.className='text-action'
-          const syncCancelButton=()=>{cancelOrResume.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
-          syncCancelButton()
-          cancelOrResume.onclick=()=>void (async()=>{
-            if(!cancelAtPeriodEnd){
-              const when=formatPeriodEnd(periodEnd)
-              const confirmed=window.confirm(when
-                ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
-                :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
-              if(!confirmed)return
-              cancelOrResume.disabled=true
-              try{
-                const result=await requestBilling('cancel-subscription')
-                cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
-                periodEnd=result.current_period_end ?? periodEnd
-                subscription.cancel_at_period_end=cancelAtPeriodEnd
-                if(periodEnd)subscription.current_period_end=periodEnd
-                syncCancelButton();renderCancelNote();cancelOrResume.disabled=false
-              }catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not cancel the subscription.';cancelOrResume.disabled=false}
-              return
-            }
-            cancelOrResume.disabled=true
-            try{
-              const result=await requestBilling('reactivate-subscription')
-              cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
-              periodEnd=result.current_period_end ?? periodEnd
-              subscription.cancel_at_period_end=cancelAtPeriodEnd
-              if(periodEnd)subscription.current_period_end=periodEnd
-              syncCancelButton();renderCancelNote();cancelOrResume.disabled=false
-            }catch(error){statusNote.hidden=false;statusNote.textContent=error instanceof Error?error.message:'Could not resume the subscription.';cancelOrResume.disabled=false}
-          })()
-          actions.append(cancelOrResume)
           card.append(actions)
         }
       }else if(plan==='founding'){
-        const action=document.createElement('a');action.className='primary-action';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
+        const action=document.createElement('a');action.className='btn btn-secondary';action.textContent='Included in Founding';action.href='/dashboard';action.setAttribute('aria-disabled','true');action.addEventListener('click',event=>event.preventDefault());card.append(action)
       }else{
-        const action=document.createElement('a');action.className='primary-action';action.textContent=item.ctaLabel;action.href='/dashboard/upgrade';action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'));card.append(action)
+        const action=document.createElement('a');action.className='btn btn-primary';action.textContent=item.ctaLabel;action.href='/dashboard/upgrade';action.addEventListener('click',()=>void trackFunnelEvent('upgrade_clicked'));card.append(action)
       }
     }
     grid.append(card)
@@ -279,7 +317,7 @@ function createUpgradeView(){
   headingCopy.append(title,copy);heading.append(headingCopy)
   const card=document.createElement('section');card.className='card'
   const feedback=document.createElement('p')
-  const button=document.createElement('button');button.type='button';button.className='primary-action'
+  const button=document.createElement('button');button.type='button';button.className='btn btn-primary'
   if(useMockBilling){
     const run=async(action:'start'|'complete'|'cancel'|'reactivate',sessionId?:string)=>{
       button.disabled=true;feedback.textContent='Updating…'
@@ -317,7 +355,7 @@ function createUpgradeView(){
         :'Manage billing in Stripe, or cancel directly in Get Look At Me. Access continues until the period ends.'
       button.textContent='Manage subscription'
       button.onclick=openPortal
-      const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='text-action';cancelBtn.style.marginTop='12px'
+      const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='btn btn-tertiary';cancelBtn.style.marginTop='12px'
       const sync=()=>{cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'}
       sync()
       cancelBtn.onclick=()=>void (async()=>{
@@ -371,7 +409,7 @@ function createSettingsView(){
   const title=document.createElement('h1')
   title.textContent='Settings'
   const copy=document.createElement('p')
-  copy.textContent='Account details already available for this signed-in profile.'
+  copy.textContent='Account, billing, and privacy for this signed-in profile.'
   headingCopy.append(title,copy)
   heading.append(headingCopy)
   const grid=document.createElement('section')
@@ -380,7 +418,7 @@ function createSettingsView(){
     const article=document.createElement('article')
     article.className='card'
     const kicker=document.createElement('p');kicker.className='label';kicker.textContent=labelText
-    const h=document.createElement('h2');h.textContent=titleText
+    const h=document.createElement('h2');h.className='panel-title';h.textContent=titleText
     article.append(kicker,h);return article
   }
   function row(labelText:string,value:string){
@@ -404,33 +442,27 @@ function createSettingsView(){
     })()
     account.append(reset,note)
   }
+  const pagesNote=document.createElement('p');pagesNote.className='settings-note'
+  pagesNote.textContent='Public URL and publish controls live on Pages.'
+  const pagesLink=document.createElement('a');pagesLink.className='btn btn-tertiary';pagesLink.href='/dashboard/pages';pagesLink.dataset.dashboardRoute='';pagesLink.textContent='Open Pages'
+  account.append(pagesNote,pagesLink)
   grid.append(account)
-  const identity=card('Profile identity','Public profile')
-  identity.append(row('Username',currentSlug||'Not set yet'))
-  if(currentSlug){
-    const link=document.createElement('a');link.className='text-action';link.href=`/${currentSlug}`;link.textContent=`${location.host}/${currentSlug}`
-    identity.append(link)
-  }
-  grid.append(identity)
-  const billing=card('Plan / Billing',planConfig.name)
-  const planCopy=document.createElement('p');planCopy.textContent=planConfig.description
-  const planLink=document.createElement('a');planLink.className='primary-action';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
-  billing.append(planCopy,planLink)
+  const billing=card('Billing',planConfig.name)
+  const price=document.createElement('p');price.className='billing-price';price.textContent=planConfig.price?`$${planConfig.price.amount} / month`:'Founding access'
+  const statusValue=subscription.cancel_at_period_end
+    ?`Cancels ${formatPeriodEnd(subscription.current_period_end)??'at period end'}`
+    :plan==='free'?'No active subscription':subscription.status==='active'?'Active':subscription.status==='trialing'?'Trialing':subscription.status.replace('_',' ')
+  const details=document.createElement('div');details.className='billing-details';details.append(row('Subscription status',statusValue))
+  if(plan!=='free'&&!subscription.cancel_at_period_end&&subscription.current_period_end)details.append(row('Renewal',`Renews ${formatPeriodEnd(subscription.current_period_end)}`))
+  const usageTitle=document.createElement('h3');usageTitle.className='billing-usage-title';usageTitle.textContent='Usage this billing period'
+  const avatarLimit=getUsageLimit(plan,'avatar.generate')
+  const ragLimit=getUsageLimit(plan,'rag.query')
+  const reset=document.createElement('p');reset.className='settings-note';reset.textContent=`Usage resets ${formatUsageResetDate()}.`
+  const planLink=document.createElement('a');planLink.className='btn btn-secondary';planLink.href='/dashboard/pricing';planLink.dataset.dashboardRoute='';planLink.textContent='View plans'
+  billing.append(price,details,usageTitle,usageMeter('Avatar generations',monthlyUsage.avatar_generation,avatarLimit),usageMeter('AI profile questions',monthlyUsage.rag_query,ragLimit),reset)
   if(subscription.provider==='stripe'&&subscription.provider_customer_id&&plan==='pro'){
-    let cancelAtPeriodEnd=Boolean(subscription.cancel_at_period_end)
-    const manage=document.createElement('button');manage.type='button';manage.className='text-action';manage.textContent='Manage subscription'
-    const cancelBtn=document.createElement('button');cancelBtn.type='button';cancelBtn.className='text-action'
+    const manage=document.createElement('button');manage.type='button';manage.className='btn btn-primary';manage.textContent='Manage subscription'
     const manageNote=document.createElement('p');manageNote.className='settings-note'
-    const syncCancel=()=>{
-      cancelBtn.textContent=cancelAtPeriodEnd?'Resume subscription':'Cancel subscription'
-      if(cancelAtPeriodEnd){
-        const when=formatPeriodEnd(subscription.current_period_end)
-        manageNote.textContent=when
-          ?`Your subscription is scheduled to cancel at the end of the current billing period (${when}).`
-          :'Your subscription is scheduled to cancel at the end of the current billing period.'
-      }
-    }
-    syncCancel()
     manage.onclick=()=>void (async()=>{
       manage.disabled=true;manageNote.textContent='Opening Stripe…'
       try{
@@ -439,33 +471,12 @@ function createSettingsView(){
         location.assign(result.session.url)
       }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not open the customer portal.';manage.disabled=false}
     })()
-    cancelBtn.onclick=()=>void (async()=>{
-      if(!cancelAtPeriodEnd){
-        const when=formatPeriodEnd(subscription.current_period_end)
-        const confirmed=window.confirm(when
-          ?`Cancel Pro at the end of the current billing period (${when})? You keep Pro access until then.`
-          :'Cancel Pro at the end of the current billing period? You keep Pro access until then.')
-        if(!confirmed)return
-      }
-      cancelBtn.disabled=true;manage.disabled=true
-      try{
-        const result=await requestBilling(cancelAtPeriodEnd?'reactivate-subscription':'cancel-subscription')
-        cancelAtPeriodEnd=Boolean(result.cancel_at_period_end)
-        subscription.cancel_at_period_end=cancelAtPeriodEnd
-        if(result.current_period_end)subscription.current_period_end=result.current_period_end
-        if(!cancelAtPeriodEnd)manageNote.textContent='Your Pro subscription will renew at the end of the billing period.'
-        syncCancel();cancelBtn.disabled=false;manage.disabled=false
-      }catch(error){manageNote.textContent=error instanceof Error?error.message:'Could not update the subscription.';cancelBtn.disabled=false;manage.disabled=false}
-    })()
-    billing.append(manage,cancelBtn,manageNote)
+    billing.append(manage,manageNote)
+  }else if(plan==='free'){
+    const upgrade=document.createElement('a');upgrade.className='btn btn-primary';upgrade.href='/dashboard/upgrade';upgrade.dataset.dashboardRoute='';upgrade.textContent='Upgrade to Pro';billing.append(upgrade)
   }
+  billing.append(planLink)
   grid.append(billing)
-  const legal=card('Privacy / legal','Policies')
-  const links=document.createElement('div');links.className='settings-links'
-  for(const [labelText,href] of [['Privacy','/privacy'],['Terms','/terms'],['Refunds','/refunds']] as const){
-    const a=document.createElement('a');a.href=href;a.textContent=labelText;links.append(a)
-  }
-  legal.append(links);grid.append(legal)
   main.append(heading,grid);return main
 }
 const settingsView=createSettingsView()
@@ -474,13 +485,13 @@ async function renderRoute(){
   activeAvatarPage?.stop();activeAvatarPage=null
   const path=location.pathname
   let section:DashboardSection='dashboard',view=overview
-  if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);activeAvatarPage=createAvatarPage(profile,state);view=activeAvatarPage.view}
+  if(path==='/dashboard/avatar'){section='avatar';state=await loadOnboardingState(profile);monthlyUsage=await getCurrentUserMonthlyUsage(user);activeAvatarPage=createAvatarPage(profile,state,{used:monthlyUsage.avatar_generation,limit:getUsageLimit(plan,'avatar.generate')});view=activeAvatarPage.view}
   else if(path==='/dashboard/create'||path==='/dashboard/profile'){section='profile';view=await getCreateWorkspace()}
   else if(path==='/dashboard/pages'){section='pages';view=pagesView}
   else if(path==='/dashboard/pricing'){section='pricing';view=pricingView}
   else if(path==='/dashboard/upgrade'){section='pricing';view=upgradeView}
   else if(path==='/dashboard/settings'){section='settings';view=settingsView}
-  else{monthlyUsage=await getCurrentUserMonthlyUsage(user);renderUsage()}
+  else{monthlyUsage=await getCurrentUserMonthlyUsage(user)}
   shell.content.replaceChildren(view);shell.setActive(section)
   if(activeAvatarPage)await activeAvatarPage.start()
   else if(view!==overview&&view!==pagesView&&view!==pricingView&&view!==upgradeView&&view!==settingsView)await startCreateWorkspace()

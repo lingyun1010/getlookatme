@@ -1,15 +1,15 @@
 import { requireAuthenticatedUser } from '../auth/session.ts'
 import { getOwnedProfile, loadOnboardingState, saveOnboardingState, saveProfileDocument, uploadProfileAsset } from '../profile/repository.ts'
-import type { Education, Experience, Project } from '../profile/types.ts'
 import { extractResumeText } from './extraction.ts'
 import { parsedResumeToDraft } from './mapping.ts'
 import { createResumeMappingService } from './mappingCoordinator.ts'
 import { draftToProfileDocument } from './profileDocument.ts'
 import type { ProfileDocumentDraft, ProfileValidationResult } from './types.ts'
 import { validateProfileDraft } from './validation.ts'
-import { requestPublication } from '../profile/publicationClient.ts'
 import { requestAiLifecycle } from '../profile/aiLifecycleClient.ts'
 import { trackFunnelEvent } from '../analytics/client.ts'
+import { NEUTRAL_PROFILE_DEFAULTS } from './defaults.ts'
+import { mountStructuredProfileEditor } from './structuredEditor.ts'
 
 const workspace = document.querySelector<HTMLElement>('.create-workspace')
 if (!workspace) throw new Error('The profile workspace is not mounted.')
@@ -25,80 +25,64 @@ const inputError = required<HTMLElement>('#inputError')
 const fileInput = required<HTMLInputElement>('#resumeFile')
 const mappingService = createResumeMappingService()
 const ownedProfile = await getOwnedProfile(await requireAuthenticatedUser())
-const saveProfileButton = required<HTMLButtonElement>('#saveProfileButton')
-saveProfileButton.textContent = ownedProfile.is_published ? 'Save Changes' : 'Publish Profile'
 let draft: ProfileDocumentDraft | null = null
 let cvPath: string | null = null
 
-const field = <T extends HTMLInputElement | HTMLTextAreaElement>(id: string): T => required<T>(`#${id}`)
-const lines = (value: string): string[] => value.split('\n').map((line) => line.trim()).filter(Boolean)
-const parts = (value: string): string[] => value.split('|').map((part) => part.trim())
-
 function showStep(step: HTMLElement): void {
   ;[inputStep, buildingStep, reviewStep].forEach((item) => { item.hidden = item !== step })
+  const workspace = reviewStep.closest('.create-workspace')
+  if (workspace) workspace.classList.toggle('profile-editor', step === reviewStep)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function renderIssues(result: ProfileValidationResult): void {
   const host = required<HTMLElement>('#reviewIssues')
   host.replaceChildren()
-  const groups = [['Needs attention', result.blockingErrors], ['Optional information missing', result.missingInformation], ['Review suggested', result.warnings]] as const
-  groups.forEach(([title, issues]) => {
-    if (!issues.length) return
-    const section = document.createElement('section'); section.className = 'issue-group'
-    const heading = document.createElement('strong'); heading.textContent = title
+  if (result.blockingErrors.length) {
+    const section = document.createElement('section'); section.className = 'issue-group issue-blocking'
+    const heading = document.createElement('strong'); heading.textContent = 'Needs attention'
     const list = document.createElement('ul')
-    issues.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
+    result.blockingErrors.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
     section.append(heading, list); host.append(section)
-  })
-}
-
-function populateReview(value: ProfileDocumentDraft): void {
-  field<HTMLInputElement>('fullName').value = value.identity.fullName ?? ''
-  field<HTMLInputElement>('preferredName').value = value.identity.preferredName ?? ''
-  field<HTMLInputElement>('location').value = value.identity.location ?? ''
-  field<HTMLInputElement>('headline').value = value.identity.headline ?? ''
-  field<HTMLInputElement>('email').value = value.identity.email ?? ''
-  field<HTMLTextAreaElement>('summary').value = value.identity.summary ?? ''
-  field<HTMLInputElement>('linkedinUrl').value = value.identity.linkedinUrl ?? ''
-  field<HTMLInputElement>('githubUrl').value = value.identity.githubUrl ?? ''
-  field<HTMLInputElement>('websiteUrl').value = value.identity.websiteUrl ?? ''
-  field<HTMLTextAreaElement>('skills').value = value.skills.flatMap(({ items }) => items).join('\n')
-  field<HTMLTextAreaElement>('experience').value = value.experience.map((item) => [item.role, item.company, item.startDate, item.endDate, item.summary].map((part) => part ?? '').join(' | ')).join('\n')
-  field<HTMLTextAreaElement>('education').value = value.education.map((item) => [item.degree, item.institution, item.startDate, item.endDate].map((part) => part ?? '').join(' | ')).join('\n')
-  field<HTMLTextAreaElement>('projects').value = value.projects.map((item) => [item.title, item.category, item.shortDescription, item.links?.[0]?.url].map((part) => part ?? '').join(' | ')).join('\n')
-  field<HTMLTextAreaElement>('servicesIntro').value = value.presentation.servicesIntro
-  field<HTMLInputElement>('contactHeading').value = value.presentation.contactHeading
-  renderIssues(validateProfileDraft(value))
-}
-
-function readReview(): ProfileDocumentDraft {
-  if (!draft) throw new Error('No profile draft is available.')
-  const experience: Experience[] = lines(field<HTMLTextAreaElement>('experience').value).map((line, index) => {
-    const [role, company, startDate, endDate, summary] = parts(line)
-    return { id: `temporary-experience-${index + 1}`, role, company, startDate: startDate || undefined, endDate: endDate || undefined, summary: summary || undefined, featured: index === 0 }
-  })
-  const education: Education[] = lines(field<HTMLTextAreaElement>('education').value).map((line, index) => {
-    const [degree, institution, startDate, endDate] = parts(line)
-    return { id: `temporary-education-${index + 1}`, degree, institution: institution || undefined, startDate: startDate || undefined, endDate: endDate || undefined, featured: index === 0 }
-  })
-  const projects: Project[] = lines(field<HTMLTextAreaElement>('projects').value).map((line, index) => {
-    const [title, category, shortDescription, url] = parts(line)
-    return { id: `temporary-project-${index + 1}`, title, category: category || 'Project', shortDescription: shortDescription || '', links: url ? [{ label: 'Project', url }] : undefined }
-  })
-  const skillItems = lines(field<HTMLTextAreaElement>('skills').value)
-  return {
-    ...draft,
-    identity: {
-      fullName: field<HTMLInputElement>('fullName').value.trim(), preferredName: field<HTMLInputElement>('preferredName').value.trim(),
-      location: field<HTMLInputElement>('location').value.trim(), headline: field<HTMLInputElement>('headline').value.trim(),
-      email: field<HTMLInputElement>('email').value.trim(), summary: field<HTMLTextAreaElement>('summary').value.trim(),
-      linkedinUrl: field<HTMLInputElement>('linkedinUrl').value.trim(), githubUrl: field<HTMLInputElement>('githubUrl').value.trim(), websiteUrl: field<HTMLInputElement>('websiteUrl').value.trim(),
-    },
-    skills: skillItems.length ? [{ id: 'resume-skills', category: 'Skills', items: skillItems }] : [], experience, education, projects,
-    featured: { experienceId: experience[0]?.id, educationId: education[0]?.id, projectId: projects[0]?.id },
-    presentation: { servicesIntro: field<HTMLTextAreaElement>('servicesIntro').value.trim(), contactHeading: field<HTMLInputElement>('contactHeading').value.trim() },
   }
+  if (result.missingInformation.length) {
+    const section = document.createElement('section'); section.className = 'issue-group issue-compact'
+    const count = result.missingInformation.length
+    const heading = document.createElement('p'); heading.className = 'issue-summary'
+    heading.textContent = `${count} optional detail${count === 1 ? '' : 's'} ${count === 1 ? 'is' : 'are'} missing. Adding them can make your profile more complete.`
+    const details = document.createElement('details')
+    const summary = document.createElement('summary'); summary.textContent = 'Review missing details'
+    const list = document.createElement('ul')
+    result.missingInformation.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
+    details.append(summary, list)
+    section.append(heading, details); host.append(section)
+  }
+  if (result.warnings.length) {
+    const section = document.createElement('section'); section.className = 'issue-group issue-note'
+    const heading = document.createElement('p'); heading.className = 'issue-summary'
+    heading.textContent = 'Some CV fields may need review.'
+    const details = document.createElement('details')
+    const summary = document.createElement('summary'); summary.textContent = 'Show parser notes'
+    const list = document.createElement('ul')
+    result.warnings.forEach(({ message }) => { const item = document.createElement('li'); item.textContent = message; list.append(item) })
+    details.append(summary, list)
+    section.append(heading, details); host.append(section)
+  }
+}
+
+function blankDraft():ProfileDocumentDraft{return{identity:{},skills:[],services:[],experience:[],education:[],projects:[],presentation:{servicesIntro:NEUTRAL_PROFILE_DEFAULTS.servicesIntro,contactHeading:NEUTRAL_PROFILE_DEFAULTS.contactHeading},featured:{},missingFields:[],warnings:[],mapping:{mapper:'deterministic',inferredFields:[],lowConfidenceFields:[]}}}
+function populateReview(value:ProfileDocumentDraft):void{
+  draft=value
+  renderIssues(validateProfileDraft(value))
+  mountStructuredProfileEditor(required<HTMLElement>('#structuredProfileEditor'),value,async next=>{
+    draft=next
+    const validation=validateProfileDraft(next);renderIssues(validation)
+    await saveOnboardingState(ownedProfile,{draft:next,cv_path:cvPath})
+    if(validation.valid){
+      await saveProfileDocument(ownedProfile,draftToProfileDocument(next,{profileId:ownedProfile.id,slug:ownedProfile.slug}))
+      if(ownedProfile.ai_enabled)await requestAiLifecycle('refresh')
+    }
+  })
 }
 
 required<HTMLButtonElement>('#buildButton').addEventListener('click', async () => {
@@ -123,26 +107,13 @@ required<HTMLButtonElement>('#buildButton').addEventListener('click', async () =
   }
 })
 
-required<HTMLButtonElement>('#startOverButton').addEventListener('click', () => { draft = null; fileInput.value = ''; showStep(inputStep) })
-
-required<HTMLFormElement>('#reviewForm').addEventListener('submit', async (event) => {
-  event.preventDefault()
-  try {
-    draft = readReview()
-    const result = validateProfileDraft(draft); renderIssues(result)
-    if (!result.valid) return
-    await saveProfileDocument(ownedProfile, draftToProfileDocument(draft, { profileId: ownedProfile.id, slug: ownedProfile.slug }))
-    await saveOnboardingState(ownedProfile, { draft, cv_path: cvPath })
-    if (!ownedProfile.is_published) await requestPublication('publish', ownedProfile.slug)
-    if (ownedProfile.ai_enabled) {
-      try { await requestAiLifecycle('refresh') }
-      catch (error) { inputError.textContent = error instanceof Error ? error.message : 'Profile saved, but AI refresh failed.'; inputError.hidden = false; return }
-    }
-    window.location.assign('/dashboard')
-  } catch (error) {
-    inputError.textContent = error instanceof Error ? error.message : 'The profile could not be previewed.'; inputError.hidden = false
-  }
+required<HTMLButtonElement>('#manualProfileButton').addEventListener('click',async()=>{
+  draft=blankDraft();cvPath=null
+  await saveOnboardingState(ownedProfile,{draft,cv_path:null})
+  populateReview(draft);showStep(reviewStep)
 })
+
+required<HTMLButtonElement>('#startOverButton').addEventListener('click', () => { draft = null; fileInput.value = ''; showStep(inputStep) })
 
 const persisted = await loadOnboardingState(ownedProfile)
 if (persisted) {

@@ -11,11 +11,13 @@ export function validateProfileDraft(draft: ProfileDocumentDraft): ProfileValida
   required.forEach(([field, label]) => {
     if (!draft.identity[field]?.trim()) blockingErrors.push({ severity: 'blocking', field: `identity.${field}`, message: `${label} is required to render the profile.` })
   })
+  if ((draft.identity.summary?.length ?? 0) > 280) blockingErrors.push({ severity: 'blocking', field: 'identity.summary', message: 'Hero summary must be 280 characters or fewer.' })
   ;(['githubUrl', 'linkedinUrl', 'websiteUrl'] as const).forEach((field) => {
     const value = draft.identity[field]
     if (value && !safeHttpUrl(value)) blockingErrors.push({ severity: 'blocking', field: `identity.${field}`, message: `${field} must be an HTTP(S) URL.` })
   })
   draft.projects.forEach((project, projectIndex) => {
+    if (project.image && !safeHttpUrl(project.image)) blockingErrors.push({ severity: 'blocking', field: `projects.${projectIndex}.image`, message: `Project image for ${project.title || `project ${projectIndex + 1}`} must be an HTTP(S) URL.` })
     project.links?.forEach((link, linkIndex) => {
       if (!safeHttpUrl(link.url)) blockingErrors.push({
         severity: 'blocking',

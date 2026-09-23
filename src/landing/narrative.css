@@ -3,7 +3,8 @@
 .hero-mark span:last-child{margin-left:12%;color:#755de5;font-style:italic}
 .showcase-shell,.supporting-shell{min-height:180px}
 .use-cases-section{background:#f7f5ff}
-.showcase-section,.use-cases-section,#how-it-works,#capabilities{scroll-margin-top:112px}
+.showcase-section,.use-cases-section,#how-it-works,#capabilities,#pricing{scroll-margin-top:112px}
+.plan-feedback{min-height:20px;margin:10px 0 0;color:#a23e63;font-size:12px;line-height:1.45}.pricing-grid .button[aria-disabled="true"]{pointer-events:none;opacity:.7}
 .final-cta .hero-actions{justify-content:center;margin-top:28px}
 .people-gallery{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;align-items:end}
 .identity-card{--lift:0px;position:relative;overflow:hidden;min-width:0;padding:0;border:0;border-radius:26px;background:#f2efff;box-shadow:0 14px 38px rgba(36,43,89,.08);transform:translateY(var(--lift));transition:transform .3s ease,box-shadow .3s ease;outline:none}

@@ -2,6 +2,7 @@ import { currentUser } from '../auth/session.ts'
 import { isSupabaseConfigured } from '../auth/supabase.ts'
 import { AuthModal } from '../auth/AuthModal.ts'
 import { trackFunnelEvent } from '../analytics/client.ts'
+import { mountPeopleShowcase } from './peopleShowcase.ts'
 import '../auth/auth.css'
 
 const authModal = new AuthModal(() => window.location.assign('/dashboard/create'))
@@ -33,3 +34,6 @@ const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('is-visible') })
 }, { threshold: 0.12 })
 document.querySelectorAll('.reveal').forEach((element) => observer.observe(element))
+
+const peopleShowcase = document.querySelector<HTMLElement>('#peopleShowcase')
+if (peopleShowcase) mountPeopleShowcase(peopleShowcase)

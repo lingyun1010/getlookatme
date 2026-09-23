@@ -20,7 +20,8 @@ if (pricingPlans) {
       <p class="plan-price">${formatPlanPrice(plan)}${suffix}</p>
       <p class="plan-description">${plan.description}</p>
       <ul>${plan.highlights.map((highlight) => `<li>${highlight}</li>`).join('')}</ul>
-      <a class="button auth-cta" data-auth-mode="sign-up" href="/signup">Create my profile</a>
+      ${planId === 'pro' ? '<a class="button auth-cta" data-auth-mode="sign-up" href="/signup">Upgrade to Pro →</a>' : 
+        '<a class="button auth-cta" data-auth-mode="sign-up" href="/signup">Start free →</a>'}
     `
     return article
   }))

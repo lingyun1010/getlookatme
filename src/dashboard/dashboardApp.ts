@@ -66,148 +66,332 @@ async function initialiseOverview(){
 }
 await initialiseOverview()
 
-function createPagesView(){
-  const main=document.createElement('main')
-  main.className='dashboard-content pages-workspace'
-  const heading=document.createElement('header')
-  heading.className='dashboard-heading'
-  const headingCopy=document.createElement('div')
-  const title=document.createElement('h1')
-  title.textContent='Pages'
-  const copy=document.createElement('p')
-  copy.textContent='Manage where and how your profile appears online.'
-  headingCopy.append(title,copy)
+function createPagesView() {
+  const main = document.createElement('main')
+  main.className = 'dashboard-content pages-workspace'
+
+  // ---------------------------------------------------------------------------
+  // Heading
+  // ---------------------------------------------------------------------------
+
+  const heading = document.createElement('header')
+  heading.className = 'dashboard-heading pages-heading'
+
+  const headingCopy = document.createElement('div')
+
+  const title = document.createElement('h1')
+  title.textContent = 'Pages'
+
+  const copy = document.createElement('p')
+  copy.textContent = 'Manage your public profile and sharing settings.'
+
+  headingCopy.append(title, copy)
   heading.append(headingCopy)
 
-  const card=document.createElement('article')
-  card.className='card pages-manage-card'
-  const label=document.createElement('p')
-  label.className='label'
-  label.textContent='Public profile'
-  const titleRow=document.createElement('div')
-  titleRow.className='title-row'
-  const pageTitle=document.createElement('h2')
-  pageTitle.id='pageTitle'
-  pageTitle.className='panel-title'
-  pageTitle.textContent=name
-  const status=document.createElement('span')
-  status.className='status-badge'
-  status.id='profileStatus'
-  titleRow.append(pageTitle,status)
-  const pageCopy=document.createElement('p')
-  pageCopy.id='pageCopy'
+  // ---------------------------------------------------------------------------
+  // Main card
+  // ---------------------------------------------------------------------------
 
-  const urlBlock=document.createElement('div')
-  urlBlock.className='pages-url-block'
-  const urlLabel=document.createElement('p')
-  urlLabel.className='choice-label'
-  urlLabel.textContent='Public URL'
-  const url=document.createElement('div')
-  url.id='profileUrl'
-  url.className='pages-url-row'
-  const editUrl=document.createElement('button')
-  editUrl.type='button'
-  editUrl.className='btn btn-tertiary'
-  editUrl.textContent='Edit URL'
-  const editActions=document.createElement('div')
-  editActions.className='pages-url-actions'
-  const saveUrl=document.createElement('button');saveUrl.type='button';saveUrl.className='btn btn-primary';saveUrl.textContent='Save'
-  const cancelEdit=document.createElement('button');cancelEdit.type='button';cancelEdit.className='btn btn-tertiary';cancelEdit.textContent='Cancel'
-  editActions.append(saveUrl,cancelEdit);editActions.hidden=true
-  urlBlock.append(urlLabel,url,editUrl,editActions)
+  const card = document.createElement('article')
+  card.className = 'card pages-manage-card'
 
-  const actions=document.createElement('div')
-  actions.className='action-row'
-  actions.id='pageActions'
-  card.append(label,titleRow,pageCopy,urlBlock,actions)
+  const cardHeader = document.createElement('div')
+  cardHeader.className = 'pages-card-header'
 
-  main.append(heading,card)
+  const cardHeaderCopy = document.createElement('div')
 
-  const slugInput=document.createElement('input')
-  slugInput.value=currentSlug
-  slugInput.className='slug-input'
-  slugInput.ariaLabel='Public profile URL slug'
-  slugInput.hidden=true
-  const feedback=document.createElement('small')
-  feedback.className='slug-feedback'
-  const hostSpan=document.createElement('span')
-  hostSpan.className='pages-url-host'
-  hostSpan.textContent=`${location.host}/`
-  const slugText=document.createElement('strong')
-  slugText.textContent=currentSlug
-  url.append(hostSpan,slugText,slugInput,feedback)
+  const label = document.createElement('p')
+  label.className = 'label'
+  label.textContent = 'Public profile'
 
-  editUrl.onclick=()=>{
-    slugInput.hidden=false
-    slugText.hidden=true
-    editUrl.hidden=true
-    editActions.hidden=false
-    feedback.textContent=''
+  const pageTitle = document.createElement('h2')
+  pageTitle.id = 'pageTitle'
+  pageTitle.className = 'panel-title'
+  pageTitle.textContent = published ? 'Your profile is live' : 'Your profile is private'
+
+  cardHeaderCopy.append(label, pageTitle)
+
+  const status = document.createElement('span')
+  status.className = 'status-badge'
+  status.id = 'profileStatus'
+
+  cardHeader.append(cardHeaderCopy, status)
+
+  const pageCopy = document.createElement('p')
+  pageCopy.id = 'pageCopy'
+  pageCopy.className = 'pages-description'
+
+  // ---------------------------------------------------------------------------
+  // URL section
+  // ---------------------------------------------------------------------------
+
+  const urlBlock = document.createElement('div')
+  urlBlock.className = 'pages-url-block'
+
+  const urlLabel = document.createElement('p')
+  urlLabel.className = 'choice-label'
+  urlLabel.textContent = 'Public URL'
+
+  const urlRow = document.createElement('div')
+  urlRow.id = 'profileUrl'
+  urlRow.className = 'pages-url-row'
+
+  // Display production domain in the UI while keeping actual actions
+  // environment-safe below.
+  const displayHost =
+    location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+      ? 'getlookatme.com/'
+      : `${location.host}/`
+
+  const hostSpan = document.createElement('span')
+  hostSpan.className = 'pages-url-host'
+  hostSpan.textContent = displayHost
+
+  const slugText = document.createElement('strong')
+  slugText.className = 'pages-url-slug'
+  slugText.textContent = currentSlug
+
+  const slugInput = document.createElement('input')
+  slugInput.value = currentSlug
+  slugInput.className = 'slug-input'
+  slugInput.ariaLabel = 'Public profile URL slug'
+  slugInput.hidden = true
+
+  const editUrl = document.createElement('button')
+  editUrl.type = 'button'
+  editUrl.className = 'pages-url-edit'
+  editUrl.textContent = 'Edit'
+
+  const editActions = document.createElement('div')
+  editActions.className = 'pages-url-actions'
+  editActions.hidden = true
+
+  const cancelEdit = document.createElement('button')
+  cancelEdit.type = 'button'
+  cancelEdit.className = 'btn btn-tertiary btn-compact'
+  cancelEdit.textContent = 'Cancel'
+
+  const saveUrl = document.createElement('button')
+  saveUrl.type = 'button'
+  saveUrl.className = 'btn btn-primary btn-compact'
+  saveUrl.textContent = 'Save'
+
+  editActions.append(cancelEdit, saveUrl)
+
+  urlRow.append(hostSpan, slugText, slugInput, editUrl, editActions)
+
+  const feedback = document.createElement('small')
+  feedback.className = 'slug-feedback'
+
+  urlBlock.append(urlLabel, urlRow, feedback)
+
+  // ---------------------------------------------------------------------------
+  // Page actions
+  // ---------------------------------------------------------------------------
+
+  const actions = document.createElement('div')
+  actions.className = 'pages-card-actions'
+  actions.id = 'pageActions'
+
+  card.append(cardHeader, pageCopy, urlBlock, actions)
+  main.append(heading, card)
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  const button = (
+    labelText: string,
+    run: () => Promise<void>,
+    kind: 'secondary' | 'primary' | 'tertiary' = 'secondary',
+  ) => {
+    const item = document.createElement('button')
+    item.type = 'button'
+    item.className = `btn btn-${kind}`
+    item.textContent = labelText
+    item.onclick = () => void run()
+    return item
+  }
+
+  function publicUrl() {
+    return `${location.origin}/${currentSlug}`
+  }
+
+  function enterUrlEditMode() {
+    slugInput.hidden = false
+    slugText.hidden = true
+    editUrl.hidden = true
+    editActions.hidden = false
+    feedback.textContent = ''
+
     slugInput.focus()
     slugInput.select()
   }
 
-  const button=(labelText:string,run:()=>Promise<void>,kind:'secondary'|'primary'|'tertiary'='secondary')=>{const item=document.createElement('button');item.type='button';item.className=`btn btn-${kind}`;item.textContent=labelText;item.onclick=()=>void run();return item}
+  function exitUrlEditMode() {
+    slugInput.hidden = true
+    slugText.hidden = false
+    editUrl.hidden = false
+    editActions.hidden = true
+  }
 
-  async function run(action:'availability'|'save-slug'|'publish'|'unpublish'){
-    feedback.textContent='Checking…'
-    try{
-      const result=await requestPublication(action,slugInput.value)
-      if(result.slug){slugInput.value=result.slug;slugText.textContent=result.slug;feedback.textContent=`✓ /${result.slug} is available`;return}
-      const next=result.profile as {slug:string;isPublished:boolean}|undefined
-      if(next){
-        currentSlug=next.slug
-        published=next.isPublished
-        slugInput.value=currentSlug
-        slugText.textContent=currentSlug
-        feedback.textContent=action==='unpublish'?'Profile unpublished.':action==='save-slug'?'URL saved.':'Saved.'
-        shell.setPublication({published,slug:currentSlug})
-        slugInput.hidden=true
-        slugText.hidden=false
-        editUrl.hidden=false
-        editActions.hidden=true
-        renderPublication()
+  // ---------------------------------------------------------------------------
+  // Publication / slug API
+  // ---------------------------------------------------------------------------
+
+  async function run(
+    action: 'availability' | 'save-slug' | 'publish' | 'unpublish',
+  ) {
+    if (action === 'availability') {
+      feedback.textContent = 'Checking…'
+    }
+
+    try {
+      const result = await requestPublication(action, slugInput.value)
+
+      // Availability response
+      if (result.slug && action === 'availability') {
+        slugInput.value = result.slug
+        feedback.textContent = `✓ ${displayHost}${result.slug} is available`
+        feedback.classList.remove('error')
+        feedback.classList.add('success')
+        return
       }
-    }catch(error){
-      feedback.textContent=error instanceof Error?error.message:'Could not update publication.'
+
+      const next = result.profile as
+        | {
+            slug: string
+            isPublished: boolean
+          }
+        | undefined
+
+      if (!next) return
+
+      currentSlug = next.slug
+      published = next.isPublished
+
+      slugInput.value = currentSlug
+      slugText.textContent = currentSlug
+
+      feedback.classList.remove('error', 'success')
+
+      if (action === 'save-slug') {
+        feedback.textContent = 'URL saved.'
+        feedback.classList.add('success')
+      } else if (action === 'unpublish') {
+        feedback.textContent = ''
+      } else {
+        feedback.textContent = ''
+      }
+
+      shell.setPublication({
+        published,
+        slug: currentSlug,
+      })
+
+      exitUrlEditMode()
+      renderPublication()
+    } catch (error) {
+      feedback.textContent =
+        error instanceof Error
+          ? error.message
+          : 'Could not update publication.'
+
+      feedback.classList.remove('success')
+      feedback.classList.add('error')
     }
   }
 
-  let availabilityTimer=0
-  slugInput.addEventListener('input',()=>{
+  // ---------------------------------------------------------------------------
+  // URL editing
+  // ---------------------------------------------------------------------------
+
+  editUrl.onclick = enterUrlEditMode
+
+  let availabilityTimer = 0
+
+  slugInput.addEventListener('input', () => {
     window.clearTimeout(availabilityTimer)
-    availabilityTimer=window.setTimeout(()=>void run('availability'),350)
+
+    feedback.textContent = ''
+
+    availabilityTimer = window.setTimeout(() => {
+      if (!slugInput.value.trim()) return
+      void run('availability')
+    }, 350)
   })
-  saveUrl.onclick=()=>void run('save-slug')
-  cancelEdit.onclick=()=>{
+
+  saveUrl.onclick = () => {
     window.clearTimeout(availabilityTimer)
-    slugInput.value=currentSlug
-    slugInput.hidden=true
-    slugText.hidden=false
-    editUrl.hidden=false
-    editActions.hidden=true
-    feedback.textContent=''
+    void run('save-slug')
   }
 
-  async function copyLink(){
-    await navigator.clipboard.writeText(`${location.origin}/${currentSlug}`)
-    feedback.textContent='Public link copied.'
+  cancelEdit.onclick = () => {
+    window.clearTimeout(availabilityTimer)
+
+    slugInput.value = currentSlug
+    feedback.textContent = ''
+    feedback.classList.remove('success', 'error')
+
+    exitUrlEditMode()
   }
 
-  function renderPublication(){
-    status.textContent=published?'Published':'Draft'
-    status.classList.toggle('published',published)
-    pageTitle.textContent=name
-    pageCopy.textContent=published
-      ?'Your profile is live. Recruiters can open and explore it.'
-      :'Your profile is currently private while it is in draft.'
+  // ---------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(publicUrl())
+
+    feedback.textContent = 'Public link copied.'
+    feedback.classList.remove('error')
+    feedback.classList.add('success')
+  }
+
+  async function viewPage() {
+    window.open(publicUrl(), '_blank', 'noopener,noreferrer')
+  }
+
+  async function publishPage() {
+    await run('publish')
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  function renderPublication() {
+    status.textContent = published ? 'Published' : 'Draft'
+    status.classList.toggle('published', published)
+    status.classList.toggle('draft', !published)
+
+    pageTitle.textContent = published
+      ? 'Your profile is live'
+      : 'Your profile is private'
+
+    pageCopy.textContent = published
+      ? 'Anyone with the link can view and explore your professional profile.'
+      : 'Your profile is currently private. Publish it when you’re ready to share.'
+
     actions.replaceChildren()
-    if(published)actions.append(button('Copy link',copyLink,'tertiary'))
+
+    if (published) {
+      actions.append(
+        button('Copy link', copyLink, 'secondary'),
+        button('View page ↗', viewPage, 'tertiary'),
+      )
+    } else {
+      actions.append(button('Publish profile', publishPage, 'primary'))
+    }
   }
-  refreshPagesPublication=renderPublication
+
+  refreshPagesPublication = renderPublication
+
   renderPublication()
+
   return main
 }
+
 const pagesView=createPagesView()
 
 function formatPeriodEnd(value:string|null|undefined){

@@ -6,11 +6,11 @@ export type DashboardSection='dashboard'|'profile'|'avatar'|'pages'|'pricing'|'s
 
 const SECTION_TITLE:Record<DashboardSection,string>={
   dashboard:'Dashboard',
-  profile:'Profile',
-  avatar:'Avatar',
-  pages:'Pages',
-  pricing:'Plan',
-  settings:'Settings',
+  profile:'Dashboard',
+  avatar:'Dashboard',
+  pages:'Dashboard',
+  pricing:'Dashboard',
+  settings:'Dashboard',
 }
 
 const link=(label:string,icon:string,href:string,section:DashboardSection)=>{

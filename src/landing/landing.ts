@@ -51,6 +51,27 @@ const answerCard = document.querySelector<HTMLElement>('.answer-card')
 const answerCopy = answerCard?.querySelector<HTMLElement>('.answer-copy')
 const answerHelper = answerCard?.querySelector<HTMLElement>('.answer-helper')
 const answerEvidence = answerCard?.querySelector<HTMLElement>('.answer-evidence')
+const capabilityList = document.querySelector<HTMLElement>('.hero .capability-list')
+const avatarExperience = document.querySelector<HTMLElement>('.hero .avatar-experience')
+
+function alignHeroAnswerCard(): void {
+  if (!answerCard || !capabilityList || !avatarExperience) return
+  if (!window.matchMedia('(min-width: 981px)').matches) {
+    answerCard.style.removeProperty('bottom')
+    return
+  }
+  const capabilityRect = capabilityList.getBoundingClientRect()
+  const demoRect = avatarExperience.getBoundingClientRect()
+  answerCard.style.bottom = `${Math.max(0, demoRect.bottom - capabilityRect.bottom)}px`
+}
+
+const heroAlignmentObserver = new ResizeObserver(() => alignHeroAnswerCard())
+if (capabilityList && avatarExperience) {
+  heroAlignmentObserver.observe(capabilityList)
+  heroAlignmentObserver.observe(avatarExperience)
+  window.addEventListener('resize', alignHeroAnswerCard)
+  void document.fonts.ready.then(alignHeroAnswerCard)
+}
 
 const heroDemoQuestions = [
   {

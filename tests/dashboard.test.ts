@@ -29,7 +29,7 @@ test('profile actions distinguish published profile, working preview, and save p
   assert.match(app, /requestPublication/)
   assert.match(app, /saveUrl\.onclick/)
   assert.match(app, /Publish profile|button\('Publish'/)
-  assert.match(app, /id='profileUrl'/)
+  assert.match(app, /(?:id='profileUrl'|\.id\s*=\s*'profileUrl')/)
   assert.match(app, /\/dashboard\/pages/)
 })
 

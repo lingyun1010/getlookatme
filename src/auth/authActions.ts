@@ -1,5 +1,7 @@
 import { requireSupabase } from './supabase.ts'
 
+export type SocialAuthProvider = 'google' | 'github' | 'linkedin_oidc'
+
 export function safeAuthRedirect(value: string | null | undefined, fallback = '/dashboard', origin = globalThis.location?.origin ?? 'http://localhost'): string {
   if (!value?.startsWith('/') || value.startsWith('//') || value.includes('\\')) return fallback
   try { const url = new URL(value, origin); return url.origin === origin ? `${url.pathname}${url.search}${url.hash}` : fallback } catch { return fallback }
@@ -15,6 +17,7 @@ export function friendlyAuthError(error: unknown): string {
   return 'Something went wrong. Please try again.'
 }
 export const signIn = (email: string, password: string) => requireSupabase().auth.signInWithPassword({ email, password })
+export const signInWithOAuth = (provider: SocialAuthProvider, redirectTo: string) => requireSupabase().auth.signInWithOAuth({ provider, options: { redirectTo } })
 export const signUp = (email: string, password: string) => requireSupabase().auth.signUp({ email, password })
 export const sendPasswordReset = (email: string, redirectTo: string) => requireSupabase().auth.resetPasswordForEmail(email, { redirectTo })
 export const updatePassword = (password: string) => requireSupabase().auth.updateUser({ password })

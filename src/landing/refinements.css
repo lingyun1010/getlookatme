@@ -1,0 +1,133 @@
+.hero h1 {
+  max-width: 620px;
+  padding-bottom: .08em;
+  font-size: clamp(48px, 4.4vw, 56px);
+  line-height: 1.06;
+}
+
+.hero h1 span {
+  display: inline-block;
+  padding-bottom: .06em;
+}
+
+.section-heading h2,
+.final-cta h2,
+.style-content h2 {
+  font-size: clamp(30px, 3.2vw, 38px);
+  line-height: 1.1;
+}
+
+.section-heading > p:last-child,
+.final-cta p,
+.style-intro {
+  font-size: 16px;
+}
+
+.profile-info h3 { font-size: 27px; }
+
+.avatar-blob {
+  inset-inline: 2%;
+  overflow: visible;
+}
+
+.hero-avatar {
+  top: -4%;
+  right: auto;
+  bottom: 78px;
+  left: 50%;
+  width: 88%;
+  transform: translateX(-50%);
+}
+
+.answer-card {
+  right: auto;
+  left: 50%;
+  width: min(620px, calc(100% - 72px));
+  transform: translateX(-50%);
+}
+
+@media (min-width: 981px) {
+  .hero {
+    grid-template-columns: minmax(0, 36fr) minmax(0, 64fr);
+    gap: 36px;
+    align-items: center;
+    min-height: max(680px, calc(100svh - 102px));
+  }
+
+  .hero-copy {
+    max-width: 430px;
+  }
+
+  .capability-list {
+    margin-top: 30px;
+  }
+
+  .avatar-experience {
+    min-height: 570px;
+  }
+
+  .avatar-blob {
+    inset: 0 14px 66px;
+    overflow: visible;
+  }
+
+  .hero-avatar {
+    top: -4%;
+    right: auto;
+    bottom: 72px;
+    left: 50%;
+    width: 84%;
+    transform: translateX(-50%);
+  }
+
+  .q-one { left: -18px; }
+  .q-two { left: -42px; }
+  .q-three { right: -18px; }
+  .q-four { right: -34px; }
+
+  .answer-card {
+    position: absolute;
+    top: auto;
+    right: auto;
+    bottom: 28px;
+    left: 50%;
+    width: min(620px, calc(100% - 96px));
+    max-height: 220px;
+    overflow-y: auto;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 650px) {
+  .hero h1 {
+    max-width: 540px;
+    font-size: clamp(42px, 12vw, 48px);
+    line-height: 1.08;
+  }
+
+  .section-heading h2,
+  .final-cta h2,
+  .style-content h2 {
+    font-size: clamp(30px, 9vw, 36px);
+  }
+
+  .hero-avatar {
+    top: 0;
+    right: auto;
+    bottom: 92px;
+    left: 50%;
+    width: 94%;
+    transform: translateX(-50%);
+  }
+
+  .avatar-blob {
+    inset-inline: -2%;
+  }
+
+  .answer-card {
+    right: auto;
+    left: 50%;
+    width: calc(100% - 16px);
+    transform: translateX(-50%);
+  }
+}

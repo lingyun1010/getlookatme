@@ -33,7 +33,7 @@ export function createAvatarPage(profile: OwnedProfile, initialState: Onboarding
           <button type="button" class="choice-pill is-selected" data-value="felt@1">Felt</button>
           <button type="button" class="choice-pill" data-value="cartoon@1">Cartoon</button>
           <button type="button" class="choice-pill" data-value="anime@1">Anime</button>
-          <button type="button" class="choice-pill" data-value="cinematic-3d@1">3D</button>
+          <button type="button" class="choice-pill" data-value="cinematic-3d@1">Realistic</button>
         </div>
         <select id="avatarStyle" hidden><option value="felt@1" selected>Felt</option><option value="cartoon@1">Cartoon</option><option value="anime@1">Anime</option><option value="cinematic-3d@1">3D</option></select>
       </div>

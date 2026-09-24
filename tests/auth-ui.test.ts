@@ -22,8 +22,12 @@ test('auth modal provides the required keyboard and focus behavior', () => {
 })
 
 test('one AuthForm owns sign in, sign up, confirmation and password recovery', () => {
-  assert.match(form, /signIn\(email,password\)/)
-  assert.match(form, /signUp\(email,password\)/)
+  assert.match(form, /signIn\(email,\s*password\)/)
+  assert.match(form, /signUp\(email,\s*password\)/)
+  assert.match(form, /signInWithOAuth\(provider,\s*redirectTo\)/)
+  assert.match(form, /google/)
+  assert.match(form, /linkedin_oidc/)
+  assert.match(form, /github/)
   assert.match(form, /sendPasswordReset/)
   assert.match(form, /updatePassword/)
   assert.match(form, /confirmation/)

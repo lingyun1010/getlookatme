@@ -58,7 +58,7 @@ export function mountDashboardShell(options:{user:User;name:string;published:boo
     return span
   }
   nav.append(
-    link('Dashboard','⌂','/dashboard','dashboard'),
+    link('Home','⌂','/dashboard','dashboard'),
     group('Create'),
     link('Profile','◎','/dashboard/profile','profile'),
     link('Avatar','◉','/dashboard/avatar','avatar'),

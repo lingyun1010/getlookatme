@@ -13,6 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="/src/landing/landing.css" />
+  <link rel="stylesheet" href="/src/landing/hero-qa.css" />
   <link rel="stylesheet" href="/src/landing/beta.css" />
 </head>
 
@@ -49,16 +50,16 @@
         <div class="avatar-blob">
           <div id="heroAvatar" class="hero-avatar" aria-label="Lingyun's interactive avatar"></div>
         </div>
-        <div class="question q-one">What AI projects has Lingyun built?</div>
-        <div class="question q-two">Show me her RAG experience</div>
-        <div class="question q-three">Why is she a fit for this role?</div>
-        <div class="question q-four">What did she do before AI?</div>
-        <article class="answer-card">
+        <button class="question q-one" type="button" aria-pressed="false">What AI projects has Lingyun built?</button>
+        <button class="question q-two" type="button" aria-pressed="false">Show me her RAG experience</button>
+        <button class="question q-three" type="button" aria-pressed="false">Why is she a fit for this role?</button>
+        <button class="question q-four" type="button" aria-pressed="false">What did she do before AI?</button>
+        <article class="answer-card" aria-live="polite" aria-busy="false">
           <div class="answer-heading"><img src="/profiles/lingyun/avatar/angle-frames/center.png"
               alt="" /><strong>Lingyun AI</strong><span>AI</span></div>
-          <p>I’ve built several AI projects including a RAG-based knowledge assistant, AI agents, and full-stack
-            applications. My work combines applied AI, product thinking and real-world deployment.</p><a
-            href="/lingyun#projects">View evidence →</a>
+          <p class="answer-copy">Ask me anything about Lingyun’s experience, projects, skills, or AI work.</p>
+          <small class="answer-helper">Choose a question above to get started.</small>
+          <div class="answer-evidence" aria-label="Answer evidence"></div>
         </article>
       </div>
     </section>

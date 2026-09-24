@@ -1,0 +1,48 @@
+.hero h1 {
+  max-width: 620px;
+  padding-bottom: .08em;
+  font-size: clamp(48px, 4.4vw, 56px);
+  line-height: 1.06;
+}
+
+.hero h1 span {
+  display: inline-block;
+  padding-bottom: .06em;
+}
+
+.section-heading h2,
+.final-cta h2,
+.style-content h2 {
+  font-size: clamp(30px, 3.2vw, 38px);
+  line-height: 1.1;
+}
+
+.section-heading > p:last-child,
+.final-cta p,
+.style-intro {
+  font-size: 16px;
+}
+
+.profile-info h3 { font-size: 27px; }
+
+.hero-avatar {
+  inset: -5% -8% -7%;
+}
+
+@media (max-width: 650px) {
+  .hero h1 {
+    max-width: 540px;
+    font-size: clamp(42px, 12vw, 48px);
+    line-height: 1.08;
+  }
+
+  .section-heading h2,
+  .final-cta h2,
+  .style-content h2 {
+    font-size: clamp(30px, 9vw, 36px);
+  }
+
+  .hero-avatar {
+    inset: -4% -7% -6%;
+  }
+}

@@ -7,6 +7,7 @@ import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/p
 import { trackFunnelEvent } from '../analytics/client.ts'
 import { askProfile } from '../chat/client.ts'
 import { createEvidenceCard } from '../chat/evidence.ts'
+import { mountStyleShowcase } from './styleShowcase.ts'
 import '../auth/auth.css'
 
 const pricingPlans = document.querySelector<HTMLElement>('#pricingPlans')
@@ -79,6 +80,9 @@ async function askHeroQuestion(button: HTMLButtonElement): Promise<void> {
 }
 
 heroQuestions.forEach((button) => button.addEventListener('click', () => { void askHeroQuestion(button) }))
+
+const styleShowcase = document.querySelector<HTMLElement>('#styleShowcase')
+if (styleShowcase) mountStyleShowcase(styleShowcase)
 
 const authModal = new AuthModal(() => window.location.assign('/dashboard/create'))
 document.querySelectorAll<HTMLAnchorElement>('[data-auth-mode="sign-up"]').forEach((link) => {

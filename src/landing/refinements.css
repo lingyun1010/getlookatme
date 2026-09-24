@@ -25,8 +25,25 @@
 
 .profile-info h3 { font-size: 27px; }
 
+.avatar-blob {
+  inset-inline: 2%;
+  overflow: visible;
+}
+
 .hero-avatar {
-  inset: -5% -8% -7%;
+  top: -4%;
+  right: auto;
+  bottom: 78px;
+  left: 50%;
+  width: 88%;
+  transform: translateX(-50%);
+}
+
+.answer-card {
+  right: auto;
+  left: 50%;
+  width: min(620px, calc(100% - 72px));
+  transform: translateX(-50%);
 }
 
 @media (min-width: 981px) {
@@ -45,7 +62,17 @@
   }
 
   .avatar-blob {
-    inset-inline: 44px;
+    inset: 0 14px 66px;
+    overflow: visible;
+  }
+
+  .hero-avatar {
+    top: -4%;
+    right: auto;
+    bottom: 72px;
+    left: 50%;
+    width: 84%;
+    transform: translateX(-50%);
   }
 
   .q-one { left: -18px; }
@@ -54,8 +81,10 @@
   .q-four { right: -34px; }
 
   .answer-card {
-    right: 30px;
-    left: 72px;
+    right: auto;
+    left: 50%;
+    width: min(620px, calc(100% - 96px));
+    transform: translateX(-50%);
   }
 }
 
@@ -73,6 +102,22 @@
   }
 
   .hero-avatar {
-    inset: -4% -7% -6%;
+    top: 0;
+    right: auto;
+    bottom: 92px;
+    left: 50%;
+    width: 94%;
+    transform: translateX(-50%);
+  }
+
+  .avatar-blob {
+    inset-inline: -2%;
+  }
+
+  .answer-card {
+    right: auto;
+    left: 50%;
+    width: calc(100% - 16px);
+    transform: translateX(-50%);
   }
 }

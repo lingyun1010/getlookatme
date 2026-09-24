@@ -49,30 +49,17 @@
 @media (min-width: 981px) {
   .hero {
     grid-template-columns: minmax(0, 36fr) minmax(0, 64fr);
-    grid-template-rows: minmax(0, 1fr) auto;
     gap: 36px;
-    align-items: stretch;
+    align-items: center;
     min-height: max(680px, calc(100svh - 102px));
-  }
-
-  .hero-copy,
-  .avatar-experience {
-    display: grid;
-    grid-row: 1 / 3;
-    grid-template-rows: subgrid;
   }
 
   .hero-copy {
     max-width: 430px;
   }
 
-  .hero-copy-main {
-    align-self: center;
-  }
-
   .capability-list {
-    grid-row: 2;
-    align-self: end;
+    margin-top: 30px;
   }
 
   .avatar-experience {
@@ -99,13 +86,15 @@
   .q-four { right: -34px; }
 
   .answer-card {
-    position: relative;
-    inset: auto;
-    grid-row: 2;
-    align-self: end;
-    justify-self: center;
+    position: absolute;
+    top: auto;
+    right: auto;
+    bottom: 28px;
+    left: 50%;
     width: min(620px, calc(100% - 96px));
-    transform: none;
+    max-height: 220px;
+    overflow-y: auto;
+    transform: translateX(-50%);
   }
 }
 

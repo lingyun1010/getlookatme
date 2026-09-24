@@ -5,8 +5,6 @@ import { isSupabaseConfigured } from '../auth/supabase.ts'
 import { AuthModal } from '../auth/AuthModal.ts'
 import { formatPlanPrice, PLAN_CONFIG, PUBLIC_PLAN_IDS } from '../monetisation/plans.ts'
 import { trackFunnelEvent } from '../analytics/client.ts'
-import { askProfile } from '../chat/client.ts'
-import { createEvidenceCard } from '../chat/evidence.ts'
 import { requestBilling } from '../billing/client.ts'
 import { mountStyleShowcase } from './styleShowcase.ts'
 import '../auth/auth.css'
@@ -53,39 +51,52 @@ const answerCard = document.querySelector<HTMLElement>('.answer-card')
 const answerCopy = answerCard?.querySelector<HTMLElement>('.answer-copy')
 const answerHelper = answerCard?.querySelector<HTMLElement>('.answer-helper')
 const answerEvidence = answerCard?.querySelector<HTMLElement>('.answer-evidence')
-let heroQuestionPending = false
 
-async function askHeroQuestion(button: HTMLButtonElement): Promise<void> {
-  if (heroQuestionPending || !answerCard || !answerCopy || !answerHelper || !answerEvidence) return
-  heroQuestionPending = true
+const heroDemoQuestions = [
+  {
+    question: 'What AI projects has Lingyun built?',
+    answer: 'Lingyun has built AI products including RAG assistants, ecommerce agents and interactive professional-profile experiences.',
+    ctaLabel: 'View AI projects →',
+    target: '/lingyun#projects',
+  },
+  {
+    question: 'Show me her RAG experience',
+    answer: 'She has built profile-grounded RAG systems with retrieval isolation, evidence mapping and multi-turn chat experiences.',
+    ctaLabel: 'See RAG work →',
+    target: '/lingyun#projects',
+  },
+  {
+    question: 'Why is she a fit for this role?',
+    answer: 'Her background combines full-stack software engineering, computer vision research and hands-on AI product development.',
+    ctaLabel: 'View experience →',
+    target: '/lingyun#experience',
+  },
+  {
+    question: 'What did she do before AI?',
+    answer: 'Before focusing on AI products, Lingyun worked as a full-stack software engineer and completed a PhD in Computer Vision.',
+    ctaLabel: 'View career history →',
+    target: '/lingyun#experience',
+  },
+] as const
+
+function askHeroQuestion(button: HTMLButtonElement): void {
+  if (!answerCard || !answerCopy || !answerHelper || !answerEvidence) return
+  const selected = heroDemoQuestions.find(({ question }) => question === button.textContent?.trim())
+  if (!selected) return
   heroQuestions.forEach((question) => {
-    question.disabled = true
     question.setAttribute('aria-pressed', String(question === button))
   })
-  answerCard.setAttribute('aria-busy', 'true')
-  answerCard.dataset.state = 'loading'
-  answerCopy.textContent = 'Lingyun AI is thinking…'
-  answerHelper.textContent = 'Finding a profile-grounded answer.'
-  answerEvidence.replaceChildren()
-
-  try {
-    const result = await askProfile('lingyun', button.textContent?.trim() ?? '')
-    answerCard.dataset.state = 'success'
-    answerCopy.textContent = result.answer
-    answerHelper.textContent = result.evidence.length ? 'Sources from Lingyun’s profile' : ''
-    result.evidence.slice(0, 3).forEach((evidence) => answerEvidence.append(createEvidenceCard('lingyun', evidence)))
-  } catch (error) {
-    answerCard.dataset.state = 'error'
-    answerCopy.textContent = error instanceof Error ? error.message : 'Unable to answer right now.'
-    answerHelper.textContent = 'Please choose the question again to retry.'
-  } finally {
-    heroQuestionPending = false
-    answerCard.setAttribute('aria-busy', 'false')
-    heroQuestions.forEach((question) => { question.disabled = false })
-  }
+  answerCard.dataset.state = 'success'
+  answerCopy.textContent = selected.answer
+  answerHelper.textContent = ''
+  const link = document.createElement('a')
+  link.className = 'chat-evidence-card'
+  link.href = selected.target
+  link.textContent = selected.ctaLabel
+  answerEvidence.replaceChildren(link)
 }
 
-heroQuestions.forEach((button) => button.addEventListener('click', () => { void askHeroQuestion(button) }))
+heroQuestions.forEach((button) => button.addEventListener('click', () => askHeroQuestion(button)))
 
 const styleShowcase = document.querySelector<HTMLElement>('#styleShowcase')
 if (styleShowcase) mountStyleShowcase(styleShowcase)

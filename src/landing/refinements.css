@@ -29,6 +29,36 @@
   inset: -5% -8% -7%;
 }
 
+@media (min-width: 981px) {
+  .hero {
+    grid-template-columns: minmax(0, 36fr) minmax(0, 64fr);
+    gap: 36px;
+    min-height: max(680px, calc(100svh - 102px));
+  }
+
+  .hero-copy {
+    max-width: 430px;
+  }
+
+  .avatar-experience {
+    min-height: 570px;
+  }
+
+  .avatar-blob {
+    inset-inline: 44px;
+  }
+
+  .q-one { left: -18px; }
+  .q-two { left: -42px; }
+  .q-three { right: -18px; }
+  .q-four { right: -34px; }
+
+  .answer-card {
+    right: 30px;
+    left: 72px;
+  }
+}
+
 @media (max-width: 650px) {
   .hero h1 {
     max-width: 540px;

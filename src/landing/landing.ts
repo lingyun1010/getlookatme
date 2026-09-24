@@ -44,7 +44,7 @@ if (avatarHost) {
     alt: lingyunAvatar.alt,
     deadZone: lingyunAvatar.centerDeadZone,
     objectFit: 'contain',
-    tracking: 'viewport',
+    tracking: 'avatar',
   })
 }
 

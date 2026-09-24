@@ -4,6 +4,7 @@ const styles: StyleVariant[] = [
   { id: 'felt', label: 'Felt', image: '/landing/styles/felt.png', note: 'Warm and tactile' },
   { id: 'cartoon', label: 'Cartoon', image: '/landing/styles/cartoon.png', note: 'Bright and expressive' },
   { id: 'anime', label: 'Anime', image: '/landing/styles/anime.png', note: 'Illustrated and cinematic' },
+  { id: 'realistic', label: 'Realistic', image: '/landing/styles/realistic.png', note: 'True to life' },
 ]
 
 export function mountStyleShowcase(host: HTMLElement): void {

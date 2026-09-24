@@ -1,6 +1,6 @@
 /* M3.1 Beta landing additions: five-step flow and SSOT-backed pricing. */
 .steps {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 

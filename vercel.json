@@ -24,6 +24,7 @@
   ],
   "functions": {
     "api/chat.ts": { "includeFiles": "{src/rag/**,src/knowledge/**,src/profile/**,src/auth/**,src/monetisation/**,src/analytics/**}" },
+    "api/billing.ts": { "includeFiles": "{src/billing/**,src/auth/**,src/analytics/**,src/monetisation/**}"},
     "api/avatar-worker.ts": { "maxDuration": 300 }
   }
 }

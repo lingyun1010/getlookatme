@@ -1,15 +1,28 @@
+.avatar-experience button.question,
+.profile-preview,
+.value-grid article {
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+
 .avatar-experience button.question {
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color .18s, box-shadow .18s;
 }
 
 .avatar-experience button.question:hover,
-.avatar-experience button.question[aria-pressed="true"] {
+.avatar-experience button.question[aria-pressed="true"],
+.profile-preview:hover,
+.profile-preview:focus-within,
+.value-grid article:hover,
+.value-grid article:focus-within {
   border-color: rgba(117, 104, 233, .55);
   box-shadow: 0 12px 28px rgba(71, 66, 151, .16);
 }
+
+.avatar-experience button.question:hover { transform: translateY(-2px); }
+.profile-preview.is-visible:hover,
+.value-grid article.is-visible:hover { transform: translateY(-2px) !important; }
 
 .avatar-experience button.question:focus-visible {
   outline: 3px solid rgba(77, 107, 255, .28);
@@ -58,3 +71,12 @@
 .answer-evidence .chat-evidence-card > span:last-child { display: none; }
 
 @keyframes answer-pulse { to { opacity: .55; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-experience button.question,
+  .profile-preview,
+  .value-grid article { transition: none; }
+  .avatar-experience button.question:hover,
+  .profile-preview.is-visible:hover,
+  .value-grid article.is-visible:hover { transform: none !important; }
+}

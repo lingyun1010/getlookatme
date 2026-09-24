@@ -22,6 +22,7 @@ export function mountStyleShowcase(host: HTMLElement): void {
         <p class="style-intro">Choose a visual style that still feels like you.</p>
         <p class="style-current"><strong>${styles[0].label}</strong><span>${styles[0].note}</span></p>
         <div class="style-thumbnails" role="tablist" aria-label="Choose an avatar style"></div>
+        <a class="style-cta" href="/dashboard/avatar" aria-label="Use Felt style">Use this style →</a>
       </div>
       <dl class="style-benefits"><div><dt>Identity</dt><dd>One professional</dd></div><div><dt>Looks</dt><dd>${styles.length} real styles</dd></div><div><dt>Switch</dt><dd>Instant preview</dd></div></dl>
     </div>`
@@ -31,7 +32,8 @@ export function mountStyleShowcase(host: HTMLElement): void {
   const label = host.querySelector<HTMLElement>('.style-current strong')
   const note = host.querySelector<HTMLElement>('.style-current span')
   const tabs = host.querySelector<HTMLElement>('.style-thumbnails')
-  if (!stage || !image || !label || !note || !tabs) return
+  const cta = host.querySelector<HTMLAnchorElement>('.style-cta')
+  if (!stage || !image || !label || !note || !tabs || !cta) return
 
   const select = (style: StyleVariant, button: HTMLButtonElement) => {
     tabs.querySelectorAll<HTMLButtonElement>('button').forEach((item) => {
@@ -46,6 +48,7 @@ export function mountStyleShowcase(host: HTMLElement): void {
       image.alt = `Generated ${style.label} avatar for the same professional`
       label.textContent = style.label
       note.textContent = style.note
+      cta.setAttribute('aria-label', `Use ${style.label} style`)
       stage.dataset.style = style.id
       stage.classList.remove('is-switching')
     }, 120)

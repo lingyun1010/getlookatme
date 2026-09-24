@@ -51,6 +51,28 @@ const answerCard = document.querySelector<HTMLElement>('.answer-card')
 const answerCopy = answerCard?.querySelector<HTMLElement>('.answer-copy')
 const answerHelper = answerCard?.querySelector<HTMLElement>('.answer-helper')
 const answerEvidence = answerCard?.querySelector<HTMLElement>('.answer-evidence')
+const capabilityList = document.querySelector<HTMLElement>('.hero .capability-list')
+const avatarExperience = document.querySelector<HTMLElement>('.hero .avatar-experience')
+
+function alignAnswerPanelToChips(): void {
+  if (!answerCard || !capabilityList || !avatarExperience) return
+  if (!window.matchMedia('(min-width: 981px)').matches) {
+    answerCard.style.removeProperty('bottom')
+    return
+  }
+  const chipsRect = capabilityList.getBoundingClientRect()
+  const demoRect = avatarExperience.getBoundingClientRect()
+  answerCard.style.bottom = `${demoRect.bottom - chipsRect.bottom}px`
+}
+
+if (answerCard && capabilityList && avatarExperience) {
+  const alignmentObserver = new ResizeObserver(alignAnswerPanelToChips)
+  alignmentObserver.observe(capabilityList)
+  alignmentObserver.observe(avatarExperience)
+  alignmentObserver.observe(answerCard)
+  window.addEventListener('resize', alignAnswerPanelToChips)
+  void document.fonts.ready.then(alignAnswerPanelToChips)
+}
 
 const heroDemoQuestions = [
   {
@@ -94,6 +116,7 @@ function askHeroQuestion(button: HTMLButtonElement): void {
   link.href = selected.target
   link.textContent = selected.ctaLabel
   answerEvidence.replaceChildren(link)
+  alignAnswerPanelToChips()
 }
 
 heroQuestions.forEach((button) => button.addEventListener('click', () => askHeroQuestion(button)))
